@@ -9,16 +9,17 @@ from core.logic import (
     choose_recipient,
     is_eligible,
 )
-from core.timeparse import DAY
+from core.timeparse import DAY, HOUR
 
-BUILD = Rules(min_left=5 * DAY, max_left=7 * DAY)
-RESEARCH = Rules(min_left=7 * DAY, max_left=8 * DAY)
+BUILD = Rules(min_left=5 * DAY, max_left=7 * DAY, pattern="BBW")
+RESEARCH = Rules(min_left=7 * DAY, max_left=8 * DAY, pattern="BBW")
 
 
-def cand(pid, days, waiting_since=0, urgent=False, rules=BUILD, base_days=None):
+def cand(pid, days, waiting_since=0, urgent=False, rules=BUILD, base_days=None, received=0, last_got=None):
     remaining = int(days * DAY)
     base = int((base_days or days) * DAY)
-    return Candidate(pid, f"p{pid}", remaining, base, buff_reduction(base, remaining, rules), urgent, waiting_since)
+    return Candidate(pid, f"p{pid}", remaining, base, buff_reduction(base, remaining, rules), urgent, waiting_since,
+                     received=received, last_got=last_got)
 
 
 def test_declared_mode_cuts_from_declared_time():
@@ -72,3 +73,44 @@ def test_urgent_goes_first():
 
 def test_nobody_needs():
     assert choose_recipient([cand(1, 6)], BUILD, 0, []) == (None, "")
+
+
+def test_pause_after_buff_lets_others_go_first():
+    rules = Rules(min_left=5 * DAY, max_left=7 * DAY, pattern="B", min_gap=12 * HOUR)
+    now = 100 * DAY
+    big = cand(1, 60, last_got=now - 2 * HOUR, received=1)
+    small = cand(2, 15)
+    assert choose_recipient([big, small], rules, 0, [], now)[0] == small
+    # пауза прошла — снова большой
+    assert choose_recipient([big, small], rules, 0, [], now + 11 * HOUR)[0] == big
+
+
+def test_pause_applies_to_urgent_too():
+    rules = Rules(min_left=5 * DAY, max_left=7 * DAY, min_gap=12 * HOUR)
+    now = 100 * DAY
+    urgent = cand(1, 30, urgent=True, last_got=now - HOUR, received=3)
+    other = cand(2, 20)
+    assert choose_recipient([urgent, other], rules, 0, [], now)[0] == other
+
+
+def test_everyone_paused_buff_is_not_wasted():
+    rules = Rules(min_left=5 * DAY, max_left=7 * DAY, min_gap=12 * HOUR)
+    now = 100 * DAY
+    a = cand(1, 30, last_got=now - 5 * HOUR, received=1)
+    b = cand(2, 20, last_got=now - 9 * HOUR, received=1)
+    assert choose_recipient([a, b], rules, 0, [], now)[0] == b
+
+
+def test_fair_round_nobody_runs_ahead():
+    rules = Rules(min_left=5 * DAY, max_left=7 * DAY, pattern="B", max_ahead=1)
+    big = cand(1, 60, received=1)
+    small = cand(2, 12, received=0)
+    # большой уже получил один — пока маленький не получит первый, большой ждёт
+    assert choose_recipient([big, small], rules, 0, [])[0] == small
+
+
+def test_wait_slot_prefers_who_got_least():
+    rules = Rules(min_left=5 * DAY, max_left=7 * DAY, pattern="W")
+    veteran = cand(1, 40, waiting_since=0, received=3)
+    newbie = cand(2, 20, waiting_since=500, received=0)
+    assert choose_recipient([veteran, newbie], rules, 0, [])[0] == newbie

@@ -33,6 +33,7 @@ class SimTimer:
     label: str = ""
     gets: list[tuple[float, int]] = field(default_factory=list)  # (когда, сколько срезал чужой баф)
     self_cuts: list[tuple[float, int]] = field(default_factory=list)  # (когда, сколько срезал свой баф)
+    last_got: float | None = None
     done_at: float | None = None
     left_at_done: float | None = None
     start_remaining: float = 0
@@ -42,6 +43,7 @@ class SimTimer:
         return Candidate(
             self.pid, self.nick, rem, self.base, buff_reduction(self.base, rem, rules),
             self.urgent, int(self.waiting_since), self.received,
+            last_got=int(self.last_got) if self.last_got else None,
         )
 
 
@@ -118,7 +120,7 @@ def simulate(
             mark_done(t, now)
 
         candidates = [t.candidate(rules) for t in timers if t.pid != donor and t.done_at is None]
-        pick, slot = choose_recipient(candidates, rules, slot_index, recent)
+        pick, slot = choose_recipient(candidates, rules, slot_index, recent, int(now))
         if pick is None:
             # этот донор сейчас никому не нужен — попробует позже
             heapq.heappush(queue, (at + 2 * HOUR, order, donor))
@@ -128,6 +130,7 @@ def simulate(
         target.remaining -= cut
         target.received += 1
         target.waiting_since = now
+        target.last_got = now
         target.gets.append((now, cut))
         recent.insert(0, target.pid)
         if slot != SLOT_URGENT:

@@ -49,9 +49,21 @@
       <div class="field">
         <label for="pattern">🔄 Ротация (большим : ждущим)</label>
         <select id="pattern" name="pattern">
-          {% for v, t in [("BW", "1 : 1"), ("BBW", "2 : 1"), ("BBBW", "3 : 1"), ("B", "только большим")] %}
+          {% for v, t in [("BBBWWW", "3 : 3"), ("BW", "1 : 1"), ("BBW", "2 : 1"), ("BBBW", "3 : 1"), ("B", "только большим")] %}
           <option value="{{ v }}" {{ 'selected' if settings.pattern == v }}>{{ t }}</option>
           {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="min_gap_hours">⏸ Пауза после бафа, часов</label>
+        <input id="min_gap_hours" name="min_gap_hours" type="number" step="1" min="0" max="72" value="{{ settings.min_gap_hours }}">
+        <div class="hint">Получил баф — следующий не раньше чем через столько часов. 0 — без паузы.</div>
+      </div>
+      <div class="field">
+        <label for="fair_round">⚖️ Справедливый круг</label>
+        <select id="fair_round" name="fair_round">
+          <option value="1" {{ 'selected' if settings.fair_round == '1' }}>включён — сначала все по одному бафу</option>
+          <option value="0" {{ 'selected' if settings.fair_round == '0' }}>выключен</option>
         </select>
       </div>
       <div class="field">

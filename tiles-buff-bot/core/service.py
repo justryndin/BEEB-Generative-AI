@@ -41,8 +41,10 @@ SETTINGS: dict[str, tuple[str, str]] = {
     "build_max": ("7", "Стройка: при остатке не больше этого (дней) бафы уже не нужны"),
     "research_min": ("7", "Исследование: ниже этого остатка (дней) бафом не опускаем"),
     "research_max": ("8", "Исследование: при остатке не больше этого (дней) бафы уже не нужны"),
-    "pattern": ("BBW", "Цикл ротации: B — самому большому остатку, W — кто дольше ждёт"),
+    "pattern": ("BBBWWW", "Цикл ротации: B — самому большому остатку, W — кому досталось меньше всех и кто дольше ждёт"),
     "max_streak": ("2", "Не больше стольких бафов подряд одному игроку"),
+    "min_gap_hours": ("12", "Пауза после полученного бафа, часов: пока она идёт, бафы получают другие"),
+    "fair_round": ("1", "Справедливый круг: 1 — сначала все по одному бафу, потом по второму…; 0 — выключить"),
     "cooldown_hours": ("48", "Через сколько часов у игрока снова готов баф"),
     "confirm_minutes": ("30", "Сколько минут держится бронь на назначенный баф"),
     "alliance_code": ("", "Код союза для регистрации на сайте (пусто — регистрация открыта всем)"),
@@ -141,6 +143,7 @@ class QueueRow:
     needed: int
     pending: bool
     label: str = ""
+    paused_for: int = 0  # сколько секунд ещё длится пауза после полученного бафа
 
 
 @dataclass
@@ -219,6 +222,8 @@ class Service:
             mode=self.setting("mode"),
             pattern=self.setting("pattern"),
             max_streak=int(self.setting_float("max_streak")),
+            min_gap=int(self.setting_float("min_gap_hours") * HOUR),
+            max_ahead=1 if self.setting_float("fair_round") > 0 else 0,
         )
 
     # ---------- игроки ----------
@@ -402,6 +407,7 @@ class Service:
             waiting_since=row["last_buff_at"] or row["created_at"],
             received=row["buffs_received"],
             has_tg=row["tg_id"] is not None,
+            last_got=row["last_buff_at"],
         )
 
     def _timer_rows(self, kind: str):
@@ -451,7 +457,7 @@ class Service:
             if row["player_id"] not in exclude
         ]
         pick, slot = choose_recipient(
-            candidates, rules, self._slot_index(kind), self._recent_recipients(kind, rules.max_streak)
+            candidates, rules, self._slot_index(kind), self._recent_recipients(kind, rules.max_streak), now
         )
         return pick, slot
 
@@ -468,6 +474,7 @@ class Service:
                 buffs_needed(c.remaining, c.base, rules),
                 c.player_id in pending,
                 gamedata.label(row["item"], row["level"], row["note"]),
+                max(0, c.paused_until(rules) - now),
             ))
         rows.sort(key=lambda r: (r.status != STATUS_NEED, not r.candidate.urgent, -r.candidate.remaining))
         pick, slot = self._choose(kind, now, pending)
@@ -910,6 +917,7 @@ class Service:
                 pid=row["player_id"], nick=row["nick"], remaining=remaining, base=row["base_seconds"],
                 urgent=bool(row["urgent"]), waiting_since=row["last_buff_at"] or row["created_at"],
                 received=row["buffs_received"], label=gamedata.label(row["item"], row["level"], row["note"]),
+                last_got=row["last_buff_at"],
             ))
         if virtual_seconds:
             timers.append(SimTimer(VIRTUAL_ID, "Ты", virtual_seconds, virtual_seconds, waiting_since=now))

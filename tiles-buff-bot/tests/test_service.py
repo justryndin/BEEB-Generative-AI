@@ -27,6 +27,9 @@ def test_register_links_offline_player_and_rejects_taken_nick():
 
 def test_full_flow_with_rotation_and_donor_self_buff():
     svc = make()
+    svc.set_setting("pattern", "BBW")
+    svc.set_setting("min_gap_hours", "0")
+    svc.set_setting("fair_round", "0")
     donor = reg(svc, 1, "Донор")
     big = reg(svc, 2, "Большой")
     small = reg(svc, 3, "Малый")

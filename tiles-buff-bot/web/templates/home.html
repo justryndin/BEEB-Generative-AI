@@ -47,14 +47,14 @@
       <tr><th>Игрок</th><th class="num">Осталось</th><th class="num">Бафов</th><th class="num">До цели</th></tr>
       {% for row in b.rows %}{% set c = row.r.candidate %}
       <tr class="{{ 'hl' if c.player_id == me.id }}">
-        <td><b>{{ c.nick }}</b>{% if c.urgent %} 🔥{% endif %}{% if row.r.pending %} ⏳{% endif %}<br><small>{{ row.r.label or "—" }}</small></td>
+        <td><b>{{ c.nick }}</b>{% if c.urgent %} 🔥{% endif %}{% if row.r.pending %} ⏳{% endif %}{% if row.r.paused_for %} ⏸{% endif %}<br><small>{{ row.r.label or "—" }}{% if row.r.paused_for %} · пауза ещё {{ dur(row.r.paused_for) }}{% endif %}</small></td>
         <td class="num">{{ dur(c.remaining) }}</td>
         <td class="num">{% if row.r.status == "need" %}{{ row.will_get }}{% else %}🎯{% endif %}</td>
         <td class="num">{% if row.r.status == "need" %}{{ eta_short(row.done_in) }}{% else %}—{% endif %}</td>
       </tr>
       {% endfor %}
     </table></div>
-    <p class="hint">«Бафов» — сколько бафов от союза он ещё получит по прогнозу, «До цели» — примерно через сколько дойдёт до цели. 🔥 срочно · ⏳ ему уже несут баф · 🎯 цель достигнута</p>
+    <p class="hint">«Бафов» — сколько бафов от союза он ещё получит по прогнозу, «До цели» — примерно через сколько дойдёт до цели. 🔥 срочно · ⏳ ему уже несут баф · ⏸ пауза после бафа · 🎯 цель достигнута</p>
   </details>
   {% endfor %}
 </section>
@@ -85,6 +85,7 @@
       {% if t %}
         {% if t.label %}<div class="text-2">{{ t.label }}</div>{% endif %}
         <div class="big">{{ dur(t.c.remaining) }}</div>
+        {% if t.paused_for %}<div class="badge" style="margin:6px 0">⏸ пауза после бафа ещё {{ dur(t.paused_for) }} — сейчас бафы получают другие</div>{% endif %}
         {% if t.status == "need" and f %}
         <ul class="kv">
           <li><span class="k">Получишь от союза</span><span class="v">≈ {{ f.gets|length }} баф.{% if f.gets %} · первый {{ eta(f.gets[0][0]) }}{% endif %}</span></li>

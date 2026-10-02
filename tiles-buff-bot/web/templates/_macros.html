@@ -10,6 +10,7 @@
     <span class="row" style="gap:6px;margin-top:2px">
       {% if c.urgent %}<span class="badge badge-urgent">🔥 срочно</span>{% endif %}
       {% if r.pending %}<span class="badge badge-warn">⏳ ему уже несут баф</span>{% endif %}
+      {% if r.paused_for %}<span class="badge">⏸ пауза ещё {{ dur(r.paused_for) }}</span>{% endif %}
     </span>
   </span>
   <span class="qtime">{{ dur(c.remaining) }}<small>осталось</small></span>

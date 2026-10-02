@@ -164,6 +164,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                 "status": timer_status(c, rules),
                 "needed": buffs_needed(c.remaining, c.base, rules),
                 "position": queue_position(kind, player_id, t),
+                "paused_for": max(0, c.paused_until(rules) - t),
             }
         return out
 
@@ -367,6 +368,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             streak=int(svc.setting_float("max_streak")),
             cooldown=svc.setting_float("cooldown_hours"),
             confirm=svc.setting_float("confirm_minutes"),
+            gap=svc.setting_float("min_gap_hours"),
+            fair=svc.setting_float("fair_round") > 0,
         )
 
     @app.post("/rules/agree")
