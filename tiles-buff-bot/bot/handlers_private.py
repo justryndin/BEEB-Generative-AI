@@ -13,6 +13,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
+from . import gamedata
 from .config import Config
 from .service import KIND_ACC, KIND_EMOJI, KIND_NAME, Service, clean_nick
 from .texts import (
@@ -25,18 +26,27 @@ from .texts import (
     BTN_RESEARCH,
     MENU_BUTTONS,
     DonationCb,
+    ItemCb,
     QueueCb,
+    SkipCb,
     TimerCb,
     assignment_text,
+    catalog_text,
     donation_kb,
     donor_done_text,
     h,
     help_text,
+    item_kb,
+    item_prompt,
+    level_prompt,
     main_kb,
+    note_prompt,
     profile_text,
     queue_kb,
     queue_text,
     recipient_text,
+    reference_text,
+    skip_kb,
     target_text,
     timer_card,
     timer_kb,
@@ -57,7 +67,13 @@ class Reg(StatesGroup):
 
 
 class TimerInput(StatesGroup):
+    level = State()
+    note = State()
     value = State()
+
+
+# Текст в шагах ввода, кроме кнопок меню и команд — они прерывают ввод.
+_FREE_TEXT = (F.text, ~F.text.in_(MENU_BUTTONS), ~F.text.startswith("/"))
 
 
 def now() -> int:
@@ -183,9 +199,7 @@ async def my_timer(message: Message, state: FSMContext, svc: Service):
     kind = "build" if message.text == BTN_BUILD else "research"
     c = svc.timer_candidate(player["id"], kind, now())
     if c is None or c.remaining <= 0:
-        await state.set_state(TimerInput.value)
-        await state.update_data(kind=kind, keep_base=False)
-        await message.answer(timer_prompt(kind, fix=False))
+        await message.answer(item_prompt(kind), reply_markup=item_kb(kind))
         return
     await message.answer(timer_card(svc, player["id"], kind, now()), reply_markup=timer_kb(kind))
 
@@ -200,15 +214,70 @@ async def timer_action(cb: CallbackQuery, callback_data: TimerCb, state: FSMCont
     if callback_data.action == "close":
         svc.close_timer(player["id"], kind)
         await cb.message.edit_text(f"🏁 {KIND_NAME[kind].capitalize()} закрыто — ты убран из очереди.")
+    elif callback_data.action == "new":
+        await state.clear()
+        await cb.message.answer(item_prompt(kind), reply_markup=item_kb(kind))
     else:
-        fix = callback_data.action == "fix"
         await state.set_state(TimerInput.value)
-        await state.update_data(kind=kind, keep_base=fix)
-        await cb.message.answer(timer_prompt(kind, fix=fix))
+        await state.set_data({"kind": kind, "keep_base": True})
+        await cb.message.answer(timer_prompt(kind, fix=True))
     await cb.answer()
 
 
-@router.message(TimerInput.value, F.text, ~F.text.in_(MENU_BUTTONS), ~F.text.startswith("/"))
+@router.callback_query(ItemCb.filter())
+async def item_chosen(cb: CallbackQuery, callback_data: ItemCb, state: FSMContext):
+    it = gamedata.item(callback_data.code)
+    if it is None:
+        await cb.answer()
+        return
+    await state.set_data({"kind": it.kind, "keep_base": False, "item": it.code})
+    await cb.message.edit_text(f"{'🏗' if it.kind == 'build' else '🔬'} {h(it.ru)}")
+    if it.kind == "build" and it.en:
+        await state.set_state(TimerInput.level)
+        await cb.message.answer(level_prompt(it))
+    else:
+        await state.set_state(TimerInput.note)
+        await cb.message.answer(note_prompt(it), reply_markup=skip_kb("note"))
+    await cb.answer()
+
+
+@router.message(TimerInput.level, *_FREE_TEXT)
+async def level_value(message: Message, state: FSMContext, svc: Service):
+    data = await state.get_data()
+    it = gamedata.item(data.get("item"))
+    top = (it.max_level if it and it.max_level else 60)
+    text = message.text.strip()
+    if not text.isdigit() or not 1 <= int(text) <= top:
+        await message.answer(f"Напиши уровень числом от 1 до {top}, например <code>24</code>")
+        return
+    level = int(text)
+    await state.update_data(level=level)
+    await state.set_state(TimerInput.value)
+    await message.answer(timer_prompt(data["kind"], fix=False, reference=reference_text(svc, it, level)))
+
+
+@router.message(TimerInput.note, *_FREE_TEXT)
+async def note_value(message: Message, state: FSMContext):
+    note = " ".join(message.text.split())[:60]
+    await state.update_data(note=note)
+    await state.set_state(TimerInput.value)
+    data = await state.get_data()
+    await message.answer(timer_prompt(data["kind"], fix=False))
+
+
+@router.callback_query(SkipCb.filter())
+async def skip_step(cb: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    if "kind" not in data:
+        await cb.answer("Начни заново через меню")
+        return
+    await state.set_state(TimerInput.value)
+    await cb.message.edit_reply_markup(reply_markup=None)
+    await cb.message.answer(timer_prompt(data["kind"], fix=False))
+    await cb.answer()
+
+
+@router.message(TimerInput.value, *_FREE_TEXT)
 async def timer_value(message: Message, state: FSMContext, svc: Service):
     player = await need_player(message, svc, state)
     if player is None:
@@ -221,8 +290,21 @@ async def timer_value(message: Message, state: FSMContext, svc: Service):
         return
     data = await state.get_data()
     kind = data.get("kind", "build")
-    svc.set_timer(player["id"], kind, seconds, now(), keep_base=bool(data.get("keep_base")))
+    it = gamedata.item(data.get("item"))
+    level = data.get("level")
+    svc.set_timer(
+        player["id"], kind, seconds, now(),
+        keep_base=bool(data.get("keep_base")),
+        item=data.get("item"), level=level, note=data.get("note"),
+    )
     await state.clear()
+    warning = ""
+    ref = it.time_for(level) if it else None
+    if ref and seconds > ref * 1.5:
+        warning = (
+            f"\n\n⚠️ Это больше справочного времени ({format_duration(ref)} без бонусов). "
+            "Проверь, правильно ли ввёл — если ошибся, поправь через «Моя стройка» → «🔧 Поправить остаток»."
+        )
     c = svc.timer_candidate(player["id"], kind, now())
     needed = buffs_needed(c.remaining, c.base, svc.rules(kind))
     tail = (
@@ -232,7 +314,9 @@ async def timer_value(message: Message, state: FSMContext, svc: Service):
         else f"Бафы не нужны: остаток уже около цели ({target_text(svc, kind)})."
     )
     await message.answer(
-        f"✅ Записал: {KIND_EMOJI[kind]} {KIND_NAME[kind]} — осталось <b>{format_duration(c.remaining)}</b>.\n{tail}",
+        f"✅ Записал: {KIND_EMOJI[kind]} {KIND_NAME[kind]}"
+        + (f" ({h(gamedata.label(data.get('item'), level, data.get('note')))})" if it else "")
+        + f" — осталось <b>{format_duration(c.remaining)}</b>.\n{tail}{warning}",
         reply_markup=main_kb(),
     )
 
@@ -320,6 +404,12 @@ async def show_profile(message: Message, state: FSMContext, svc: Service):
     if player is None:
         return
     await message.answer(profile_text(svc, player, now()), reply_markup=main_kb())
+
+
+@router.message(Command("catalog"))
+async def show_catalog(message: Message, state: FSMContext, svc: Service):
+    await state.clear()
+    await message.answer(catalog_text(svc))
 
 
 @router.message(F.text == BTN_HELP)

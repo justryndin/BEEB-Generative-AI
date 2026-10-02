@@ -12,6 +12,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
 )
 
+from . import gamedata
 from .logic import SLOT_BIG, SLOT_URGENT, SLOT_WAIT, STATUS_NEED, STATUS_TARGET, buffs_needed, timer_status
 from .service import KIND_ACC, KIND_EMOJI, KIND_NAME, KINDS, Assignment, BuffResult, Service
 from .timeparse import format_duration
@@ -45,6 +46,14 @@ class TimerCb(CallbackData, prefix="t"):
 
 class QueueCb(CallbackData, prefix="q"):
     kind: str
+
+
+class ItemCb(CallbackData, prefix="i"):
+    code: str
+
+
+class SkipCb(CallbackData, prefix="s"):
+    step: str
 
 
 def h(value) -> str:
@@ -86,6 +95,60 @@ def timer_kb(kind: str) -> InlineKeyboardMarkup:
     )
 
 
+def item_kb(kind: str) -> InlineKeyboardMarkup:
+    items = gamedata.items_for(kind)
+    rows = []
+    for i in range(0, len(items), 2):
+        rows.append([
+            InlineKeyboardButton(text=it.ru, callback_data=ItemCb(code=it.code).pack())
+            for it in items[i : i + 2]
+        ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def skip_kb(step: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text="⏭ Пропустить", callback_data=SkipCb(step=step).pack())]]
+    )
+
+
+def item_prompt(kind: str) -> str:
+    if kind == "build":
+        return "🏗 Что строишь? Выбери здание (если строишь несколько — самое долгое):"
+    return "🔬 Какая ветка исследований? Выбери (если изучаешь несколько — самое долгое):"
+
+
+def level_prompt(it: gamedata.Item) -> str:
+    top = f" (1–{it.max_level})" if it.max_level else ""
+    return f"<b>{h(it.ru)}</b> — на какой уровень улучшаешь{top}? Напиши число, например <code>24</code>"
+
+
+def note_prompt(it: gamedata.Item) -> str:
+    if it.kind == "build":
+        return "Какое здание и на какой уровень? Напиши коротко, например <code>Склад 18</code>"
+    return (
+        f"<b>{h(it.ru)}</b> — какое исследование и уровень? Напиши коротко, например "
+        "<code>Скорость строительства 7</code>, или нажми «Пропустить»."
+    )
+
+
+def reference_text(svc: Service, it: gamedata.Item | None, level: int | None) -> str:
+    """Справочное время для выбранного здания/уровня, если оно известно."""
+    if it is None or level is None:
+        return ""
+    lines = []
+    ref = it.time_for(level)
+    if ref:
+        approx = " ≈ (данные неточные)" if it.approximate else ""
+        lines.append(f"📚 Справочно {h(it.ru)} → {level}: <b>{format_duration(ref)}</b> без бонусов{approx}")
+    if level in it.requires:
+        lines.append(f"Требования: {h(it.requires[level])}")
+    for code, lvl, median, count in svc.observed_times(it.code):
+        if lvl == level:
+            lines.append(f"👥 По союзу: обычно заявляют ≈ {format_duration(median)} ({count} записей)")
+    return "\n".join(lines)
+
+
 def queue_kb(kind: str) -> InlineKeyboardMarkup:
     other = "research" if kind == "build" else "build"
     return InlineKeyboardMarkup(
@@ -101,11 +164,12 @@ def target_text(svc: Service, kind: str) -> str:
     return f"{hi:g} дн." if lo == hi else f"{lo:g}–{hi:g} дн."
 
 
-def timer_prompt(kind: str, fix: bool) -> str:
+def timer_prompt(kind: str, fix: bool, reference: str = "") -> str:
     what = "самой долгой стройки" if kind == "build" else "самого долгого исследования"
     head = "Сколько сейчас осталось" if fix else "Сколько осталось"
+    ref = f"{reference}\n\n" if reference else ""
     return (
-        f"{head} до конца {what}?\n"
+        f"{ref}⏳ {head} до конца {what}? Посмотри таймер в игре.\n"
         "Напиши, например: <code>21д 5ч</code>, <code>100д</code> или <code>20d 13:45:12</code>\n\n"
         "Если запущено несколько — укажи самое долгое: баф действует сразу на все."
     )
@@ -117,8 +181,10 @@ def timer_card(svc: Service, player_id: int, kind: str, now: int) -> str:
         return f"{KIND_EMOJI[kind]} {KIND_NAME[kind].capitalize()}: не записано."
     rules = svc.rules(kind)
     status = timer_status(c, rules)
+    timer = svc.active_timer(player_id, kind)
+    what = gamedata.label(timer["item"], timer["level"], timer["note"]) if timer else ""
     lines = [
-        f"{KIND_EMOJI[kind]} <b>{KIND_NAME[kind].capitalize()}</b>",
+        f"{KIND_EMOJI[kind]} <b>{KIND_NAME[kind].capitalize()}</b>" + (f": {h(what)}" if what else ""),
         f"Осталось: <b>{format_duration(c.remaining)}</b> (заявлено {format_duration(c.base)})",
         f"Получено бафов: {c.received}",
     ]
@@ -138,6 +204,7 @@ def assignment_text(a: Assignment, confirm_minutes: float) -> str:
     lines += [
         f"🎁 Баф на <b>{KIND_ACC[a.kind]}</b>",
         f"Отдай его игроку: <b>{h(a.recipient_nick)}</b>",
+        *([f"Что у него: {h(a.recipient_label)}"] if a.recipient_label else []),
         f"У него осталось: {format_duration(a.remaining)} → после бафа ≈ {format_duration(a.remaining - a.reduction)}",
         f"Почему он: {SLOT_REASON.get(a.slot, a.slot)}",
     ]
@@ -193,8 +260,9 @@ def queue_text(svc: Service, kind: str, now: int, limit: int | None = None) -> s
             c = r.candidate
             marks = ("🔥 " if c.urgent else "") + ("⏳ " if r.pending else "")
             offline = "" if c.has_tg else " 📵"
+            what = f" · {h(r.label)}" if r.label else ""
             lines.append(
-                f"{i}. {marks}{h(c.nick)}{offline} — {format_duration(c.remaining)} · ещё ≈{r.needed} · получил {c.received}"
+                f"{i}. {marks}{h(c.nick)}{offline} — {format_duration(c.remaining)}{what} · ещё ≈{r.needed} · получил {c.received}"
             )
         if len(shown) < len(need):
             lines.append(f"… и ещё {len(need) - len(shown)}")
@@ -240,6 +308,27 @@ def digest_text(svc: Service, now: int, limit: int = 10) -> str:
     return "\n".join(parts)
 
 
+def catalog_text(svc: Service) -> str:
+    pp = gamedata.ITEMS["pp"]
+    lines = ["📚 <b>Справочник</b>", "", f"🏗 <b>{pp.title}</b> — время улучшения без бонусов:"]
+    lines.append(" · ".join(f"{lvl}: {format_duration(pp.time_for(lvl))}" for lvl in range(11, 31)))
+    for code in ("bar1", "bar23"):
+        it = gamedata.ITEMS[code]
+        lines.append(f"\n🏗 <b>{it.title}</b> (≈, данные неточные):")
+        lines.append(" · ".join(f"{lvl}: {format_duration(it.time_for(lvl))}" for lvl in range(20, 31)))
+    others = [it.ru for it in gamedata.BUILDINGS if not it.times and it.en]
+    lines.append(f"\nПо остальным зданиям публичных данных нет: {', '.join(others)}.")
+    observed = svc.observed_times()
+    if observed:
+        lines.append("\n👥 <b>Заявлено игроками союза</b> (медиана):")
+        for code, lvl, median, count in observed[:40]:
+            it = gamedata.item(code)
+            lines.append(f"{h(it.ru if it else code)} → {lvl}: ≈ {format_duration(median)} ({count})")
+    lines.append("\n🔬 <b>Ветки исследований:</b> " + ", ".join(it.title for it in gamedata.RESEARCH if it.en))
+    lines.append(f"\nИсточник справочных времён: {gamedata.SOURCE}. Твои бонусы к скорости сокращают реальное время.")
+    return "\n".join(lines)
+
+
 HELP = """<b>Как это работает</b>
 
 1️⃣ Запустил стройку или исследование → нажми «🏗 Моя стройка» / «🔬 Моё исследование» и напиши, сколько осталось (самое долгое). Бот поставит тебя в очередь.
@@ -258,7 +347,8 @@ HELP = """<b>Как это работает</b>
 
 Ускорился сам → «Моя стройка» → «🔧 Поправить остаток».
 Закончил или бафы не нужны → «🏁 Завершено».
-Сменить ник: <code>/nick Новый ник</code>"""
+Сменить ник: <code>/nick Новый ник</code>
+Справочник построек и исследований: /catalog"""
 
 
 def help_text(svc: Service) -> str:

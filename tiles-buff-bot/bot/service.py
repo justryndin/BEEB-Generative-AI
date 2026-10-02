@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from . import gamedata
 from .db import Database
 from .logic import (
     SLOT_URGENT,
@@ -80,6 +81,7 @@ class Assignment:
     recipient_id: int
     recipient_nick: str
     recipient_tg: int | None
+    recipient_label: str
     remaining: int
     reduction: int
     waiting: int
@@ -110,6 +112,7 @@ class QueueRow:
     status: str
     needed: int
     pending: bool
+    label: str = ""
 
 
 @dataclass
@@ -291,12 +294,24 @@ class Service:
             "SELECT * FROM timers WHERE player_id = ? AND kind = ? AND active = 1", player_id, kind
         )
 
-    def set_timer(self, player_id: int, kind: str, seconds: int, now: int, keep_base: bool = False):
+    def set_timer(
+        self,
+        player_id: int,
+        kind: str,
+        seconds: int,
+        now: int,
+        keep_base: bool = False,
+        item: str | None = None,
+        level: int | None = None,
+        note: str | None = None,
+    ):
         """Новый таймер или поправка остатка.
 
         keep_base=False — новая стройка/исследование: заявленное время = seconds.
         keep_base=True — игрок поправил остаток (например, ускорился сам), а
-        заявленное время, от которого считаются 15%, остаётся прежним.
+        заявленное время, от которого считаются 15%, остаётся прежним
+        (и то, что строится, тоже).
+        item/level/note — что именно строится или изучается (справочник gamedata).
         """
         current = self.active_timer(player_id, kind)
         with self.db.tx():
@@ -310,12 +325,16 @@ class Service:
             if current is not None:
                 self.db.run("UPDATE timers SET active = 0 WHERE id = ?", current["id"])
             cur = self.db.run(
-                "INSERT INTO timers(player_id, kind, base_seconds, end_at, created_at) VALUES(?, ?, ?, ?, ?)",
+                "INSERT INTO timers(player_id, kind, base_seconds, end_at, created_at, item, level, note) "
+                "VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
                 player_id,
                 kind,
                 seconds,
                 now + seconds,
                 now,
+                item,
+                level,
+                note,
             )
         return self.db.one("SELECT * FROM timers WHERE id = ?", cur.lastrowid)
 
@@ -412,7 +431,13 @@ class Service:
         for row in self._timer_rows(kind):
             c = self.candidate_from_row(row, rules, now)
             status = timer_status(c, rules)
-            rows.append(QueueRow(c, status, buffs_needed(c.remaining, c.base, rules), c.player_id in pending))
+            rows.append(QueueRow(
+                c,
+                status,
+                buffs_needed(c.remaining, c.base, rules),
+                c.player_id in pending,
+                gamedata.label(row["item"], row["level"], row["note"]),
+            ))
         rows.sort(key=lambda r: (r.status != STATUS_NEED, not r.candidate.urgent, -r.candidate.remaining))
         pick, slot = self._choose(kind, now, pending)
         return QueueView(kind, rows, pick, slot, rules)
@@ -443,6 +468,7 @@ class Service:
     def _assignment(self, donation, now: int, reused: bool) -> Assignment:
         recipient = self.player(donation["recipient_id"])
         c = self.timer_candidate(donation["recipient_id"], donation["kind"], now)
+        timer = self.active_timer(donation["recipient_id"], donation["kind"])
         return Assignment(
             donation_id=donation["id"],
             kind=donation["kind"],
@@ -451,6 +477,7 @@ class Service:
             recipient_id=donation["recipient_id"],
             recipient_nick=recipient["nick"] if recipient else "?",
             recipient_tg=recipient["tg_id"] if recipient else None,
+            recipient_label=gamedata.label(timer["item"], timer["level"], timer["note"]) if timer else "",
             remaining=c.remaining if c else 0,
             reduction=c.reduction if c else 0,
             waiting=max(0, now - c.waiting_since) if c else 0,
@@ -632,3 +659,23 @@ class Service:
             "SELECT COUNT(*) AS n FROM donations WHERE recipient_id = ? AND status = 'done'", player_id
         )["n"]
         return given, received
+
+    def observed_times(self, item: str | None = None) -> list[tuple[str, int, int, int]]:
+        """Реальные заявленные игроками времена: (код, уровень, медиана секунд, сколько записей).
+
+        Заявленное время — это остаток на момент записи, поэтому оценка грубая,
+        но со временем по союзу набирается своя статистика.
+        """
+        sql = "SELECT item, level, base_seconds FROM timers WHERE item IS NOT NULL AND level IS NOT NULL"
+        args: tuple = ()
+        if item:
+            sql += " AND item = ?"
+            args = (item,)
+        groups: dict[tuple[str, int], list[int]] = {}
+        for r in self.db.all(sql, *args):
+            groups.setdefault((r["item"], r["level"]), []).append(r["base_seconds"])
+        out = []
+        for (code, level), values in sorted(groups.items()):
+            values.sort()
+            out.append((code, level, values[len(values) // 2], len(values)))
+        return out

@@ -28,7 +28,10 @@ CREATE TABLE IF NOT EXISTS timers (
     target_notified INTEGER NOT NULL DEFAULT 0,
     buffs_received  INTEGER NOT NULL DEFAULT 0,
     last_buff_at    INTEGER,
-    created_at      INTEGER NOT NULL
+    created_at      INTEGER NOT NULL,
+    item            TEXT,
+    level           INTEGER,
+    note            TEXT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS timers_one_active ON timers(player_id, kind) WHERE active = 1;
 
@@ -74,6 +77,13 @@ class Database:
         if path != ":memory:":
             self.conn.execute("PRAGMA journal_mode = WAL")
         self.conn.executescript(SCHEMA)
+        self._migrate()
+
+    def _migrate(self) -> None:
+        columns = {r["name"] for r in self.conn.execute("PRAGMA table_info(timers)")}
+        for name, sql_type in (("item", "TEXT"), ("level", "INTEGER"), ("note", "TEXT")):
+            if name not in columns:
+                self.conn.execute(f"ALTER TABLE timers ADD COLUMN {name} {sql_type}")
 
     def all(self, sql: str, *args) -> list[sqlite3.Row]:
         return self.conn.execute(sql, args).fetchall()

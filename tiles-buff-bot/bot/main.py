@@ -34,12 +34,16 @@ async def main() -> None:
             BotCommand(command="queue", description="Очередь на бафы"),
             BotCommand(command="me", description="Мой профиль"),
             BotCommand(command="help", description="Как это работает"),
+            BotCommand(command="catalog", description="Справочник построек и исследований"),
             BotCommand(command="admin", description="Команды админа"),
         ],
         scope=BotCommandScopeAllPrivateChats(),
     )
     await bot.set_my_commands(
-        [BotCommand(command="queue", description="Сводка по бафам")],
+        [
+            BotCommand(command="queue", description="Сводка по бафам"),
+            BotCommand(command="catalog", description="Справочник построек"),
+        ],
         scope=BotCommandScopeAllGroupChats(),
     )
 
