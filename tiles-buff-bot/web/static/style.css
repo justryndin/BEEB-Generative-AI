@@ -403,6 +403,10 @@ details summary { cursor: pointer; font-weight: 600; color: var(--accent-text); 
 }
 .toc a:hover { border-color: var(--accent); color: var(--text); }
 
+.refresh-note { text-align: center; color: var(--muted); font-size: .85rem; margin: 18px 0 0; }
+.linklike { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-text); text-decoration: underline; cursor: pointer; }
+.no-anim, .no-anim * { animation: none !important; }
+
 .center { text-align: center; }
 .mt0 { margin-top: 0; }
 .mb0 { margin-bottom: 0; }

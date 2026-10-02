@@ -106,6 +106,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                 "csrf": me["csrf"] if me else "",
                 "flash": flash,
                 "path": request.url.path,
+                "refresh_seconds": int(svc.setting_float("refresh_minutes") * 60),
+                "updated_at": local(now(), "%H:%M"),
                 **ctx,
             },
             status_code=status_code,

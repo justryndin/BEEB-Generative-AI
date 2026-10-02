@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import queue_item %}
 {% block title %}Очередь · {{ site_name }}{% endblock %}
-{% block body_attrs %}data-autorefresh="1"{% endblock %}
+{% block refresh %}{{ refresh_seconds }}{% endblock %}
 {% block content %}
 <h1>📋 Очередь</h1>
 <nav class="tabs">

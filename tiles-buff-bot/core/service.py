@@ -45,6 +45,7 @@ SETTINGS: dict[str, tuple[str, str]] = {
     "cooldown_hours": ("48", "Через сколько часов у игрока снова готов баф"),
     "confirm_minutes": ("30", "Сколько минут держится бронь на назначенный баф"),
     "alliance_code": ("", "Код союза для регистрации на сайте (пусто — регистрация открыта всем)"),
+    "refresh_minutes": ("15", "Как часто главная, очередь и статистика сами обновляют данные, минут (0 — не обновлять)"),
 }
 _INTERNAL_SETTINGS: set[str] = set()
 _TEXT_SETTINGS = {"mode", "pattern", "alliance_code"}
@@ -187,6 +188,8 @@ class Service:
             value = f"{number:g}"
             if key == "pct" and not 0 < number < 100:
                 return "pct: от 0 до 100"
+            if key == "refresh_minutes" and number > 240:
+                return "refresh_minutes: не больше 240"
             if key in ("cooldown_hours", "confirm_minutes") and number <= 0:
                 return f"{key}: должно быть больше 0"
             if number < 0:

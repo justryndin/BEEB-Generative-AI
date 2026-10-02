@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import queue_item, buff_line %}
-{% block body_attrs %}data-autorefresh="1"{% endblock %}
+{% block refresh %}{{ refresh_seconds }}{% endblock %}
 {% block content %}
 <h1>Привет, {{ me.nick }}! 👋</h1>
 
