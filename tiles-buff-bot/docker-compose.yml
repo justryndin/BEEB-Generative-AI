@@ -22,9 +22,34 @@ services:
         max-size: "5m"
         max-file: "3"
 
+  caddy:
+    # Вариант «напрямую»: HTTPS на отдельном IP сервера (SITE_IP), сертификат выпускается сам.
+    image: caddy:2
+    container_name: tiles-buff-caddy
+    profiles: ["direct"]
+    restart: unless-stopped
+    ports:
+      - "${SITE_IP:-127.0.0.1}:80:80"
+      - "${SITE_IP:-127.0.0.1}:443:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
   tunnel:
-    # Cloudflare Tunnel: сайт сам подключается к Cloudflare. Порты 80/443 и VPN не трогаем.
+    # Вариант «через Cloudflare»: сайт сам подключается к Cloudflare, порты не нужны.
     image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
     container_name: tiles-buff-tunnel
     restart: unless-stopped
     command: tunnel --no-autoupdate run
@@ -41,3 +66,5 @@ services:
 
 volumes:
   bot-data:
+  caddy-data:
+  caddy-config:
