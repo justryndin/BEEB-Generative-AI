@@ -28,7 +28,7 @@
     <p class="text-2">Не в очереди.</p>
     <a class="btn btn-sm" href="/join/{{ kind }}?player={{ p.id }}">➕ Записать {{ KIND_ACC[kind] }}</a>
   {% endif %}
-  <hr style="border:0;border-top:1px solid var(--border);margin:14px 0">
+  <hr class="sep">
   <div class="row">
     <span>Его баф: {{ buff_line(kind, buffs[kind]) }}</span><span class="spacer"></span>
     <form method="post" action="/admin/p/{{ p.id }}/assign"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">

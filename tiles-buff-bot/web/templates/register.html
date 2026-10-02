@@ -2,8 +2,9 @@
 {% block title %}Регистрация · {{ site_name }}{% endblock %}
 {% block content %}
 <div class="card" style="max-width:460px;margin:20px auto">
-  <h1>✨ Регистрация</h1>
-  <p class="text-2">Займёт полминуты. Нужны только ник и PIN-код.</p>
+  <img class="mark-sm" src="/static/icon.svg" alt="" width="64" height="64">
+  <h1 class="center">Регистрация</h1>
+  <p class="text-2 center">Займёт полминуты. Нужны только ник и PIN-код.</p>
   {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
   <form method="post" action="/register">
     <div class="field">

@@ -639,7 +639,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     def manifest():
         body = (
             '{"name": "%s", "short_name": "Бафы", "start_url": "/", "display": "standalone", '
-            '"background_color": "#0f1b2d", "theme_color": "#2a78d6", '
+            '"background_color": "#0d0a14", "theme_color": "#0d0a14", '
             '"icons": [{"src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml"}]}' % cfg.site_name
         )
         return Response(body, media_type="application/manifest+json")

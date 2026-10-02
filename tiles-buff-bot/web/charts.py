@@ -51,8 +51,9 @@ def column_chart(points: list[tuple[str, int, str]], title: str) -> str:
             )
         parts.append("</g>")
         if label:
+            anchor, lx = ("end", x + bar) if i == n - 1 else ("middle", x + bar / 2)
             parts.append(
-                f'<text class="tick" x="{x + bar / 2:.1f}" y="{height - 8}" text-anchor="middle">{escape(label)}</text>'
+                f'<text class="tick" x="{lx:.1f}" y="{height - 8}" text-anchor="{anchor}">{escape(label)}</text>'
             )
     parts.append(f'<line class="axis" x1="{left}" x2="{width - right}" y1="{top + plot_h}" y2="{top + plot_h}"/>')
     parts.append("</svg>")

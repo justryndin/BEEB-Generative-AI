@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}{{ site_name }}{% endblock %}</title>
-  <meta name="theme-color" content="#2a78d6">
+  <meta name="theme-color" content="#0d0a14">
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/static/icon.svg">
-  <link rel="stylesheet" href="/static/style.css?v=1">
+  <link rel="stylesheet" href="/static/style.css?v=2">
 </head>
 <body {% block body_attrs %}{% endblock %}>
 {% set nav = [
@@ -20,7 +20,7 @@
 ] %}
 <header class="topbar">
   <div class="topbar-in">
-    <a class="logo" href="/"><span class="logo-mark">❄️</span><span>{{ site_name }}</span></a>
+    <a class="logo" href="/"><img src="/static/icon.svg" alt="" width="34" height="34"><span>{{ site_name }}</span></a>
     {% if me %}
     <nav class="topnav" aria-label="Разделы">
       {% for href, ico, name in nav %}
@@ -51,7 +51,7 @@
   {% endfor %}
 </nav>
 {% endif %}
-<p class="footer">{{ site_name }} · Tiles Survive · сезон «Эра метели» ❄️{% if me and is_admin %} · <a href="/me">профиль</a>{% endif %}</p>
-<script src="/static/app.js?v=1" defer></script>
+<p class="footer">© {{ site_name }} · Tiles Survive · сезон «Эра метели»{% if me and is_admin %} · <a href="/me">профиль</a>{% endif %}</p>
+<script src="/static/app.js?v=2" defer></script>
 </body>
 </html>

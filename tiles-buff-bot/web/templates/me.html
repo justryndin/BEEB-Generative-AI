@@ -10,7 +10,7 @@
 <div class="grid4" style="margin-bottom:16px">
   <div class="tile"><div class="num">{{ given }}</div><div class="lbl">бафов отдал</div></div>
   <div class="tile"><div class="num">{{ received }}</div><div class="lbl">бафов получил</div></div>
-  <div class="tile"><div class="num">{{ saved // 86400 }}</div><div class="lbl">дней подарил союзу</div></div>
+  <div class="tile accent"><div class="num">{{ saved // 86400 }}</div><div class="lbl">дней подарил союзу</div></div>
   <div class="tile"><div class="num">{{ (timers.build is not none) + (timers.research is not none) }}</div><div class="lbl">таймеров в очереди</div></div>
 </div>
 
