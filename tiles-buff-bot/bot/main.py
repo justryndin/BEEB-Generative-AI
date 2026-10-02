@@ -11,7 +11,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand, BotCommandScopeAllGroupChats, BotCommandScopeAllPrivateChats
 
-from . import handlers_admin, handlers_group, handlers_private, scheduler
+from . import handlers_admin, handlers_group, handlers_panel, handlers_private, scheduler
 from .config import load_config
 from .db import Database
 from .service import Service
@@ -26,7 +26,7 @@ async def main() -> None:
     dp = Dispatcher(storage=MemoryStorage())
     dp["svc"] = svc
     dp["cfg"] = cfg
-    dp.include_routers(handlers_admin.router, handlers_group.router, handlers_private.router)
+    dp.include_routers(handlers_admin.router, handlers_panel.router, handlers_group.router, handlers_private.router)
 
     await bot.set_my_commands(
         [
@@ -35,7 +35,7 @@ async def main() -> None:
             BotCommand(command="me", description="Мой профиль"),
             BotCommand(command="help", description="Как это работает"),
             BotCommand(command="catalog", description="Справочник построек и исследований"),
-            BotCommand(command="admin", description="Команды админа"),
+            BotCommand(command="admin", description="Управление (для админов)"),
         ],
         scope=BotCommandScopeAllPrivateChats(),
     )

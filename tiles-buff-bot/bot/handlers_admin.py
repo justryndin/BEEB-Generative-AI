@@ -5,10 +5,11 @@ from __future__ import annotations
 import time
 
 from aiogram import Bot, F, Router
-from aiogram.filters import BaseFilter, Command, CommandObject
+from aiogram.filters import Command, CommandObject
 from aiogram.types import Message
 
 from .config import Config
+from .filters import IsAdmin
 from .handlers_private import notify
 from .service import KIND_ACC, KIND_NAME, KINDS, SETTINGS, Service, parse_kind, split_nick_kind
 from .texts import (
@@ -23,11 +24,6 @@ from .texts import (
 from .timeparse import format_duration, parse_duration
 
 
-class IsAdmin(BaseFilter):
-    async def __call__(self, message: Message, svc: Service, cfg: Config) -> bool:
-        return svc.is_admin(message.from_user.id, cfg.owner_ids)
-
-
 router = Router(name="admin")
 router.message.filter(F.chat.type == "private", IsAdmin())
 
@@ -36,8 +32,8 @@ def now() -> int:
     return int(time.time())
 
 
-@router.message(Command("admin"))
-async def cmd_admin(message: Message):
+@router.message(Command("commands"))
+async def cmd_commands(message: Message):
     await message.answer(ADMIN_HELP)
 
 

@@ -19,12 +19,15 @@ from .timeparse import format_duration
 
 BTN_BUILD = "🏗 Моя стройка"
 BTN_RESEARCH = "🔬 Моё исследование"
-BTN_BUFF_BUILD = "🎁 Баф на стройку"
-BTN_BUFF_RESEARCH = "🎁 Баф на исследование"
+BTN_BUFF_BUILD = "🎁 Отдать баф: стройка"
+BTN_BUFF_RESEARCH = "🎁 Отдать баф: исследование"
 BTN_QUEUE = "📋 Очередь"
 BTN_ME = "👤 Профиль"
-BTN_HELP = "❓ Помощь"
-MENU_BUTTONS = {BTN_BUILD, BTN_RESEARCH, BTN_BUFF_BUILD, BTN_BUFF_RESEARCH, BTN_QUEUE, BTN_ME, BTN_HELP}
+BTN_HELP = "❓ Как это работает"
+BTN_ADMIN = "⚙️ Управление"
+MENU_BUTTONS = {
+    BTN_BUILD, BTN_RESEARCH, BTN_BUFF_BUILD, BTN_BUFF_RESEARCH, BTN_QUEUE, BTN_ME, BTN_HELP, BTN_ADMIN,
+}
 
 SLOT_REASON = {
     SLOT_BIG: "у него самый большой остаток",
@@ -52,84 +55,122 @@ class ItemCb(CallbackData, prefix="i"):
     code: str
 
 
-class SkipCb(CallbackData, prefix="s"):
-    step: str
+class LevelCb(CallbackData, prefix="l"):
+    level: int
+
+
+class NavCb(CallbackData, prefix="n"):
+    action: str
+    kind: str = ""
+
+
+class PanelCb(CallbackData, prefix="p"):
+    action: str
+    pid: int = 0
+    page: int = 0
+    kind: str = ""
+    value: str = ""
 
 
 def h(value) -> str:
     return escape(str(value))
 
 
-def main_kb() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text=BTN_BUILD), KeyboardButton(text=BTN_RESEARCH)],
-            [KeyboardButton(text=BTN_BUFF_BUILD), KeyboardButton(text=BTN_BUFF_RESEARCH)],
-            [KeyboardButton(text=BTN_QUEUE), KeyboardButton(text=BTN_ME), KeyboardButton(text=BTN_HELP)],
-        ],
-        resize_keyboard=True,
-    )
+def btn(text: str, cb: CallbackData) -> InlineKeyboardButton:
+    return InlineKeyboardButton(text=text, callback_data=cb.pack())
+
+
+def main_kb(is_admin: bool = False) -> ReplyKeyboardMarkup:
+    rows = [
+        [KeyboardButton(text=BTN_BUILD), KeyboardButton(text=BTN_RESEARCH)],
+        [KeyboardButton(text=BTN_BUFF_BUILD), KeyboardButton(text=BTN_BUFF_RESEARCH)],
+        [KeyboardButton(text=BTN_QUEUE), KeyboardButton(text=BTN_ME)],
+        [KeyboardButton(text=BTN_HELP)],
+    ]
+    if is_admin:
+        rows[-1].append(KeyboardButton(text=BTN_ADMIN))
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True, input_field_placeholder="Выбери действие 👇")
+
+
+def cancel_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[btn("❌ Отмена", NavCb(action="cancel"))]])
 
 
 def donation_kb(donation_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="✅ Отдал", callback_data=DonationCb(action="ok", id=donation_id).pack())],
+            [btn("✅ Отдал", DonationCb(action="ok", id=donation_id))],
             [
-                InlineKeyboardButton(text="🔁 Другой игрок", callback_data=DonationCb(action="other", id=donation_id).pack()),
-                InlineKeyboardButton(text="❌ Отмена", callback_data=DonationCb(action="no", id=donation_id).pack()),
+                btn("🔁 Другой игрок", DonationCb(action="other", id=donation_id)),
+                btn("❌ Отмена", DonationCb(action="no", id=donation_id)),
             ],
         ]
     )
 
 
+def join_kb(kind: str) -> InlineKeyboardMarkup:
+    word = "стройку" if kind == "build" else "исследование"
+    return InlineKeyboardMarkup(inline_keyboard=[[btn(f"➕ Записать {word}", TimerCb(action="new", kind=kind))]])
+
+
 def timer_kb(kind: str) -> InlineKeyboardMarkup:
-    word = "стройка" if kind == "build" else "исследование"
+    new = "✏️ Началась новая стройка" if kind == "build" else "✏️ Началось новое исследование"
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=f"✏️ Новое {word}" if kind == "research" else f"✏️ Новая {word}",
-                                  callback_data=TimerCb(action="new", kind=kind).pack())],
-            [InlineKeyboardButton(text="🔧 Поправить остаток", callback_data=TimerCb(action="fix", kind=kind).pack())],
-            [InlineKeyboardButton(text="🏁 Завершено / бафы не нужны", callback_data=TimerCb(action="close", kind=kind).pack())],
+            [btn("🔧 Поправить остаток времени", TimerCb(action="fix", kind=kind))],
+            [btn(new, TimerCb(action="new", kind=kind))],
+            [btn("🏁 Готово / бафы больше не нужны", TimerCb(action="close", kind=kind))],
         ]
+    )
+
+
+def confirm_close_kb(kind: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[
+            btn("✅ Да, убрать", TimerCb(action="close_yes", kind=kind)),
+            btn("↩️ Нет", TimerCb(action="show", kind=kind)),
+        ]]
     )
 
 
 def item_kb(kind: str) -> InlineKeyboardMarkup:
     items = gamedata.items_for(kind)
-    rows = []
-    for i in range(0, len(items), 2):
-        rows.append([
-            InlineKeyboardButton(text=it.ru, callback_data=ItemCb(code=it.code).pack())
-            for it in items[i : i + 2]
-        ])
+    rows = [[btn(it.ru, ItemCb(code=it.code)) for it in items[i : i + 2]] for i in range(0, len(items), 2)]
+    rows.append([btn("❌ Отмена", NavCb(action="cancel"))])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def skip_kb(step: str) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text="⏭ Пропустить", callback_data=SkipCb(step=step).pack())]]
-    )
+def level_kb(it: gamedata.Item) -> InlineKeyboardMarkup:
+    top = it.max_level or 30
+    per_row = 6
+    rows = [
+        [btn(str(lvl), LevelCb(level=lvl)) for lvl in range(start, min(start + per_row, top + 1))]
+        for start in range(1, top + 1, per_row)
+    ]
+    rows.append([btn("◀️ Назад", NavCb(action="items", kind=it.kind)), btn("❌ Отмена", NavCb(action="cancel"))])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def item_prompt(kind: str) -> str:
+def steps(kind: str, step: int) -> str:
+    total = 3 if kind == "build" else 2
+    return f"<i>Шаг {step} из {total}</i>"
+
+
+def item_prompt(kind: str, for_nick: str | None = None) -> str:
+    who = f"Игрок <b>{h(for_nick)}</b>\n" if for_nick else ""
     if kind == "build":
-        return "🏗 Что строишь? Выбери здание (если строишь несколько — самое долгое):"
-    return "🔬 Какая ветка исследований? Выбери (если изучаешь несколько — самое долгое):"
+        return (
+            f"{who}{steps(kind, 1)}\n🏗 <b>Что строится?</b> Нажми на здание.\n"
+            "Если строится несколько — выбери то, что дольше всех."
+        )
+    return (
+        f"{who}{steps(kind, 1)}\n🔬 <b>Какая ветка исследований?</b> Нажми на неё.\n"
+        "Если идёт несколько исследований — выбери то, что дольше всех."
+    )
 
 
 def level_prompt(it: gamedata.Item) -> str:
-    top = f" (1–{it.max_level})" if it.max_level else ""
-    return f"<b>{h(it.ru)}</b> — на какой уровень улучшаешь{top}? Напиши число, например <code>24</code>"
-
-
-def note_prompt(it: gamedata.Item) -> str:
-    if it.kind == "build":
-        return "Какое здание и на какой уровень? Напиши коротко, например <code>Склад 18</code>"
-    return (
-        f"<b>{h(it.ru)}</b> — какое исследование и уровень? Напиши коротко, например "
-        "<code>Скорость строительства 7</code>, или нажми «Пропустить»."
-    )
+    return f"{steps('build', 2)}\n🏗 <b>{h(it.ru)}</b> — на какой уровень улучшается? Нажми на номер уровня."
 
 
 def reference_text(svc: Service, it: gamedata.Item | None, level: int | None) -> str:
@@ -152,10 +193,7 @@ def reference_text(svc: Service, it: gamedata.Item | None, level: int | None) ->
 def queue_kb(kind: str) -> InlineKeyboardMarkup:
     other = "research" if kind == "build" else "build"
     return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(
-            text=f"{KIND_EMOJI[other]} Показать: {KIND_NAME[other]}",
-            callback_data=QueueCb(kind=other).pack(),
-        )]]
+        inline_keyboard=[[btn(f"{KIND_EMOJI[other]} Показать: {KIND_NAME[other]}", QueueCb(kind=other))]]
     )
 
 
@@ -165,13 +203,14 @@ def target_text(svc: Service, kind: str) -> str:
 
 
 def timer_prompt(kind: str, fix: bool, reference: str = "") -> str:
-    what = "самой долгой стройки" if kind == "build" else "самого долгого исследования"
-    head = "Сколько сейчас осталось" if fix else "Сколько осталось"
+    what = "стройки" if kind == "build" else "исследования"
+    step = "" if fix else steps(kind, 3 if kind == "build" else 2) + "\n"
     ref = f"{reference}\n\n" if reference else ""
+    head = "Сколько <b>сейчас</b> осталось" if fix else "Сколько осталось"
     return (
-        f"{ref}⏳ {head} до конца {what}? Посмотри таймер в игре.\n"
-        "Напиши, например: <code>21д 5ч</code>, <code>100д</code> или <code>20d 13:45:12</code>\n\n"
-        "Если запущено несколько — укажи самое долгое: баф действует сразу на все."
+        f"{step}{ref}⏳ <b>{head} до конца {what}?</b>\n"
+        "Посмотри таймер в игре и напиши его сюда, например:\n"
+        "<code>21д 5ч</code> · <code>100д</code> · <code>21</code> (= 21 день) · <code>20d 13:45:12</code>"
     )
 
 
@@ -304,7 +343,7 @@ def digest_text(svc: Service, now: int, limit: int = 10) -> str:
             who = ", ".join(f"@{h(p['tg_username'])}" if p["tg_username"] else h(p["nick"]) for p in ready[:20])
             parts.append(f"🎁 Баф на {KIND_ACC[kind]} уже должен быть готов у: {who}")
         parts.append("")
-    parts.append("Отдаёшь баф — сначала спроси бота, кому 👉 кнопка «🎁 Баф…»")
+    parts.append("Отдаёшь баф — сначала спроси бота, кому 👉 кнопка «🎁 Отдать баф…»")
     return "\n".join(parts)
 
 
@@ -329,26 +368,35 @@ def catalog_text(svc: Service) -> str:
     return "\n".join(lines)
 
 
-HELP = """<b>Как это работает</b>
+HELP = """<b>Как это работает</b> ❄️
 
-1️⃣ Запустил стройку или исследование → нажми «🏗 Моя стройка» / «🔬 Моё исследование» и напиши, сколько осталось (самое долгое). Бот поставит тебя в очередь.
+<b>Получить помощь</b>
+1. Запустил в игре стройку → нажми «🏗 Моя стройка» → «➕ Записать стройку».
+2. Нажми, что строится, и на какой уровень.
+3. Напиши, сколько осталось по таймеру (например <code>21д 5ч</code>).
+Всё — ты в очереди. Когда тебе отдадут баф, придёт уведомление.
+С исследованием так же — кнопка «🔬 Моё исследование».
 
-2️⃣ Готов твой баф → нажми «🎁 Баф на стройку» / «🎁 Баф на исследование». Бот скажет, кому его отдать. Отдай в игре и нажми «✅ Отдал».
-Если игрока не получается найти — «🔁 Другой игрок».
+<b>Отдать свой баф</b>
+1. Баф готов → нажми «🎁 Отдать баф: стройка» (или исследование).
+2. Бот скажет, <b>кому</b> отдать.
+3. Отдай в игре и нажми «✅ Отдал».
+Не можешь найти игрока → «🔁 Другой игрок».
+Через {cooldown}ч бот напомнит, что баф снова готов.
 
-3️⃣ Получил баф — бот пришлёт уведомление и сам пересчитает остаток.
+<b>Если что-то поменялось</b>
+Ускорился сам → «🏗 Моя стройка» → «🔧 Поправить остаток времени».
+Стройка закончилась → «🏁 Готово».
+Ошибся в нике → «👤 Профиль» → «✏️ Сменить ник».
 
 <b>Правила очереди</b>
 • Один баф срезает {pct}% от заявленного времени.
 • Бафаем до остатка: стройка — {build}, исследование — {research}. Лишних бафов не даём.
-• Ротация «{pattern}»: 2 бафа тем, у кого больше всего осталось, 1 — тому, кто дольше всех ждёт. Так помощь получают все.
+• Ротация: {pattern_text}. Так помощь получают все.
 • Одному игроку — не больше {streak} бафов подряд.
-• Админы могут отметить срочное 🔥 — оно идёт вне очереди.
+• Срочное 🔥 (отмечают админы) идёт вне очереди.
 
-Ускорился сам → «Моя стройка» → «🔧 Поправить остаток».
-Закончил или бафы не нужны → «🏁 Завершено».
-Сменить ник: <code>/nick Новый ник</code>
-Справочник построек и исследований: /catalog"""
+Справочник построек: /catalog"""
 
 
 def help_text(svc: Service) -> str:
@@ -356,12 +404,24 @@ def help_text(svc: Service) -> str:
         pct=f"{svc.setting_float('pct'):g}",
         build=target_text(svc, "build"),
         research=target_text(svc, "research"),
-        pattern=h(svc.setting("pattern")),
+        pattern_text=pattern_text(svc.setting("pattern")),
         streak=int(svc.setting_float("max_streak")),
+        cooldown=f"{svc.setting_float('cooldown_hours'):g}",
     )
 
 
+def pattern_text(pattern: str) -> str:
+    big, wait = pattern.count("B"), pattern.count("W")
+    parts = []
+    if big:
+        parts.append(f"{big} — тем, у кого больше всего осталось")
+    if wait:
+        parts.append(f"{wait} — тому, кто дольше всех ждёт")
+    return " → ".join(parts)
+
+
 ADMIN_HELP = """<b>Команды админа</b>
+Всё то же самое есть кнопками в «⚙️ Управление». Команды — запасной вариант.
 Тип: <code>стройка</code> или <code>исследование</code>. Время: <code>21д 5ч</code>.
 
 <b>Таймеры игроков</b> (можно и тех, кого нет в боте — бот создаст игрока; когда человек зарегистрируется с этим ником, таймер привяжется)
@@ -384,4 +444,5 @@ ADMIN_HELP = """<b>Команды админа</b>
 <b>Прочее</b>
 /settings — настройки · /set ключ значение
 /digest — отправить сводку в группу сейчас
-/myid — твой Telegram ID"""
+/myid — твой Telegram ID
+/admin — панель управления кнопками"""
