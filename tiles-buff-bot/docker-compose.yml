@@ -1,0 +1,20 @@
+services:
+  buff-bot:
+    build: .
+    container_name: tiles-buff-bot
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_PATH: /app/data/bot.db
+    volumes:
+      - ./data:/app/data
+    # Бот сам ходит к Telegram и не открывает ни одного порта наружу.
+    mem_limit: 256m
+    cpus: 0.5
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
