@@ -7,7 +7,8 @@ services:
     environment:
       DB_PATH: /app/data/bot.db
     volumes:
-      - ./data:/app/data
+      # Именованный том: Docker сам выдаст права пользователю бота внутри контейнера.
+      - bot-data:/app/data
     # Бот сам ходит к Telegram и не открывает ни одного порта наружу.
     mem_limit: 256m
     cpus: 0.5
@@ -18,3 +19,6 @@ services:
       options:
         max-size: "5m"
         max-file: "3"
+
+volumes:
+  bot-data:

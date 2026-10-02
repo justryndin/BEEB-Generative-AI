@@ -126,7 +126,7 @@ docker compose logs -f   # проверить, что запустился (вы
 ```bash
 git pull && docker compose up -d --build   # обновить
 docker compose down                        # остановить
-cp data/bot.db ~/bot-backup-$(date +%F).db # резервная копия базы
+docker compose cp buff-bot:/app/data/bot.db ~/bot-backup-$(date +%F).db  # резервная копия базы
 ```
 
 ### Безопасно ли рядом с VPN?
