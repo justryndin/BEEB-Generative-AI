@@ -66,7 +66,7 @@ Telegram-бот распределяет сезонные бафы (−15% к с
 curl -fsSL https://get.docker.com | sh
 
 # Код бота
-git clone https://github.com/justryndin/BEEB-Generative-AI.git
+git clone -b claude/dazzling-maxwell-uf3pkt https://github.com/justryndin/BEEB-Generative-AI.git
 cd BEEB-Generative-AI/tiles-buff-bot
 
 # Настройки
