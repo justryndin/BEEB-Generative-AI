@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import queue_item, buff_line %}
+{% from "_macros.html" import buff_line %}
 {% block refresh %}{{ refresh_seconds }}{% endblock %}
 {% block content %}
 <h1>Привет, {{ me.nick }}! 👋</h1>
@@ -7,43 +7,92 @@
 {% for d in received %}
 <div class="alert alert-good">🎁 <b>{{ d.donor_nick or "Кто-то" }}</b> отдал тебе баф на {{ KIND_ACC[d.kind] }} (−{{ dur(d.reduction or 0) }}) · {{ local(d.resolved_at) }}</div>
 {% endfor %}
-
+{% for d in incoming %}
+<div class="alert alert-info">⏳ <b>{{ d.donor_nick or "Игрок" }}</b> прямо сейчас отдаёт тебе баф на {{ KIND_ACC[d.kind] }}. Загляни в игру! 🎁</div>
+{% endfor %}
 {% for d in pending %}
 <div class="alert alert-warn">⏳ У тебя есть незавершённая бронь на баф. <a href="/give/d/{{ d.id }}"><b>Открыть и завершить →</b></a></div>
 {% endfor %}
+{% if not me.agreed_at %}
+<div class="alert alert-warn">📜 Прочитай и прими <a href="/rules"><b>условия очереди</b></a> — без этого нельзя вставать в очередь и отдавать бафы.</div>
+{% endif %}
 
+{# ---------- 1. Кому следующие бафы: слева исследование, справа стройка ---------- #}
 <section class="card">
-  <div class="card-head"><h2>🎁 Отдать свой баф</h2></div>
-  <p class="text-2">Готов баф в игре? Нажми — сайт скажет, кому его отдать.</p>
+  <div class="card-head"><h2>🎯 Кому следующие бафы</h2></div>
+  <p class="hint mt0">Прогноз, если все отдают бафы вовремя. Справа — примерно через сколько. {{ donors }} игроков → ≈{{ "%.0f"|format(boards.research.per_day) }} бафов каждого типа в сутки (1 каждые ≈{{ dur(86400 / boards.research.per_day if boards.research.per_day else 0) }}).</p>
+  <div class="split">
+    {% for kind in ["research", "build"] %}
+    {% set b = boards[kind] %}
+    <div class="split-col">
+      <h3>{{ KIND_EMOJI[kind] }} {{ KIND_NAME[kind]|capitalize }}</h3>
+      {% if b.next %}
+      <ol class="nextlist">
+        {% for n in b.next[:6] %}
+        <li class="{{ 'me' if n.pid == me.id }}"><span class="n">{{ n.n }}</span><span class="nk">{{ n.nick }}</span><span class="t">{{ eta_short(n.in) }}</span></li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="muted">Никому не нужно 👍</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% for kind in ["research", "build"] %}
+  {% set b = boards[kind] %}
+  <details class="full">
+    <summary>{{ KIND_EMOJI[kind] }} Полный список — {{ KIND_NAME[kind] }} ({{ b.rows|length }})</summary>
+    <div class="table-wrap"><table>
+      <tr><th>Игрок</th><th class="num">Осталось</th><th class="num">Бафов</th><th class="num">До цели</th></tr>
+      {% for row in b.rows %}{% set c = row.r.candidate %}
+      <tr class="{{ 'hl' if c.player_id == me.id }}">
+        <td><b>{{ c.nick }}</b>{% if c.urgent %} 🔥{% endif %}{% if row.r.pending %} ⏳{% endif %}<br><small>{{ row.r.label or "—" }}</small></td>
+        <td class="num">{{ dur(c.remaining) }}</td>
+        <td class="num">{% if row.r.status == "need" %}{{ row.will_get }}{% else %}🎯{% endif %}</td>
+        <td class="num">{% if row.r.status == "need" %}{{ eta_short(row.done_in) }}{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table></div>
+    <p class="hint">«Бафов» — сколько бафов от союза он ещё получит по прогнозу, «До цели» — примерно через сколько дойдёт до цели. 🔥 срочно · ⏳ ему уже несут баф · 🎯 цель достигнута</p>
+  </details>
+  {% endfor %}
+</section>
+
+{# ---------- 2. Кнопки ---------- #}
+<section class="card">
+  <h2>🎁 Отдать свой баф</h2>
   <div class="grid2">
-    {% for kind in KINDS %}
+    {% for kind in ["research", "build"] %}
     <form method="post" action="/give/{{ kind }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button class="btn btn-primary btn-big btn-block btn-col" type="submit">
-        <span>{{ KIND_EMOJI[kind] }} Баф на {{ KIND_ACC[kind] }}</span>
-      </button>
+      <button class="btn btn-primary btn-big btn-block" type="submit">{{ KIND_EMOJI[kind] }} Баф на {{ KIND_ACC[kind] }}</button>
       <div class="center" style="margin-top:6px">Мой баф: {{ buff_line(kind, buffs[kind]) }}</div>
     </form>
     {% endfor %}
   </div>
 </section>
 
+{# ---------- 3. Моя очередь и прогноз ---------- #}
 <section class="card">
-  <div class="card-head"><h2>⏳ Моя очередь</h2></div>
+  <h2>🔮 Моя очередь и прогноз</h2>
   <div class="grid2">
-    {% for kind in KINDS %}
-    {% set t = timers[kind] %}
+    {% for kind in ["research", "build"] %}
+    {% set t = timers[kind] %}{% set f = mine[kind] %}
     <div class="timer">
       <div class="row"><b>{{ KIND_EMOJI[kind] }} {{ KIND_NAME[kind]|capitalize }}</b>
         {% if t and t.c.urgent %}<span class="badge badge-urgent">🔥 срочно</span>{% endif %}</div>
       {% if t %}
         {% if t.label %}<div class="text-2">{{ t.label }}</div>{% endif %}
         <div class="big">{{ dur(t.c.remaining) }}</div>
-        <div class="progress" aria-hidden="true"><span style="width:{{ [100, [3, (100 * (1 - t.c.remaining / t.c.base))|round]|max]|min }}%"></span></div>
-        {% if t.status == "need" %}
-          <div>Ещё нужно ≈ <b>{{ t.needed }}</b> баф. {% if t.position %}· в списке <b>№{{ t.position }}</b>{% endif %}</div>
+        {% if t.status == "need" and f %}
+        <ul class="kv">
+          <li><span class="k">Получишь от союза</span><span class="v">≈ {{ f.gets|length }} баф.{% if f.gets %} · первый {{ eta(f.gets[0][0]) }}{% endif %}</span></li>
+          {% if f.self_n %}<li><span class="k">Твои свои бафы, пока отдаёшь</span><span class="v">{{ f.self_n }} раз · −{{ dur(f.self_sum) }}</span></li>{% endif %}
+          <li><span class="k">Дойдёшь до цели</span><span class="v">{{ eta(f.done_in) }}{% if f.left is not none %} · останется ≈{{ dur(f.left) }}{% endif %}</span></li>
+        </ul>
         {% else %}
-          <div><span class="badge badge-good">🎯 цель достигнута</span> бафы больше не нужны</div>
+        <div><span class="badge badge-good">🎯 цель достигнута</span> бафы больше не нужны</div>
         {% endif %}
         <div class="row" style="margin-top:10px">
           <a class="btn btn-sm" href="/join/{{ kind }}?fix=1">🔧 Поправить время</a>
@@ -54,30 +103,38 @@
         </div>
       {% else %}
         <p class="text-2" style="margin:8px 0 12px">Ты не в очереди.</p>
-        <a class="btn btn-block" href="/join/{{ kind }}">➕ Встать в очередь</a>
+        <a class="btn btn-primary btn-block" href="/join/{{ kind }}">➕ Встать в очередь</a>
       {% endif %}
     </div>
     {% endfor %}
   </div>
 </section>
 
-{% for kind in KINDS %}
-{% set pv = previews[kind] %}
+{# ---------- 4. Условия ---------- #}
 <section class="card">
-  <div class="card-head">
-    <h2>{{ KIND_EMOJI[kind] }} Очередь: {{ KIND_NAME[kind] }}</h2>
-    <a href="/queue?kind={{ kind }}">все {{ pv.total }} →</a>
-  </div>
-  {% if pv.next %}
-  <div class="next"><span class="arrow">👉</span><div><div class="muted">Следующий баф получит</div><div class="nick">{{ pv.next.nick }}</div><div class="muted">{{ SLOT_REASON[pv.slot] }}</div></div></div>
-  {% endif %}
-  {% if pv.rows %}
-  <ol class="qlist">{% for r in pv.rows %}{{ queue_item(r, me, loop.index) }}{% endfor %}</ol>
-  {% else %}
-  <p class="muted">Сейчас никому не нужны бафы 👍</p>
-  {% endif %}
+  <div class="card-head"><h2>📜 Условия</h2><a href="/rules">подробнее →</a></div>
+  <ul class="checks">
+    <li>Пишу <b>точное</b> время по таймеру в игре и поправляю его, если ускорился сам.</li>
+    <li>Отдаю баф <b>только тому</b>, кого назначил сайт, и сразу жму «✅ Я отдал».</li>
+    <li>Закончил стройку или исследование — жму «🏁 Готово».</li>
+    <li>Всё держится на честности: мы — один союз 🤝</li>
+  </ul>
+  {% if me.agreed_at %}<p class="hint mb0">✅ Ты принял условия {{ local(me.agreed_at, "%d.%m.%Y") }}.</p>{% endif %}
 </section>
-{% endfor %}
 
-<p class="center text-2">За неделю союз отдал <b>{{ week.buffs }}</b> баф. и сэкономил <b>{{ dur(week.saved) }}</b> 🙌 <a href="/stats">Статистика →</a></p>
+{# ---------- 5. Калькулятор ---------- #}
+<section class="card">
+  <div class="card-head"><h2>🧮 Калькулятор</h2><a href="/calc">свой расчёт →</a></div>
+  <p class="hint mt0">Если встанешь в очередь сейчас с таким таймером: сколько бафов получишь от союза, твои собственные бафы и когда дойдёшь до цели. Учитываются все, кто уже в очереди.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Таймер</th><th>🔬 Исследование</th><th>🏗 Стройка</th></tr>
+    {% for i in range(4) %}{% set r = presets.research[i] %}{% set b = presets.build[i] %}
+    <tr>
+      <td><b>{{ r.days|int }} дн.</b></td>
+      <td>{{ r.gets|length }} от союза{% if r.self_n %} + {{ r.self_n }} своих{% endif %}<br><small>цель {{ eta(r.done_in) }}</small></td>
+      <td>{{ b.gets|length }} от союза{% if b.self_n %} + {{ b.self_n }} своих{% endif %}<br><small>цель {{ eta(b.done_in) }}</small></td>
+    </tr>
+    {% endfor %}
+  </table></div>
+</section>
 {% endblock %}

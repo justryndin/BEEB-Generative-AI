@@ -17,7 +17,8 @@ from fastapi.templating import Jinja2Templates
 
 from core import gamedata
 from core.db import Database
-from core.logic import STATUS_NEED, buffs_needed, timer_status
+from core.forecast import VIRTUAL_ID
+from core.logic import STATUS_NEED, buff_reduction, buffs_needed, timer_status
 from core.service import KIND_ACC, KIND_EMOJI, KIND_NAME, KINDS, SETTINGS, Service, clean_nick, valid_pin
 from core.timeparse import DAY, HOUR, MINUTE, format_duration
 
@@ -214,7 +215,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
 
     @app.post("/register")
     def register(request: Request, nick: str = Form(""), pin: str = Form(""), pin2: str = Form(""),
-                 code: str = Form("")):
+                 code: str = Form(""), agree: str = Form("")):
         nick, pin = clean_nick(nick), pin.strip()
         need_code = bool(svc.setting("alliance_code"))
         error = None
@@ -226,6 +227,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             error = "PIN-коды не совпадают."
         elif need_code and code.strip().casefold() != svc.setting("alliance_code").strip().casefold():
             error = "Неверный код союза. Спроси его у руководства союза."
+        elif not agree:
+            error = "Нужно согласиться с условиями очереди."
         player = None
         if error is None:
             player, reg_error = svc.register_web(nick, pin, now())
@@ -233,6 +236,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                 error = "Этот ник уже зарегистрирован. Если это твой ник — попроси админа сбросить PIN."
         if error:
             return render(request, "register.html", error=error, nick=nick, need_code=need_code, status_code=400)
+        svc.agree(player["id"], now())
         token, _ = svc.create_session(player["id"], now())
         resp = go("/", f"Добро пожаловать, {player['nick']}! ✅")
         resp.set_cookie("sid", token, max_age=max_age, httponly=True, samesite="lax", secure=cfg.secure_cookies)
@@ -250,6 +254,79 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
 
     # ---------- главная ----------
 
+    def eta(seconds) -> str:
+        if seconds is None:
+            return "больше 4 мес."
+        if seconds < 10 * MINUTE:
+            return "сейчас"
+        return "через " + format_duration(seconds)
+
+    def eta_short(seconds) -> str:
+        if seconds is None:
+            return "—"
+        if seconds < 10 * MINUTE:
+            return "сейчас"
+        return "~" + format_duration(seconds)
+
+    templates.env.globals.update(eta=eta, eta_short=eta_short)
+
+    def board(kind: str, t: int) -> dict:
+        """Очередь + прогноз: кто следующий получит бафы и когда все получат своё."""
+        fc = svc.forecast(kind, t)
+        view = svc.queue_view(kind, t)
+        rows = []
+        for r in view.rows:
+            st = fc.timers.get(r.candidate.player_id)
+            rows.append({
+                "r": r,
+                "will_get": len(st.gets) if st else 0,
+                "done_in": int(st.done_at - t) if st and st.done_at is not None else None,
+                "left": st.left_at_done if st else None,
+            })
+        nxt = [
+            {"n": i + 1, "nick": e.nick, "pid": e.pid, "in": int(e.at - t), "at": int(e.at)}
+            for i, e in enumerate(fc.events[:30])
+        ]
+        return {
+            "fc": fc,
+            "next": nxt,
+            "rows": rows,
+            "need": sum(1 for r in view.rows if r.status == STATUS_NEED),
+            "per_day": fc.buffs_per_day,
+        }
+
+    def my_forecast(fc, pid: int, t: int) -> dict | None:
+        st = fc.timers.get(pid)
+        if st is None:
+            return None
+        return {
+            "remaining": int(st.start_remaining),
+            "gets": [(int(at - t), cut) for at, cut in st.gets],
+            "self_n": len(st.self_cuts),
+            "self_sum": sum(c for _, c in st.self_cuts),
+            "done_in": int(st.done_at - t) if st.done_at is not None else None,
+            "left": int(st.left_at_done) if st.left_at_done is not None else None,
+        }
+
+    def calc(kind: str, days: float, t: int, donates: bool = True, donors: int | None = None,
+             replace_pid: int | None = None) -> dict:
+        seconds = int(days * DAY)
+        rules = svc.rules(kind)
+        fc = svc.forecast(kind, t, virtual_seconds=seconds, virtual_donates=donates,
+                          replace_pid=replace_pid, donors=donors)
+        mine = my_forecast(fc, VIRTUAL_ID, t)
+        return {
+            "days": days,
+            "ideal": buffs_needed(seconds, seconds, rules),
+            "per_buff": buff_reduction(seconds, seconds, rules),
+            "per_day": fc.buffs_per_day,
+            **mine,
+        }
+
+    def need_agreed(me):
+        if not me["agreed_at"]:
+            raise HTTPException(status_code=303, headers={"Location": "/rules?need=1"})
+
     @app.get("/", response_class=HTMLResponse)
     def home(request: Request):
         me = current(request)
@@ -260,25 +337,61 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             })
         received = svc.received_since(me["id"], me["last_seen_at"] or t)
         svc.touch_seen(me["id"], t)
-        previews = {}
-        for kind in KINDS:
-            view = svc.queue_view(kind, t)
-            previews[kind] = {
-                "rows": [r for r in view.rows if r.status == STATUS_NEED][:5],
-                "total": sum(1 for r in view.rows if r.status == STATUS_NEED),
-                "next": view.next_pick,
-                "slot": view.next_slot,
-            }
+        boards = {k: board(k, t) for k in KINDS}
         return render(
             request,
             "home.html",
             me,
+            boards=boards,
             timers=my_timers(me["id"], t),
+            mine={k: my_forecast(boards[k]["fc"], me["id"], t) for k in KINDS},
             buffs={k: buff_state(me["id"], k, t) for k in KINDS},
             received=received,
+            incoming=svc.incoming_pending(me["id"]),
             pending=svc.pending_by_requester(me["id"]),
-            previews=previews,
-            week=svc.totals(t - 7 * DAY),
+            presets={k: [calc(k, d, t, replace_pid=me["id"]) for d in (10, 20, 30, 40)] for k in KINDS},
+            donors=svc.donor_count(),
+            cooldown=svc.setting_float("cooldown_hours"),
+        )
+
+    # ---------- условия и калькулятор ----------
+
+    @app.get("/rules", response_class=HTMLResponse)
+    def rules_page(request: Request, need: int = 0):
+        me = current(request)
+        return render(
+            request, "rules.html", me,
+            need=need,
+            pct=svc.setting_float("pct"),
+            pattern=svc.setting("pattern"),
+            streak=int(svc.setting_float("max_streak")),
+            cooldown=svc.setting_float("cooldown_hours"),
+            confirm=svc.setting_float("confirm_minutes"),
+        )
+
+    @app.post("/rules/agree")
+    def rules_agree(request: Request, csrf: str = Form("")):
+        me = need_login(request)
+        check_csrf(me, csrf)
+        svc.agree(me["id"], now())
+        return go("/", "✅ Спасибо! Условия приняты — теперь можно вставать в очередь и отдавать бафы.")
+
+    @app.get("/calc", response_class=HTMLResponse)
+    def calculator(request: Request, days: float = 0, hours: int = 0, kind: str = "research",
+                   donates: int = 1, donors: int = 0):
+        me = need_login(request)
+        t = now()
+        kind = kind if kind in KINDS else "research"
+        total = svc.donor_count()
+        donors = donors if 0 < donors <= 500 else total
+        days_total = max(0.0, min(400.0, days + hours / 24))
+        result = calc(kind, days_total, t, bool(donates), donors, me["id"]) if days_total > 0 else None
+        return render(
+            request, "calc.html", me,
+            kind=kind, days=days, hours=hours, donates=donates, donors=donors, total_donors=total,
+            result=result,
+            presets={k: [calc(k, d, t, bool(donates), donors, me["id"]) for d in (10, 20, 30, 40)] for k in KINDS},
+            cooldown=svc.setting_float("cooldown_hours"),
         )
 
     # ---------- очередь ----------
@@ -315,6 +428,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     @app.get("/join/{kind}", response_class=HTMLResponse)
     def join(request: Request, kind: str, item: str = "", level: int = 0, fix: int = 0, player: int = 0):
         me = need_login(request)
+        need_agreed(me)
         if kind not in KINDS:
             raise HTTPException(status_code=404)
         target = join_target(request, me, player)
@@ -355,6 +469,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                     minutes: str = Form("0")):
         me = need_login(request)
         check_csrf(me, csrf)
+        need_agreed(me)
         if kind not in KINDS:
             raise HTTPException(status_code=404)
         target = join_target(request, me, player)
@@ -389,6 +504,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     def give(request: Request, kind: str, csrf: str = Form("")):
         me = need_login(request)
         check_csrf(me, csrf)
+        need_agreed(me)
         if kind not in KINDS:
             raise HTTPException(status_code=404)
         a = svc.assign(kind, me["id"], me["id"], now())

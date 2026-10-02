@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from . import gamedata
 from .db import Database
+from .forecast import VIRTUAL_ID, Forecast, SimTimer, simulate
 from .logic import (
     SLOT_URGENT,
     STATUS_NEED,
@@ -45,6 +46,7 @@ SETTINGS: dict[str, tuple[str, str]] = {
     "cooldown_hours": ("48", "Через сколько часов у игрока снова готов баф"),
     "confirm_minutes": ("30", "Сколько минут держится бронь на назначенный баф"),
     "alliance_code": ("", "Код союза для регистрации на сайте (пусто — регистрация открыта всем)"),
+    "donors": ("0", "Сколько игроков реально отдают бафы — для прогноза (0 — считать всех игроков)"),
     "refresh_minutes": ("15", "Как часто главная, очередь и статистика сами обновляют данные, минут (0 — не обновлять)"),
 }
 _INTERNAL_SETTINGS: set[str] = set()
@@ -770,6 +772,17 @@ class Service:
         if pin is None:
             self.db.run("DELETE FROM sessions WHERE player_id = ?", player_id)
 
+    def agree(self, player_id: int, now: int) -> None:
+        self.db.run("UPDATE players SET agreed_at = ? WHERE id = ?", now, player_id)
+
+    def incoming_pending(self, player_id: int):
+        """Брони, где этому игроку сейчас несут баф."""
+        return self.db.all(
+            "SELECT d.*, p.nick AS donor_nick FROM donations d LEFT JOIN players p ON p.id = d.donor_id "
+            "WHERE d.recipient_id = ? AND d.status = 'pending' ORDER BY d.id",
+            player_id,
+        )
+
     def set_owner(self, player_id: int) -> None:
         self.db.run("UPDATE players SET is_owner = 1, is_admin = 1 WHERE id = ?", player_id)
 
@@ -864,4 +877,71 @@ class Service:
             "GROUP BY p.id ORDER BY n DESC, saved DESC LIMIT ?",
             since,
             limit,
+        )
+
+    # ---------- прогноз ----------
+
+    def donor_count(self) -> int:
+        total = self.db.one("SELECT COUNT(*) AS n FROM players")["n"]
+        wanted = int(self.setting_float("donors"))
+        return max(1, min(wanted, total) if wanted > 0 else total)
+
+    def forecast(
+        self,
+        kind: str,
+        now: int,
+        virtual_seconds: int | None = None,
+        virtual_donates: bool = True,
+        replace_pid: int | None = None,
+        donors: int | None = None,
+    ) -> Forecast:
+        """Прогноз очереди. virtual_seconds — «а если бы у меня было столько»: добавляет
+        виртуального игрока (VIRTUAL_ID), заменяя настоящий таймер replace_pid."""
+        rules = self.rules(kind)
+        cooldown = self.setting_float("cooldown_hours") * HOUR
+        timers = []
+        for row in self._timer_rows(kind):
+            if row["player_id"] == replace_pid:
+                continue
+            remaining = row["end_at"] - now
+            if remaining <= 0:
+                continue
+            timers.append(SimTimer(
+                pid=row["player_id"], nick=row["nick"], remaining=remaining, base=row["base_seconds"],
+                urgent=bool(row["urgent"]), waiting_since=row["last_buff_at"] or row["created_at"],
+                received=row["buffs_received"], label=gamedata.label(row["item"], row["level"], row["note"]),
+            ))
+        if virtual_seconds:
+            timers.append(SimTimer(VIRTUAL_ID, "Ты", virtual_seconds, virtual_seconds, waiting_since=now))
+
+        # Доноры: сначала те, кто отдавал недавно (они точно активны), потом остальные.
+        rows = self.db.all(
+            "SELECT p.id, c.ready_at, (SELECT MAX(resolved_at) FROM donations d "
+            " WHERE d.donor_id = p.id AND d.status = 'done') AS last_given "
+            "FROM players p LEFT JOIN cooldowns c ON c.player_id = p.id AND c.kind = ? "
+            "ORDER BY last_given IS NULL, last_given DESC, p.id",
+            kind,
+        )
+        if replace_pid is not None:
+            rows = [r for r in rows if r["id"] != replace_pid]
+        count = donors if donors else self.donor_count()
+        if virtual_seconds and virtual_donates:
+            count = max(count - 1, 0)
+        rows = rows[:count]
+        unknown = [r for r in rows if r["ready_at"] is None]
+        schedule = []
+        for r in rows:
+            if r["ready_at"] is not None:
+                schedule.append((r["id"], max(now, r["ready_at"])))
+        for i, r in enumerate(unknown):
+            # Когда баф готов — неизвестно: считаем, что готовность равномерно распределена.
+            schedule.append((r["id"], now + cooldown * (i + 0.5) / len(unknown)))
+        if virtual_seconds and virtual_donates:
+            schedule.append((VIRTUAL_ID, now))
+
+        return simulate(
+            timers, schedule, rules, cooldown, now,
+            slot_index=self._slot_index(kind),
+            recent=self._recent_recipients(kind, rules.max_streak),
+            kind=kind,
         )

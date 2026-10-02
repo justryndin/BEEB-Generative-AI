@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Условия · {{ site_name }}{% endblock %}
+{% block content %}
+<h1>📜 Условия очереди</h1>
+{% if need %}<div class="alert alert-warn">Чтобы вставать в очередь и отдавать бафы, прими условия внизу страницы.</div>{% endif %}
+
+<section class="card">
+  <h2>🤝 Что я обещаю</h2>
+  <ul class="checks">
+    <li>Пишу <b>точное</b> время по таймеру в игре. Ускорился сам — сразу поправляю («🔧 Поправить время»).</li>
+    <li>Отдаю баф <b>только тому</b>, кого назначил сайт. Не нашёл игрока — жму «🔁 Другой игрок», а не отдаю кому-то другому.</li>
+    <li>Жму «✅ Я отдал» <b>только после</b> того, как реально отдал баф в игре.</li>
+    <li>Закончил стройку или исследование — жму «🏁 Готово», чтобы бафы не ушли впустую.</li>
+    <li>Не записываюсь дважды и не пишу время больше, чем на самом деле.</li>
+  </ul>
+  <p class="text-2">Сайт не может проверить игру — всё держится на честности. Нарушения видны в истории бафов, руководство союза может убрать игрока из очереди.</p>
+</section>
+
+<section class="card">
+  <h2>⚙️ Как распределяются бафы</h2>
+  <div class="stack">
+    <div class="tip"><span class="ico">✂️</span><div>Один баф срезает <b>{{ pct|round(0)|int }}%</b> от заявленного времени и действует <b>и на того, кто отдал</b>.</div></div>
+    <div class="tip"><span class="ico">🎯</span><div>Бафаем до остатка: стройка — <b>{{ target_text("build") }}</b>, исследование — <b>{{ target_text("research") }}</b>. Баф не назначается, если после него останется меньше нижней границы — так ни один баф не сгорает впустую.</div></div>
+    <div class="tip"><span class="ico">🔄</span><div>Ротация <b>{{ pattern_text(pattern) }}</b>: сначала тем, у кого больше всего осталось, потом тому, кто дольше всех ждёт.</div></div>
+    <div class="tip"><span class="ico">🤝</span><div>Одному игроку — не больше <b>{{ streak }}</b> бафов подряд, если есть кому ещё.</div></div>
+    <div class="tip"><span class="ico">🔥</span><div>«Срочно» отмечает руководство — такие игроки получают бафы вне очереди.</div></div>
+    <div class="tip"><span class="ico">♻️</span><div>Баф восстанавливается за <b>{{ cooldown|int }} ч</b>. Бронь на баф держится <b>{{ confirm|int }} мин</b>.</div></div>
+    <div class="tip"><span class="ico">🔮</span><div>Прогноз и калькулятор считают очередь по этим же правилам, если все отдают бафы вовремя и пишут точное время.</div></div>
+  </div>
+</section>
+
+{% if me %}
+<section class="card">
+  {% if me.agreed_at %}
+  <p class="mb0">✅ Ты принял условия {{ local(me.agreed_at, "%d.%m.%Y") }}. Спасибо!</p>
+  {% else %}
+  <form method="post" action="/rules/agree">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn btn-primary btn-big btn-block" type="submit">✅ Согласен с условиями</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

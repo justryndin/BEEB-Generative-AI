@@ -82,6 +82,7 @@ MIGRATIONS = {
         ("locked_until", "INTEGER"),
         ("is_owner", "INTEGER NOT NULL DEFAULT 0"),
         ("last_seen_at", "INTEGER"),
+        ("agreed_at", "INTEGER"),
     ],
 }
 

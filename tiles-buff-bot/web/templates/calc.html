@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Калькулятор · {{ site_name }}{% endblock %}
+{% block content %}
+<h1>🧮 Калькулятор бафов</h1>
+<p class="text-2">Сколько бафов и когда ты получишь, если встанешь в очередь <b>сейчас</b>. Расчёт моделирует настоящую очередь: всех, кто уже стоит, ротацию, цели и то, что твой собственный баф режет и твой таймер.</p>
+
+<section class="card">
+  <form method="get" action="/calc">
+    <nav class="tabs" style="margin-bottom:14px">
+      {% for k in ["research", "build"] %}
+      <label class="tab-radio"><input type="radio" name="kind" value="{{ k }}" {{ 'checked' if k == kind }}><span>{{ KIND_EMOJI[k] }} {{ KIND_NAME[k]|capitalize }}</span></label>
+      {% endfor %}
+    </nav>
+    <label>Сколько осталось по таймеру</label>
+    <div class="row" style="margin-bottom:10px">
+      {% for d in (10, 20, 30, 40, 60, 100) %}<button class="btn btn-sm" type="submit" name="days" value="{{ d }}">{{ d }} дн.</button>{% endfor %}
+    </div>
+    <div class="timefields" style="grid-template-columns:1fr 1fr">
+      <div class="stepper"><label for="days">Дней</label><input id="days" name="days" type="number" min="0" max="400" step="1" value="{{ days|int if days else '' }}" placeholder="0"></div>
+      <div class="stepper"><label for="hours">Часов</label><input id="hours" name="hours" type="number" min="0" max="23" value="{{ hours or '' }}" placeholder="0"></div>
+    </div>
+    <details style="margin-top:10px">
+      <summary>Настройки расчёта</summary>
+      <div class="field" style="margin-top:10px"><label for="donors">Сколько игроков отдают бафы</label>
+        <input id="donors" name="donors" type="number" min="1" max="500" value="{{ donors }}">
+        <div class="hint">Сейчас на сайте {{ total_donors }}. Каждый отдаёт по бафу раз в {{ cooldown|int }} ч.</div></div>
+      <label class="check"><input type="checkbox" name="donates" value="1" {{ 'checked' if donates }}> Я тоже отдаю свой баф (он режет и мой таймер)</label>
+    </details>
+    <button class="btn btn-primary btn-big btn-block" type="submit" style="margin-top:14px">Посчитать</button>
+  </form>
+</section>
+
+{% if result %}
+<section class="card">
+  <h2>{{ KIND_EMOJI[kind] }} Таймер {{ dur(result.days * 86400) }}</h2>
+  <div class="grid4" style="margin-bottom:14px">
+    <div class="tile accent"><div class="num">{{ result.gets|length }}</div><div class="lbl">бафов от союза</div></div>
+    <div class="tile"><div class="num">{{ result.self_n }}</div><div class="lbl">своих бафов (−{{ dur(result.self_sum) }})</div></div>
+    <div class="tile"><div class="num">{{ eta(result.done_in)|replace("через ", "") }}</div><div class="lbl">до цели</div></div>
+    <div class="tile"><div class="num">{{ dur(result.left or 0) }}</div><div class="lbl">останется</div></div>
+  </div>
+  <ul class="kv">
+    <li><span class="k">Один баф срезает</span><span class="v">{{ dur(result.per_buff) }} (15% от {{ dur(result.days * 86400) }})</span></li>
+    <li><span class="k">В идеале нужно бафов до цели {{ target_text(kind) }}</span><span class="v">{{ result.ideal }}</span></li>
+    <li><span class="k">Бафов этого типа в союзе</span><span class="v">≈{{ "%.0f"|format(result.per_day) }} в сутки</span></li>
+  </ul>
+  {% if result.gets %}
+  <h3 style="margin-top:16px">Когда придут бафы</h3>
+  <ol class="nextlist">
+    {% for sec, cut in result.gets %}<li><span class="n">{{ loop.index }}</span><span class="nk">−{{ dur(cut) }}</span><span class="t">{{ eta(sec) }}</span></li>{% endfor %}
+  </ol>
+  {% endif %}
+  <p class="hint">Прогноз верен, если все отдают бафы вовремя и пишут точное время. Новые игроки в очереди и «срочно» могут его сдвинуть.</p>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>📊 Таблица: 10 / 20 / 30 / 40 дней</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Таймер</th><th>🔬 Исследование</th><th>🏗 Стройка</th></tr>
+    {% for i in range(4) %}{% set r = presets.research[i] %}{% set b = presets.build[i] %}
+    <tr>
+      <td><b>{{ r.days|int }} дн.</b><br><small>баф −{{ dur(r.per_buff) }}</small></td>
+      <td>{{ r.gets|length }} от союза{% if r.self_n %} + {{ r.self_n }} своих{% endif %}<br><small>первый {{ eta(r.gets[0][0]) if r.gets else "—" }} · цель {{ eta(r.done_in) }}</small></td>
+      <td>{{ b.gets|length }} от союза{% if b.self_n %} + {{ b.self_n }} своих{% endif %}<br><small>первый {{ eta(b.gets[0][0]) if b.gets else "—" }} · цель {{ eta(b.done_in) }}</small></td>
+    </tr>
+    {% endfor %}
+  </table></div>
+</section>
+{% endblock %}

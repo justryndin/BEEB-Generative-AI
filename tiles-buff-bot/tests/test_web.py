@@ -28,7 +28,7 @@ def site():
 
 
 def register(client, nick, pin="1234", code=""):
-    return client.post("/register", data={"nick": nick, "pin": pin, "pin2": pin, "code": code})
+    return client.post("/register", data={"nick": nick, "pin": pin, "pin2": pin, "code": code, "agree": "1"})
 
 
 def test_public_pages(site):
@@ -128,3 +128,22 @@ def test_stats_page(site):
     for period in (7, 30, 90):
         r = owner.get(f"/stats?period={period}")
         assert r.status_code == 200 and "<svg" in r.text
+
+
+def test_rules_consent_and_calculator(site):
+    svc, owner, player = site
+    register(owner, "Иван")
+    # регистрация без согласия не проходит
+    r = player.post("/register", data={"nick": "Мура", "pin": "1234", "pin2": "1234"})
+    assert "согласиться с условиями" in r.text
+    # старый игрок без согласия не может встать в очередь
+    svc.db.run("UPDATE players SET agreed_at = NULL WHERE nick = 'Иван'")
+    assert owner.get("/join/build").url.path == "/rules"
+    token = csrf(owner.get("/rules").text)
+    owner.post("/rules/agree", data={"csrf": token})
+    assert owner.get("/join/build").url.path == "/join/build"
+
+    home = owner.get("/")
+    assert "Кому следующие бафы" in home.text and "Калькулятор" in home.text
+    r = owner.get("/calc?kind=research&days=27&hours=5")
+    assert r.status_code == 200 and "Таймер 27д 5ч" in r.text and "бафов от союза" in r.text

@@ -403,6 +403,36 @@ details summary { cursor: pointer; font-weight: 600; color: var(--accent-text); 
 }
 .toc a:hover { border-color: var(--accent); color: var(--text); }
 
+/* ---------- «кому следующие бафы»: две колонки ---------- */
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.split-col { min-width: 0; background: var(--surface-2); border: 1px solid var(--border); border-radius: 16px; padding: 12px 10px; }
+.split-col h3 { font-size: .95rem; margin: 0 0 8px; }
+.nextlist { list-style: none; margin: 0; padding: 0; }
+.nextlist li { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: .9rem; }
+.nextlist li:last-child { border-bottom: 0; }
+.nextlist .n { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: .75rem; font-weight: 700; background: var(--surface); border: 1px solid var(--border); }
+.nextlist .nk { font-weight: 600; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nextlist .t { color: var(--muted); font-size: .8rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.nextlist li.me { background: var(--accent-soft); border-radius: 10px; padding-left: 4px; padding-right: 4px; }
+.nextlist li.me .n { background: var(--grad); color: #fff; border-color: transparent; }
+details.full { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 6px; }
+details.full table { font-size: .88rem; }
+details.full th, details.full td { padding: 8px 5px; }
+tr.hl td { background: var(--accent-soft); }
+
+.checks { list-style: none; margin: 0 0 8px; padding: 0; }
+.checks li { position: relative; padding: 6px 0 6px 30px; color: var(--text-2); }
+.checks li::before { content: "✓"; position: absolute; left: 0; top: 6px; width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; font-size: .75rem; font-weight: 800; color: #fff; background: var(--grad); }
+.check { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; cursor: pointer; }
+.check input { width: 22px; height: 22px; margin-top: 2px; accent-color: #e0479a; flex: none; }
+
+.tab-radio { margin: 0; cursor: pointer; }
+.tab-radio input { position: absolute; opacity: 0; pointer-events: none; }
+.tab-radio span { display: block; text-align: center; padding: 10px; border-radius: 12px; font-weight: 600; color: var(--muted); }
+.tab-radio input:checked + span { background: var(--grad); color: #fff; box-shadow: 0 6px 18px rgba(255, 95, 162, .3); }
+.tab-radio input:focus-visible + span { outline: 3px solid var(--accent-ring); }
+
 .refresh-note { text-align: center; color: var(--muted); font-size: .85rem; margin: 18px 0 0; }
 .linklike { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-text); text-decoration: underline; cursor: pointer; }
 .no-anim, .no-anim * { animation: none !important; }
