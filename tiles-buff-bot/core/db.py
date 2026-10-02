@@ -64,7 +64,26 @@ CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS sessions (
+    token      TEXT PRIMARY KEY,
+    player_id  INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    csrf       TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+);
 """
+
+# Колонки, добавленные после первой версии: таблица → [(колонка, тип)].
+MIGRATIONS = {
+    "timers": [("item", "TEXT"), ("level", "INTEGER"), ("note", "TEXT")],
+    "players": [
+        ("pin_hash", "TEXT"),
+        ("failed_logins", "INTEGER NOT NULL DEFAULT 0"),
+        ("locked_until", "INTEGER"),
+        ("is_owner", "INTEGER NOT NULL DEFAULT 0"),
+        ("last_seen_at", "INTEGER"),
+    ],
+}
 
 
 class Database:
@@ -80,10 +99,11 @@ class Database:
         self._migrate()
 
     def _migrate(self) -> None:
-        columns = {r["name"] for r in self.conn.execute("PRAGMA table_info(timers)")}
-        for name, sql_type in (("item", "TEXT"), ("level", "INTEGER"), ("note", "TEXT")):
-            if name not in columns:
-                self.conn.execute(f"ALTER TABLE timers ADD COLUMN {name} {sql_type}")
+        for table, wanted in MIGRATIONS.items():
+            columns = {r["name"] for r in self.conn.execute(f"PRAGMA table_info({table})")}
+            for name, sql_type in wanted:
+                if name not in columns:
+                    self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}")
 
     def all(self, sql: str, *args) -> list[sqlite3.Row]:
         return self.conn.execute(sql, args).fetchall()

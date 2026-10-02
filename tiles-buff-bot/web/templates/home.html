@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% from "_macros.html" import queue_item, buff_line %}
+{% block body_attrs %}data-autorefresh="1"{% endblock %}
+{% block content %}
+<h1>Привет, {{ me.nick }}! 👋</h1>
+
+{% for d in received %}
+<div class="alert alert-good">🎁 <b>{{ d.donor_nick or "Кто-то" }}</b> отдал тебе баф на {{ KIND_ACC[d.kind] }} (−{{ dur(d.reduction or 0) }}) · {{ local(d.resolved_at) }}</div>
+{% endfor %}
+
+{% for d in pending %}
+<div class="alert alert-warn">⏳ У тебя есть незавершённая бронь на баф. <a href="/give/d/{{ d.id }}"><b>Открыть и завершить →</b></a></div>
+{% endfor %}
+
+<section class="card">
+  <div class="card-head"><h2>🎁 Отдать свой баф</h2></div>
+  <p class="text-2">Готов баф в игре? Нажми — сайт скажет, кому его отдать.</p>
+  <div class="grid2">
+    {% for kind in KINDS %}
+    <form method="post" action="/give/{{ kind }}">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="btn btn-primary btn-big btn-block btn-col" type="submit">
+        <span>{{ KIND_EMOJI[kind] }} Баф на {{ KIND_ACC[kind] }}</span>
+      </button>
+      <div class="center" style="margin-top:6px">Мой баф: {{ buff_line(kind, buffs[kind]) }}</div>
+    </form>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2>⏳ Моя очередь</h2></div>
+  <div class="grid2">
+    {% for kind in KINDS %}
+    {% set t = timers[kind] %}
+    <div class="timer">
+      <div class="row"><b>{{ KIND_EMOJI[kind] }} {{ KIND_NAME[kind]|capitalize }}</b>
+        {% if t and t.c.urgent %}<span class="badge badge-urgent">🔥 срочно</span>{% endif %}</div>
+      {% if t %}
+        {% if t.label %}<div class="text-2">{{ t.label }}</div>{% endif %}
+        <div class="big">{{ dur(t.c.remaining) }}</div>
+        <div class="progress" aria-hidden="true"><span style="width:{{ [100, [3, (100 * (1 - t.c.remaining / t.c.base))|round]|max]|min }}%"></span></div>
+        {% if t.status == "need" %}
+          <div>Ещё нужно ≈ <b>{{ t.needed }}</b> баф. {% if t.position %}· в списке <b>№{{ t.position }}</b>{% endif %}</div>
+        {% else %}
+          <div><span class="badge badge-good">🎯 цель достигнута</span> бафы больше не нужны</div>
+        {% endif %}
+        <div class="row" style="margin-top:10px">
+          <a class="btn btn-sm" href="/join/{{ kind }}?fix=1">🔧 Поправить время</a>
+          <form class="inline" method="post" action="/timer/{{ kind }}/close" data-confirm="Убрать тебя из очереди ({{ KIND_NAME[kind] }})?">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <button class="btn btn-sm btn-ghost" type="submit">🏁 Готово</button>
+          </form>
+        </div>
+      {% else %}
+        <p class="text-2" style="margin:8px 0 12px">Ты не в очереди.</p>
+        <a class="btn btn-block" href="/join/{{ kind }}">➕ Встать в очередь</a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% for kind in KINDS %}
+{% set pv = previews[kind] %}
+<section class="card">
+  <div class="card-head">
+    <h2>{{ KIND_EMOJI[kind] }} Очередь: {{ KIND_NAME[kind] }}</h2>
+    <a href="/queue?kind={{ kind }}">все {{ pv.total }} →</a>
+  </div>
+  {% if pv.next %}
+  <div class="next"><span class="arrow">👉</span><div><div class="muted">Следующий баф получит</div><div class="nick">{{ pv.next.nick }}</div><div class="muted">{{ SLOT_REASON[pv.slot] }}</div></div></div>
+  {% endif %}
+  {% if pv.rows %}
+  <ol class="qlist">{% for r in pv.rows %}{{ queue_item(r, me, loop.index) }}{% endfor %}</ol>
+  {% else %}
+  <p class="muted">Сейчас никому не нужны бафы 👍</p>
+  {% endif %}
+</section>
+{% endfor %}
+
+<p class="center text-2">За неделю союз отдал <b>{{ week.buffs }}</b> баф. и сэкономил <b>{{ dur(week.saved) }}</b> 🙌 <a href="/stats">Статистика →</a></p>
+{% endblock %}

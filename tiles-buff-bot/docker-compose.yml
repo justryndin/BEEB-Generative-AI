@@ -1,19 +1,38 @@
 services:
-  buff-bot:
+  web:
     build: .
-    container_name: tiles-buff-bot
+    container_name: tiles-buff-site
     restart: unless-stopped
     env_file: .env
     environment:
       DB_PATH: /app/data/bot.db
     volumes:
-      # Именованный том: Docker сам выдаст права пользователю бота внутри контейнера.
+      # Та же база, что была у Telegram-бота: игроки и очередь переедут на сайт.
       - bot-data:/app/data
-    # Бот сам ходит к Telegram и не открывает ни одного порта наружу.
+    ports:
+      # Только для проверки с самого сервера (curl). Снаружи сайт доступен через Cloudflare Tunnel.
+      - "127.0.0.1:8765:8000"
     mem_limit: 256m
     cpus: 0.5
     security_opt:
       - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  tunnel:
+    # Cloudflare Tunnel: сайт сам подключается к Cloudflare. Порты 80/443 и VPN не трогаем.
+    image: cloudflare/cloudflared:latest
+    container_name: tiles-buff-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      - web
+    mem_limit: 128m
     logging:
       driver: json-file
       options:

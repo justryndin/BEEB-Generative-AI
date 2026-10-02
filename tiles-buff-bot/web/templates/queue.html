@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import queue_item %}
+{% block title %}Очередь · {{ site_name }}{% endblock %}
+{% block body_attrs %}data-autorefresh="1"{% endblock %}
+{% block content %}
+<h1>📋 Очередь</h1>
+<nav class="tabs">
+  {% for k in KINDS %}<a href="/queue?kind={{ k }}" class="{{ 'on' if k == kind }}">{{ KIND_EMOJI[k] }} {{ KIND_NAME[k]|capitalize }}</a>{% endfor %}
+</nav>
+
+{% if view.next_pick %}
+<div class="next">
+  <span class="arrow">👉</span>
+  <div><div class="muted">Следующий баф получит</div><div class="nick">{{ view.next_pick.nick }}</div><div class="muted">{{ SLOT_REASON[view.next_slot] }}</div></div>
+</div>
+{% endif %}
+
+<section class="card">
+  <div class="card-head"><h2>Ждут бафа — {{ need|length }}</h2></div>
+  <p class="hint mt0">Бафаем до остатка {{ target_text(kind) }} · ротация {{ pattern_text(view.rules.pattern) }} (большим : дольше всех ждущим)</p>
+  {% if need %}
+  <ol class="qlist">{% for r in need %}{{ queue_item(r, me, loop.index) }}{% endfor %}</ol>
+  {% else %}
+  <p class="muted">Сейчас никому не нужны бафы 👍</p>
+  {% endif %}
+</section>
+
+{% if reached %}
+<section class="card">
+  <h2>🎯 Цель достигнута — {{ reached|length }}</h2>
+  <p class="hint mt0">Им бафы больше не назначаются: остаток уже около {{ target_text(kind) }}.</p>
+  <ul class="feed">
+    {% for r in reached %}<li><span>{{ r.candidate.nick }}{% if r.label %} · <span class="muted">{{ r.label }}</span>{% endif %}</span><span class="when">{{ dur(r.candidate.remaining) }}</span></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<div class="grid2">
+  <form method="post" action="/give/{{ kind }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn btn-primary btn-big btn-block" type="submit">🎁 Отдать баф на {{ KIND_ACC[kind] }}</button>
+  </form>
+  <a class="btn btn-big btn-block" href="/join/{{ kind }}">➕ Встать в очередь</a>
+</div>
+<p class="hint center" style="margin-top:12px">Номер в списке — примерный: бафы идут по кругу «{{ pattern_text(view.rules.pattern) }}», поэтому помощь получают и большие, и маленькие таймеры.</p>
+{% endblock %}

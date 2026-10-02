@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% from "_macros.html" import steps %}
+{% block title %}Встать в очередь · {{ site_name }}{% endblock %}
+{% block content %}
+{% set q = "&player=" ~ target.id if for_other else "" %}
+{% if for_other %}<div class="alert alert-info">⚙️ Записываешь за игрока <b>{{ target.nick }}</b></div>{% endif %}
+
+{% if fix %}
+<h1>🔧 Поправить время</h1>
+<p class="text-2">{{ KIND_EMOJI[kind] }} {{ KIND_NAME[kind]|capitalize }}{% if it %}: {{ it.ru }}{% if level %} → {{ level }}{% endif %}{% endif %}. Ускорился сам или ошибся — укажи, сколько <b>сейчас</b> осталось по таймеру.</p>
+{% else %}
+<h1>{{ KIND_EMOJI[kind] }} Встать в очередь</h1>
+{% endif %}
+
+{% if step == "item" %}
+<section class="card">
+  {{ steps(1, total_steps) }}
+  <h2>{{ "Что строится?" if kind == "build" else "Какая ветка исследований?" }}</h2>
+  <p class="text-2">Нажми на {{ "здание" if kind == "build" else "ветку" }}. Если идёт несколько — выбери то, что <b>дольше всех</b>: баф ложится сразу на все.</p>
+  <div class="choices">
+    {% for i in gamedata.items_for(kind) %}
+    <a class="choice" href="/join/{{ kind }}?item={{ i.code }}{{ q }}">{{ i.ru }}{% if i.en %}<small class="muted">{{ i.en }}</small>{% endif %}</a>
+    {% endfor %}
+  </div>
+</section>
+
+{% elif step == "level" %}
+<section class="card">
+  {{ steps(2, total_steps) }}
+  <h2>{{ it.ru }} — на какой уровень?</h2>
+  <p class="text-2">Нажми на уровень, <b>до которого</b> сейчас улучшается здание.</p>
+  <div class="levels">
+    {% for n in range(1, it.max_level + 1) %}<a href="/join/{{ kind }}?item={{ it.code }}&level={{ n }}{{ q }}">{{ n }}</a>{% endfor %}
+  </div>
+  <p style="margin-top:14px"><a href="/join/{{ kind }}?{{ q[1:] }}">◀️ Назад к выбору здания</a></p>
+</section>
+
+{% else %}
+<section class="card">
+  {% if not fix %}{{ steps(total_steps, total_steps) }}{% endif %}
+  <h2>⏳ Сколько осталось по таймеру?</h2>
+  {% if it and not fix %}<p class="text-2 mt0">{{ it.ru }}{% if level %} → {{ level }}{% endif %}</p>{% endif %}
+  {% if reference %}
+  <div class="alert alert-info">📚 Справочно {{ it.ru }} → {{ level }}: <b>{{ dur(reference) }}</b> без бонусов{% if it.approximate %} (≈, данные неточные){% endif %}.
+    {% if requires %}<br>Требования: {{ requires }}{% endif %}
+    {% for o in observed %}<br>👥 У игроков союза обычно ≈ {{ dur(o[2]) }} ({{ o[3] }} записей){% endfor %}
+  </div>
+  {% endif %}
+  <p class="text-2">Открой {{ "стройку" if kind == "build" else "исследование" }} в игре, посмотри таймер и введи числа. Кнопки «−» и «+» помогут.</p>
+  <form method="post" action="/join/{{ kind }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="item" value="{{ it.code if it else '' }}">
+    <input type="hidden" name="level" value="{{ level or 0 }}">
+    <input type="hidden" name="fix" value="{{ fix }}">
+    <input type="hidden" name="player" value="{{ target.id if for_other else 0 }}">
+    <div class="timefields">
+      {% for name, label, max in [("days", "Дней", 400), ("hours", "Часов", 23), ("minutes", "Минут", 59)] %}
+      <div class="stepper">
+        <label for="{{ name }}">{{ label }}</label>
+        <input id="{{ name }}" name="{{ name }}" type="number" inputmode="numeric" min="0" max="{{ max }}" value="0">
+        <div class="pm">
+          <button type="button" data-step="-1" data-target="{{ name }}" aria-label="Меньше">−</button>
+          <button type="button" data-step="1" data-target="{{ name }}" aria-label="Больше">+</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="hint">Например, на таймере <b>21д 05:30:00</b> → 21 дней, 5 часов, 30 минут.</p>
+    <button class="btn btn-primary btn-big btn-block" type="submit">✅ {{ "Сохранить" if fix else "Встать в очередь" }}</button>
+  </form>
+  {% if not fix and it and it.kind == "build" and it.max_level %}
+  <p style="margin-top:14px"><a href="/join/{{ kind }}?item={{ it.code }}{{ q }}">◀️ Назад к выбору уровня</a></p>
+  {% elif not fix %}
+  <p style="margin-top:14px"><a href="/join/{{ kind }}?{{ q[1:] }}">◀️ Назад</a></p>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

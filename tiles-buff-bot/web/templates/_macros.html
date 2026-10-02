@@ -1,0 +1,31 @@
+{% macro queue_item(r, me, pos) -%}
+{% set c = r.candidate %}
+<li class="qitem{{ ' me' if me and c.player_id == me.id }}{{ ' urgent' if c.urgent }}">
+  <span class="qpos" aria-label="Место {{ pos }}">{{ pos }}</span>
+  <span>
+    <span class="qname">{{ c.nick }}{% if me and c.player_id == me.id %} <span class="badge badge-accent">это ты</span>{% endif %}</span>
+    <span class="qmeta">
+      {% if r.label %}{{ r.label }} · {% endif %}ещё ≈{{ r.needed }} баф.{% if c.received %} · получил {{ c.received }}{% endif %}
+    </span>
+    <span class="row" style="gap:6px;margin-top:2px">
+      {% if c.urgent %}<span class="badge badge-urgent">🔥 срочно</span>{% endif %}
+      {% if r.pending %}<span class="badge badge-warn">⏳ ему уже несут баф</span>{% endif %}
+    </span>
+  </span>
+  <span class="qtime">{{ dur(c.remaining) }}<small>осталось</small></span>
+</li>
+{%- endmacro %}
+
+{% macro steps(current, total) -%}
+<div class="steps" aria-label="Шаг {{ current }} из {{ total }}">
+  {% for i in range(1, total + 1) %}<span class="{{ 'on' if i <= current }}"></span>{% endfor %}
+</div>
+<div class="step-title">Шаг {{ current }} из {{ total }}</div>
+{%- endmacro %}
+
+{% macro buff_line(kind, state) -%}
+{% set s, left = state %}
+{% if s == "ready" %}<span class="badge badge-good">✅ готов</span>
+{% elif s == "wait" %}<span class="badge">⏳ через {{ dur(left) }}</span>
+{% else %}<span class="badge">❔ сайт узнает после первого бафа</span>{% endif %}
+{%- endmacro %}

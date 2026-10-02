@@ -1,9 +1,9 @@
 import sqlite3
 
-from bot import gamedata
-from bot.db import Database
-from bot.service import Service
-from bot.timeparse import DAY, HOUR, MINUTE
+from core import gamedata
+from core.db import Database
+from core.service import Service
+from core.timeparse import DAY, HOUR, MINUTE
 
 T0 = 1_700_000_000
 

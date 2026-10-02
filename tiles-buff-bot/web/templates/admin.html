@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Управление · {{ site_name }}{% endblock %}
+{% block content %}
+<h1>⚙️ Управление</h1>
+
+{% if not settings.alliance_code %}
+<div class="alert alert-warn">⚠️ Код союза не задан — зарегистрироваться может любой, у кого есть ссылка. Задай код в <a href="#settings">настройках</a> и сообщи его союзу в игровом чате.</div>
+{% endif %}
+
+<section class="card">
+  <div class="card-head"><h2>👥 Игроки — {{ rows|length }}</h2></div>
+  <input id="player-search" type="search" placeholder="🔎 Поиск по нику" aria-label="Поиск по нику" style="margin-bottom:10px">
+  <ul class="qlist">
+    {% for r in rows %}{% set p = r.p %}
+    <li class="qitem" data-nick="{{ p.nick|lower }}" style="grid-template-columns:1fr auto">
+      <a href="/admin/p/{{ p.id }}" style="text-decoration:none;color:inherit">
+        <span class="qname">{% if p.is_owner %}👑 {% elif p.is_admin %}⭐ {% endif %}{{ p.nick }}</span>
+        <span class="qmeta">
+          {% for k in KINDS %}{% set c = r.timers[k] %}{% if c and c.remaining > 0 %}{{ KIND_EMOJI[k] }} {{ dur(c.remaining) }}{% if c.urgent %} 🔥{% endif %} · {% endif %}{% endfor %}
+          {% if not p.pin_hash %}<span class="badge badge-warn">не вошёл на сайт</span>{% endif %}
+        </span>
+      </a>
+      <a class="btn btn-sm" href="/admin/p/{{ p.id }}">Открыть</a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="card">
+  <h2>➕ Добавить игрока</h2>
+  <p class="text-2 mt0">Для тех, кто не может сам зайти на сайт. Ты сможешь записывать за него стройки и отдавать его бафы. Если он потом зарегистрируется с этим же ником — всё станет его.</p>
+  <form method="post" action="/admin/add" class="row">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="text" name="nick" placeholder="Ник в игре" minlength="2" maxlength="32" required style="flex:1;min-width:180px">
+    <button class="btn btn-primary" type="submit">Добавить</button>
+  </form>
+</section>
+
+<section class="card" id="settings">
+  <h2>🛠 Настройки очереди</h2>
+  <form method="post" action="/admin/settings">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="field">
+      <label for="alliance_code">🔐 Код союза для регистрации</label>
+      <input id="alliance_code" name="alliance_code" type="text" value="{{ settings.alliance_code }}" maxlength="32" placeholder="например: метель2026">
+      <div class="hint">Без кода зарегистрироваться нельзя. Пусто — регистрация открыта всем.</div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label for="pattern">🔄 Ротация (большим : ждущим)</label>
+        <select id="pattern" name="pattern">
+          {% for v, t in [("BW", "1 : 1"), ("BBW", "2 : 1"), ("BBBW", "3 : 1"), ("B", "только большим")] %}
+          <option value="{{ v }}" {{ 'selected' if settings.pattern == v }}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="max_streak">🤝 Бафов подряд одному</label>
+        <select id="max_streak" name="max_streak">
+          {% for n in ["1", "2", "3", "5"] %}<option value="{{ n }}" {{ 'selected' if settings.max_streak == n }}>{{ n }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field"><label for="build_min">🏗 Стройка: мин. остаток, дней</label><input id="build_min" name="build_min" type="number" step="0.5" min="0" value="{{ settings.build_min }}"></div>
+      <div class="field"><label for="build_max">🏗 Стройка: бафы не нужны при остатке ≤, дней</label><input id="build_max" name="build_max" type="number" step="0.5" min="0" value="{{ settings.build_max }}"></div>
+      <div class="field"><label for="research_min">🔬 Исследование: мин. остаток, дней</label><input id="research_min" name="research_min" type="number" step="0.5" min="0" value="{{ settings.research_min }}"></div>
+      <div class="field"><label for="research_max">🔬 Исследование: бафы не нужны при остатке ≤, дней</label><input id="research_max" name="research_max" type="number" step="0.5" min="0" value="{{ settings.research_max }}"></div>
+      <div class="field"><label for="pct">✂️ Баф срезает, %</label><input id="pct" name="pct" type="number" step="1" min="1" max="99" value="{{ settings.pct }}"></div>
+      <div class="field">
+        <label for="mode">📐 % считается от</label>
+        <select id="mode" name="mode">
+          <option value="declared" {{ 'selected' if settings.mode == 'declared' }}>заявленного времени</option>
+          <option value="remaining" {{ 'selected' if settings.mode == 'remaining' }}>текущего остатка</option>
+        </select>
+      </div>
+      <div class="field"><label for="cooldown_hours">♻️ Баф восстанавливается, часов</label><input id="cooldown_hours" name="cooldown_hours" type="number" step="1" min="1" value="{{ settings.cooldown_hours }}"></div>
+      <div class="field"><label for="confirm_minutes">⏱ Бронь держится, минут</label><input id="confirm_minutes" name="confirm_minutes" type="number" step="5" min="5" value="{{ settings.confirm_minutes }}"></div>
+    </div>
+    <button class="btn btn-primary btn-block" type="submit">💾 Сохранить настройки</button>
+  </form>
+</section>
+{% endblock %}

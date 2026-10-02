@@ -1,6 +1,6 @@
 import pytest
 
-from bot.timeparse import DAY, HOUR, MINUTE, format_duration, parse_duration
+from core.timeparse import DAY, HOUR, MINUTE, format_duration, parse_duration
 
 
 @pytest.mark.parametrize(

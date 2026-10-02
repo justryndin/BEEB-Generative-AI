@@ -1,4 +1,4 @@
-from bot.logic import (
+from core.logic import (
     SLOT_BIG,
     SLOT_URGENT,
     SLOT_WAIT,
@@ -9,7 +9,7 @@ from bot.logic import (
     choose_recipient,
     is_eligible,
 )
-from bot.timeparse import DAY
+from core.timeparse import DAY
 
 BUILD = Rules(min_left=5 * DAY, max_left=7 * DAY)
 RESEARCH = Rules(min_left=7 * DAY, max_left=8 * DAY)

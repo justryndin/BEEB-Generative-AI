@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>❄️ Бафы союза</h1>
+  <p>Сезонные бафы −15% к стройке и исследованиям — без потерь и по-честному. Сайт сам подскажет, <b>кому</b> отдать твой баф, а тебе бафы придут по очереди.</p>
+  <div class="grid2" style="margin-top:14px">
+    <a class="btn btn-big btn-block" style="background:#fff;color:#17406f;border-color:#fff" href="/login">🔑 Войти</a>
+    <a class="btn btn-big btn-block" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.7)" href="/register">✨ Я новенький</a>
+  </div>
+</section>
+
+<div class="grid4" style="margin-bottom:16px">
+  <div class="tile"><div class="num">{{ totals.buffs }}</div><div class="lbl">бафов отдано</div></div>
+  <div class="tile"><div class="num">{{ (totals.saved // 86400) }}</div><div class="lbl">дней сэкономлено</div></div>
+  <div class="tile"><div class="num">{{ queue_counts.build }}</div><div class="lbl">🏗 ждут бафа</div></div>
+  <div class="tile"><div class="num">{{ queue_counts.research }}</div><div class="lbl">🔬 ждут бафа</div></div>
+</div>
+
+<div class="card">
+  <h2>Как это работает — 3 шага</h2>
+  <div class="stack">
+    <div class="tip"><span class="ico">1️⃣</span><div><b>Запустил стройку или исследование</b> — запишись в очередь: выбери здание, уровень и сколько осталось.</div></div>
+    <div class="tip"><span class="ico">2️⃣</span><div><b>Готов твой баф</b> — нажми «Отдать баф». Сайт скажет, кому его отдать в игре.</div></div>
+    <div class="tip"><span class="ico">3️⃣</span><div><b>Отдал</b> — нажми «✅ Я отдал». Очередь пересчитается сама.</div></div>
+  </div>
+</div>
+{% endblock %}

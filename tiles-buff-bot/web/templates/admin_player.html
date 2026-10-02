@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_macros.html" import buff_line %}
+{% block title %}{{ p.nick }} · Управление{% endblock %}
+{% block content %}
+<p><a href="/admin">◀️ Все игроки</a></p>
+<h1>{% if p.is_owner %}👑 {% elif p.is_admin %}⭐ {% endif %}{{ p.nick }}</h1>
+<div class="row" style="margin-bottom:14px">
+  {% if p.pin_hash %}<span class="badge badge-good">вошёл на сайт</span>{% else %}<span class="badge badge-warn">ещё не зарегистрировался — может сделать это под этим ником</span>{% endif %}
+  {% if p.locked_until %}<span class="badge badge-urgent">вход временно заблокирован</span>{% endif %}
+  <span class="badge">отдал {{ given }} · получил {{ received }}</span>
+</div>
+
+{% for kind in KINDS %}
+{% set t = timers[kind] %}
+<section class="card">
+  <div class="card-head"><h2>{{ KIND_EMOJI[kind] }} {{ KIND_NAME[kind]|capitalize }}</h2>{% if urgent[kind] %}<span class="badge badge-urgent">🔥 срочно</span>{% endif %}</div>
+  {% if t %}
+    <p>{% if t.label %}{{ t.label }} · {% endif %}осталось <b>{{ dur(t.c.remaining) }}</b> · получил {{ t.c.received }} · {% if t.status == "need" %}ещё ≈{{ t.needed }}{% else %}🎯 цель достигнута{% endif %}</p>
+    <div class="row">
+      <form method="post" action="/admin/p/{{ p.id }}/urgent"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
+        <button class="btn btn-sm" type="submit">{{ "🔥 Выключить срочно" if urgent[kind] else "🔥 Срочно" }}</button></form>
+      <a class="btn btn-sm" href="/join/{{ kind }}?fix=1&player={{ p.id }}">🔧 Поправить время</a>
+      <a class="btn btn-sm" href="/join/{{ kind }}?player={{ p.id }}">✏️ Записать заново</a>
+      <form method="post" action="/admin/p/{{ p.id }}/close" data-confirm="Убрать {{ p.nick }} из очереди ({{ KIND_NAME[kind] }})?"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
+        <button class="btn btn-sm btn-ghost" type="submit">🏁 Убрать из очереди</button></form>
+    </div>
+  {% else %}
+    <p class="text-2">Не в очереди.</p>
+    <a class="btn btn-sm" href="/join/{{ kind }}?player={{ p.id }}">➕ Записать {{ KIND_ACC[kind] }}</a>
+  {% endif %}
+  <hr style="border:0;border-top:1px solid var(--border);margin:14px 0">
+  <div class="row">
+    <span>Его баф: {{ buff_line(kind, buffs[kind]) }}</span><span class="spacer"></span>
+    <form method="post" action="/admin/p/{{ p.id }}/assign"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
+      <button class="btn btn-sm btn-primary" type="submit">🎁 Кому отдать его баф?</button></form>
+  </div>
+</section>
+{% endfor %}
+
+<section class="card">
+  <h2>🛠 Действия</h2>
+  <div class="stack">
+    {% if p.pin_hash %}
+    <form method="post" action="/admin/p/{{ p.id }}/resetpin" data-confirm="Сбросить PIN игрока {{ p.nick }}? Он заново зарегистрируется под своим ником.">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="btn btn-block" type="submit">🔑 Сбросить PIN (забыл код)</button>
+    </form>
+    {% endif %}
+    {% if is_owner and not p.is_owner %}
+    <form method="post" action="/admin/p/{{ p.id }}/{{ 'drop_admin' if p.is_admin else 'make_admin' }}">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="btn btn-block" type="submit">{{ "✖️ Снять админа" if p.is_admin else "⭐ Сделать админом (R4)" }}</button>
+    </form>
+    {% endif %}
+    {% if not p.is_owner %}
+    <form method="post" action="/admin/p/{{ p.id }}/delete" data-confirm="Удалить {{ p.nick }} с сайта? Он пропадёт из очередей, история бафов сохранится.">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="btn btn-danger btn-block" type="submit">🗑 Удалить с сайта (ушёл из союза)</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

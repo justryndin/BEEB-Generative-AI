@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Вход · {{ site_name }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:460px;margin:20px auto">
+  <h1>🔑 Вход</h1>
+  {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/login">
+    <div class="field">
+      <label for="nick">Ник в игре</label>
+      <input id="nick" name="nick" type="text" value="{{ nick or '' }}" autocomplete="username" autocapitalize="none" required>
+    </div>
+    <div class="field">
+      <label for="pin">PIN-код (4 цифры)</label>
+      <input id="pin" name="pin" type="password" class="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="current-password" required>
+    </div>
+    <button class="btn btn-primary btn-big btn-block" type="submit">Войти</button>
+  </form>
+  <p class="center" style="margin-top:16px">Впервые здесь? <a href="/register"><b>Зарегистрироваться</b></a></p>
+  <p class="hint center">Забыл PIN — попроси руководство союза сбросить его.</p>
+</div>
+{% endblock %}

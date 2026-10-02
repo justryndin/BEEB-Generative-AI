@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "_macros.html" import buff_line %}
+{% block title %}Профиль · {{ site_name }}{% endblock %}
+{% block content %}
+<h1>👤 {{ me.nick }}</h1>
+<div class="row" style="margin-bottom:12px">
+  {% if me.is_owner %}<span class="badge badge-accent">👑 владелец</span>{% elif me.is_admin %}<span class="badge badge-accent">⭐ админ</span>{% endif %}
+</div>
+
+<div class="grid4" style="margin-bottom:16px">
+  <div class="tile"><div class="num">{{ given }}</div><div class="lbl">бафов отдал</div></div>
+  <div class="tile"><div class="num">{{ received }}</div><div class="lbl">бафов получил</div></div>
+  <div class="tile"><div class="num">{{ saved // 86400 }}</div><div class="lbl">дней подарил союзу</div></div>
+  <div class="tile"><div class="num">{{ (timers.build is not none) + (timers.research is not none) }}</div><div class="lbl">таймеров в очереди</div></div>
+</div>
+
+<section class="card">
+  <h2>🎁 Мои бафы</h2>
+  <ul class="feed">
+    {% for kind in KINDS %}<li><span>{{ KIND_EMOJI[kind] }} Баф на {{ KIND_ACC[kind] }}</span><span class="when">{{ buff_line(kind, buffs[kind]) }}</span></li>{% endfor %}
+  </ul>
+  <p class="hint">Сайт узнаёт, когда твой баф готов, после того как ты отдашь его через сайт (баф восстанавливается за 48 ч).</p>
+</section>
+
+<section class="card">
+  <h2>✏️ Сменить ник</h2>
+  <form method="post" action="/me/nick" class="row">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="text" name="nick" value="{{ me.nick }}" minlength="2" maxlength="32" required style="flex:1;min-width:180px">
+    <button class="btn" type="submit">Сохранить</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>🔑 Сменить PIN-код</h2>
+  <form method="post" action="/me/pin">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="grid2">
+      <div class="field"><label for="old">Текущий PIN</label><input id="old" name="old" type="password" class="pin" inputmode="numeric" maxlength="4" required></div>
+      <div class="field"><label for="npin">Новый PIN</label><input id="npin" name="pin" type="password" class="pin" inputmode="numeric" maxlength="4" required></div>
+    </div>
+    <div class="field"><label for="npin2">Новый PIN ещё раз</label><input id="npin2" name="pin2" type="password" class="pin" inputmode="numeric" maxlength="4" required></div>
+    <button class="btn" type="submit">Сменить PIN</button>
+  </form>
+</section>
+
+<section class="card">
+  <div class="row">
+    <form method="post" action="/logout">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="btn" type="submit">🚪 Выйти</button>
+    </form>
+    <span class="spacer"></span>
+    {% if not me.is_owner %}
+    <form method="post" action="/me/delete" data-confirm="Точно удалить тебя с сайта? Ты пропадёшь из очередей.">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="btn btn-danger" type="submit">🗑 Удалить меня</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

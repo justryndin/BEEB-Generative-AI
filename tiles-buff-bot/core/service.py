@@ -1,8 +1,11 @@
-"""Бизнес-логика бота поверх SQLite. Здесь нет ничего про Telegram."""
+"""Бизнес-логика очереди бафов поверх SQLite. Не зависит от сайта."""
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import re
+import secrets
 from dataclasses import dataclass
 
 from . import gamedata
@@ -41,9 +44,31 @@ SETTINGS: dict[str, tuple[str, str]] = {
     "max_streak": ("2", "Не больше стольких бафов подряд одному игроку"),
     "cooldown_hours": ("48", "Через сколько часов у игрока снова готов баф"),
     "confirm_minutes": ("30", "Сколько минут держится бронь на назначенный баф"),
-    "digest_hour": ("10", "Во сколько (час, 0–23) постить сводку в группу; -1 — не постить"),
+    "alliance_code": ("", "Код союза для регистрации на сайте (пусто — регистрация открыта всем)"),
 }
-_INTERNAL_SETTINGS = {"last_digest"}
+_INTERNAL_SETTINGS: set[str] = set()
+_TEXT_SETTINGS = {"mode", "pattern", "alliance_code"}
+
+MAX_FAILED_LOGINS = 5
+LOCK_SECONDS = 15 * 60
+_PIN_ITERATIONS = 120_000
+
+
+def hash_pin(pin: str, salt: str | None = None) -> str:
+    salt = salt or secrets.token_hex(8)
+    digest = hashlib.pbkdf2_hmac("sha256", pin.encode(), salt.encode(), _PIN_ITERATIONS).hex()
+    return f"{salt}${digest}"
+
+
+def check_pin(pin: str, stored: str | None) -> bool:
+    if not stored or "$" not in stored:
+        return False
+    salt, _ = stored.split("$", 1)
+    return hmac.compare_digest(hash_pin(pin, salt), stored)
+
+
+def valid_pin(pin: str) -> bool:
+    return pin.isdigit() and len(pin) == 4
 
 
 def parse_kind(word: str) -> str | None:
@@ -151,6 +176,9 @@ class Service:
             value = value.upper()
             if not re.fullmatch(r"[BW]{1,12}", value):
                 return "pattern: только буквы B и W, например BBW"
+        elif key == "alliance_code":
+            if len(value) > 32:
+                return "Код союза — не длиннее 32 символов"
         elif key in SETTINGS:
             try:
                 number = float(value.replace(",", "."))
@@ -159,11 +187,9 @@ class Service:
             value = f"{number:g}"
             if key == "pct" and not 0 < number < 100:
                 return "pct: от 0 до 100"
-            if key == "digest_hour" and not (number == -1 or 0 <= number <= 23):
-                return "digest_hour: от 0 до 23 или -1"
             if key in ("cooldown_hours", "confirm_minutes") and number <= 0:
                 return f"{key}: должно быть больше 0"
-            if number < 0 and key != "digest_hour":
+            if number < 0:
                 return f"{key}: не может быть отрицательным"
             for kind in KINDS:
                 lo, hi = f"{kind}_min", f"{kind}_max"
@@ -679,3 +705,160 @@ class Service:
             values.sort()
             out.append((code, level, values[len(values) // 2], len(values)))
         return out
+
+    # ---------- вход на сайт ----------
+
+    def is_admin_player(self, player) -> bool:
+        return bool(player and (player["is_admin"] or player["is_owner"]))
+
+    def register_web(self, nick: str, pin: str, now: int):
+        """Регистрация по нику и PIN. Возвращает (игрок, ошибка).
+
+        Если ник уже завёл админ (или он остался от Telegram-бота) и PIN ещё не задан,
+        игрок «забирает» его себе вместе с очередью и историей.
+        """
+        nick = clean_nick(nick)
+        if not valid_pin(pin):
+            return None, "pin"
+        existing = self.player_by_nick(nick)
+        if existing is not None:
+            if existing["pin_hash"]:
+                return None, "taken"
+            self.db.run("UPDATE players SET pin_hash = ? WHERE id = ?", hash_pin(pin), existing["id"])
+            return self.player(existing["id"]), None
+        cur = self.db.run(
+            "INSERT INTO players(nick, nick_key, pin_hash, created_at) VALUES(?, ?, ?, ?)",
+            nick,
+            nick_key(nick),
+            hash_pin(pin),
+            now,
+        )
+        return self.player(cur.lastrowid), None
+
+    def login(self, nick: str, pin: str, now: int):
+        """Возвращает (игрок, ошибка): ошибка — "unknown", "nopin", "locked" или "wrong"."""
+        player = self.player_by_nick(nick)
+        if player is None:
+            return None, "unknown"
+        if not player["pin_hash"]:
+            return None, "nopin"
+        if player["locked_until"] and player["locked_until"] > now:
+            return None, "locked"
+        if not check_pin(pin, player["pin_hash"]):
+            failed = player["failed_logins"] + 1
+            locked = now + LOCK_SECONDS if failed >= MAX_FAILED_LOGINS else None
+            self.db.run(
+                "UPDATE players SET failed_logins = ?, locked_until = ? WHERE id = ?",
+                0 if locked else failed,
+                locked,
+                player["id"],
+            )
+            return None, "locked" if locked else "wrong"
+        self.db.run("UPDATE players SET failed_logins = 0, locked_until = NULL WHERE id = ?", player["id"])
+        return self.player(player["id"]), None
+
+    def set_pin(self, player_id: int, pin: str | None) -> None:
+        """PIN = None сбрасывает его: игрок сможет заново зарегистрироваться под своим ником."""
+        self.db.run(
+            "UPDATE players SET pin_hash = ?, failed_logins = 0, locked_until = NULL WHERE id = ?",
+            hash_pin(pin) if pin else None,
+            player_id,
+        )
+        if pin is None:
+            self.db.run("DELETE FROM sessions WHERE player_id = ?", player_id)
+
+    def set_owner(self, player_id: int) -> None:
+        self.db.run("UPDATE players SET is_owner = 1, is_admin = 1 WHERE id = ?", player_id)
+
+    def create_session(self, player_id: int, now: int) -> tuple[str, str]:
+        token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(16)
+        self.db.run(
+            "INSERT INTO sessions(token, player_id, csrf, created_at) VALUES(?, ?, ?, ?)",
+            token,
+            player_id,
+            csrf,
+            now,
+        )
+        return token, csrf
+
+    def session(self, token: str | None, now: int, max_age: int):
+        if not token:
+            return None
+        return self.db.one(
+            "SELECT s.csrf, p.* FROM sessions s JOIN players p ON p.id = s.player_id "
+            "WHERE s.token = ? AND s.created_at > ?",
+            token,
+            now - max_age,
+        )
+
+    def drop_session(self, token: str) -> None:
+        self.db.run("DELETE FROM sessions WHERE token = ?", token)
+
+    def touch_seen(self, player_id: int, now: int) -> None:
+        self.db.run("UPDATE players SET last_seen_at = ? WHERE id = ?", now, player_id)
+
+    # ---------- лента и статистика ----------
+
+    def received_since(self, player_id: int, since: int):
+        return self.db.all(
+            "SELECT d.*, p.nick AS donor_nick FROM donations d LEFT JOIN players p ON p.id = d.donor_id "
+            "WHERE d.recipient_id = ? AND d.status = 'done' AND d.resolved_at >= ? ORDER BY d.resolved_at DESC",
+            player_id,
+            since,
+        )
+
+    def pending_by_requester(self, requester_id: int):
+        return self.db.all(
+            "SELECT * FROM donations WHERE requested_by = ? AND status = 'pending' ORDER BY id DESC",
+            requester_id,
+        )
+
+    def recent_donations(self, limit: int = 20):
+        return self.db.all(
+            "SELECT d.*, a.nick AS donor_nick, b.nick AS recipient_nick FROM donations d "
+            "LEFT JOIN players a ON a.id = d.donor_id LEFT JOIN players b ON b.id = d.recipient_id "
+            "WHERE d.status = 'done' ORDER BY d.resolved_at DESC LIMIT ?",
+            limit,
+        )
+
+    def totals(self, since: int = 0) -> dict:
+        row = self.db.one(
+            "SELECT COUNT(*) AS buffs, COALESCE(SUM(reduction), 0) AS saved, "
+            "COUNT(DISTINCT donor_id) AS donors, COUNT(DISTINCT recipient_id) AS recipients "
+            "FROM donations WHERE status = 'done' AND resolved_at >= ?",
+            since,
+        )
+        by_kind = {
+            r["kind"]: r["n"]
+            for r in self.db.all(
+                "SELECT kind, COUNT(*) AS n FROM donations WHERE status = 'done' AND resolved_at >= ? GROUP BY kind",
+                since,
+            )
+        }
+        return {**dict(row), "build": by_kind.get("build", 0), "research": by_kind.get("research", 0)}
+
+    def daily_counts(self, now: int, days: int, tz_offset: int = 0) -> list[tuple[int, int]]:
+        """[(начало дня, число бафов)] за последние days дней, по местному времени."""
+        today = (now + tz_offset) // DAY * DAY - tz_offset
+        start = today - (days - 1) * DAY
+        counts = {
+            r["day"]: r["n"]
+            for r in self.db.all(
+                "SELECT ((resolved_at + ?) / 86400) * 86400 - ? AS day, COUNT(*) AS n FROM donations "
+                "WHERE status = 'done' AND resolved_at >= ? GROUP BY day",
+                tz_offset,
+                tz_offset,
+                start,
+            )
+        }
+        return [(start + i * DAY, counts.get(start + i * DAY, 0)) for i in range(days)]
+
+    def top_players(self, role: str, since: int = 0, limit: int = 10):
+        column = "donor_id" if role == "donor" else "recipient_id"
+        return self.db.all(
+            f"SELECT p.id, p.nick, COUNT(*) AS n, COALESCE(SUM(d.reduction), 0) AS saved FROM donations d "
+            f"JOIN players p ON p.id = d.{column} WHERE d.status = 'done' AND d.resolved_at >= ? "
+            "GROUP BY p.id ORDER BY n DESC, saved DESC LIMIT ?",
+            since,
+            limit,
+        )

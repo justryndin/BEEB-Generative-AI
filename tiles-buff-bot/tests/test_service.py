@@ -1,6 +1,6 @@
-from bot.db import Database
-from bot.service import Service, split_nick_kind
-from bot.timeparse import DAY, HOUR
+from core.db import Database
+from core.service import Service, split_nick_kind
+from core.timeparse import DAY, HOUR
 
 T0 = 1_700_000_000
 
