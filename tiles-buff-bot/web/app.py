@@ -19,6 +19,7 @@ from core import gamedata
 from core.db import Database
 from core import crm
 from core.analytics import benefit, r4_report
+from core.tips import player_tip
 from core.notify import NOTICE_KINDS, Notice, prefs as notify_prefs
 from core.logic import CYCLE_MAX, STATUS_NEED, buffs_needed, make_pattern, parse_pattern, timer_status
 from core.service import KIND_ACC, KIND_EMOJI, KIND_NAME, KINDS, SETTINGS, Service, clean_nick, valid_pin
@@ -95,6 +96,9 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         if it is None:
             return ""
         return f"{it.ru} до {int(svc.setting_float('priority_below')) - 1} ур."
+
+    def tip_for(me, t: int, step: int = 0):
+        return player_tip(svc, me, t, cfg.tz, step)
 
     def pattern_text(pattern: str) -> str:
         big, wait, wait_first = parse_pattern(pattern)
@@ -310,7 +314,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             raise HTTPException(status_code=303, headers={"Location": "/rules?need=1"})
 
     @app.get("/", response_class=HTMLResponse)
-    def home(request: Request):
+    def home(request: Request, tip: int = 0):
         me = current(request)
         t = now()
         if me is None:
@@ -326,6 +330,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             own_gift=svc.last_own_gift(me["id"], t - SELF_UNDO_SECONDS),
             checks=svc.time_checks(me["id"], t),
             pinned=crm.pinned_posts(svc),
+            tip=tip_for(me, t, tip),
+            tip_step=tip,
             soon=[o for o in crm.occurrences(svc, t, 1) if o.start - t < DAY][:2],
             order=svc.setting("queue_order"),
             pattern=svc.setting("pattern"),
@@ -334,6 +340,13 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             now_ts=t,
             gap=svc.setting_float("min_gap_hours"),
         )
+
+    @app.get("/tip", response_class=HTMLResponse)
+    def next_tip(request: Request, step: int = 1):
+        """«Ещё совет» — кусок главной с новым советом (без перезагрузки страницы)."""
+        me = need_login(request)
+        step = max(0, min(step, 1000))
+        return templates.TemplateResponse(request, "_tip.html", {"tip": tip_for(me, now(), step), "tip_step": step})
 
     @app.get("/live", response_class=HTMLResponse)
     def live(request: Request):
@@ -887,7 +900,9 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
 
     @app.get("/guides", response_class=HTMLResponse)
     def guides_index(request: Request):
-        return render(request, "guides/index.html", current(request), guides=GUIDES)
+        me = current(request)
+        return render(request, "guides/index.html", me, guides=GUIDES,
+                      tip=tip_for(me, now()) if me else None, tip_step=0)
 
     @app.get("/guides/{slug}", response_class=HTMLResponse)
     def guide_page(request: Request, slug: str):

@@ -7,9 +7,16 @@
   <a href="/events">📅 События</a>
   <a href="/guides" class="on">📚 Гайды</a>
 </nav>
-<p class="text-2">Коротко и по делу: как развиваться, когда что тратить и как играть вместе с союзом. Начни с «Недели» — от неё зависит, сколько очков ты получишь за те же ускорения.</p>
+<a class="card guide-hero" href="/guides/start">
+  <span class="guide-emoji">🌱</span>
+  <b>Начни здесь — 5 минут</b>
+  <small>Восемь главных правил на одной странице. Остальное сайт подскажет сам: каждый день — «Совет дня» на главной.</small>
+</a>
+{% if tip %}{% include "_tip.html" %}{% endif %}
+<h2 class="section-title">📚 База знаний</h2>
+<p class="hint mt0">Читать всё не нужно — открывай, когда захочется разобраться в теме.</p>
 <div class="guide-grid">
-  {% for g in guides %}
+  {% for g in guides if g.slug != "start" %}
   <a class="card guide-card" href="/guides/{{ g.slug }}">
     <span class="guide-emoji">{{ g.emoji }}</span>
     <b>{{ g.title }}</b>

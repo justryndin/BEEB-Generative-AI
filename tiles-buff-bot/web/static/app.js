@@ -36,6 +36,21 @@
       update();
     });
 
+    // «Ещё совет» — подменяем карточку без перезагрузки страницы.
+    root.querySelectorAll("[data-next-tip]").forEach(function (link) {
+      link.addEventListener("click", function (e) {
+        e.preventDefault();
+        fetch("/tip?step=" + link.dataset.nextTip, { credentials: "same-origin" })
+          .then(function (r) { if (!r.ok) throw new Error(); return r.text(); })
+          .then(function (html) {
+            var fresh = new DOMParser().parseFromString(html, "text/html").querySelector("[data-tip]");
+            var box = link.closest("[data-tip]");
+            if (fresh && box) { box.replaceWith(fresh); bind(fresh); }
+          })
+          .catch(function () { location.href = link.href; });
+      });
+    });
+
     // Подтверждение важных действий.
     root.querySelectorAll("form[data-confirm]").forEach(function (form) {
       form.addEventListener("submit", function (e) {

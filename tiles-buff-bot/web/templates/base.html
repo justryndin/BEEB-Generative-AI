@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/static/icon-180.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="/static/style.css?v=18">
+  <link rel="stylesheet" href="/static/style.css?v=19">
 </head>
 <body{% if me %} data-vapid="{{ vapid_public }}" data-csrf="{{ csrf }}"{% endif %}>
 {% set nav = [
@@ -56,6 +56,6 @@
 </nav>
 {% endif %}
 <p class="footer"><a href="/help">❓ Справка</a> · <a href="/stats">📊 Статистика</a> · <a href="/guides">📚 Гайды</a> · <a href="/rules">📜 Условия</a>{% if me and is_admin %} · <a href="/me">👤 Профиль</a>{% endif %}<br>© {{ site_name }} · Tiles Survive · сезон «Эра метели»</p>
-<script src="/static/app.js?v=6" defer></script>
+<script src="/static/app.js?v=7" defer></script>
 </body>
 </html>

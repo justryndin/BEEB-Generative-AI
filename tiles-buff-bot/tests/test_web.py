@@ -253,7 +253,7 @@ def test_push_subscribe_and_settings(site):
     assert owner.post("/push/subscribe", json={**sub, "csrf": "bad"}).status_code == 400
     owner.post("/me/notify", data={"csrf": token, "on_got": "1", "quiet": "1"})
     from core.notify import prefs
-    assert set(prefs(svc.player(ivan["id"]))["off"]) == {"ready", "next", "done", "news", "events", "check"}
+    assert set(prefs(svc.player(ivan["id"]))["off"]) == {"ready", "next", "done", "news", "events", "check", "tips"}
     owner.post("/push/unsubscribe", json={"csrf": token, "endpoint": "https://push.example/1"})
     assert svc.push_subs(ivan["id"]) == []
 
@@ -392,3 +392,13 @@ def test_guides_section(site):
     assert owner.get("/guides/nope").status_code == 404
     assert owner.get("/tips").url.path == "/guides"
     assert "Электростанция: время, ресурсы, требования" in owner.get("/guides/build").text
+
+
+def test_tip_of_day_on_home_and_more(site):
+    _, owner, _ = site
+    register(owner, "Иван")
+    home = owner.get("/").text
+    assert "Совет дня" in home and 'data-next-tip="1"' in home
+    more = owner.get("/tip?step=1")
+    assert more.status_code == 200 and 'data-next-tip="2"' in more.text
+    assert "Начни здесь" in owner.get("/guides").text and owner.get("/guides/start").status_code == 200

@@ -20,11 +20,19 @@ class Guide:
 DD = "dandangers.ru (союз [Dan]Dangers, штат 174)"
 OFF = "tilessurvive.com — официальный сайт"
 
+DTF = "DTF, блог «Гейм-Знаток»"
+
 GUIDES = [
+    Guide("start", "🌱", "Начни здесь — 5 минут",
+          "Самое главное для новичка на одной странице. Остальное сайт подскажет сам — советом дня.",
+          [(DTF + ": 30 советов для быстрого роста", "https://dtf.ru/howto/5142971-gid-po-tiles-survive-sovety-dlya-bystrogo-rosta-v-igre"),
+           (DTF + ": все события", "https://dtf.ru/howto/5295020-gid-po-sobytiyam-v-tiles-survive"),
+           (DD, "https://dandangers.ru/guide-17sovetov.html")]),
     Guide("news", "📰", "Что нового в игре",
           "Обновления 2.5.900–2.6.200 и планы разработчиков — коротко и по делу.",
           [(OFF + ": 2.6.200", "https://tilessurvive.com/ru/blog/1194"),
            (OFF + ": обратная связь 26 сентября", "https://tilessurvive.com/ru/blog/1187"),
+           (DTF + ": Лава, первый X-SSR", "https://dtf.ru/howto/5323109-lava-v-tiles-survive-pervyy-geroy-x-ssr"),
            (OFF + ": 2.6.100", "https://tilessurvive.com/ru/blog/1179"),
            (OFF + ": обратная связь 11 сентября", "https://tilessurvive.com/ru/blog/1140"),
            (OFF + ": 2.6.0", "https://tilessurvive.com/ru/blog/1127"),
@@ -34,7 +42,7 @@ GUIDES = [
           [(OFF + ": 2.6.100", "https://tilessurvive.com/ru/blog/1179"),
            (OFF + ": обратная связь 11 сентября", "https://tilessurvive.com/ru/blog/1140"),
            (OFF + ": 2.6.200", "https://tilessurvive.com/ru/blog/1194"),
-           ("Гайд игрока по питомцам (скриншоты, прислали в союзе)", "")]),
+           (DTF + ": полный гайд по питомцам", "https://dtf.ru/howto/5309573-gid-po-pitomtsam-v-tiles-survive")]),
     Guide("season", "❄️", "Сезон IV: «Эра метели»",
           "Что нового в сезоне: Печь Судного дня, холод, бастионы и города, природный газ, Ледяной гигант, очки прогресса сезона.",
           [(OFF + ": обновление 2.5.900", "https://tilessurvive.com/ru/blog/1113"),

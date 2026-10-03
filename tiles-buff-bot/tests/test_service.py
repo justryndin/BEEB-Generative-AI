@@ -394,3 +394,21 @@ def test_daily_time_check_notice():
     assert len(keys) == 1
     svc.confirm_time(a["id"], "build", later)
     assert not [n for n in due_notices(svc, ZoneInfo("UTC"), later + 60) if n.kind == "check"]
+
+
+def test_tip_of_day_fits_the_player():
+    from core.tips import TIPS, tip_of_day
+    # Держит баф — первым делом совет «отдай баф»
+    assert tip_of_day({"holding", "build"}, 2, "1:2026-10-03").key == "give-now"
+    # Нет уведомлений — совет включить
+    assert tip_of_day({"no_push"}, 2, "1:2026-10-03").key == "push"
+    # Иначе примерно через день — совет на сегодняшний день недели
+    tuesdays = [tip_of_day(set(), 1, f"{p}:2026-10-06") for p in range(40)]
+    assert 10 < sum(1 in t.days for t in tuesdays) < 30
+    # «Ещё совет» перебирает базу без повторов подряд и не даёт чужих условных советов
+    seen = [tip_of_day(set(), 1, "s", step).key for step in range(1, 40)]
+    assert len(set(seen)) == len(seen)
+    assert all(not tip.when for tip in TIPS if tip.key in seen)
+    # Один и тот же совет весь день, другой — завтра (для большинства игроков)
+    days = {tip_of_day(set(), 4, f"7:2026-10-{d:02d}").key for d in range(1, 29)}
+    assert len(days) > 1

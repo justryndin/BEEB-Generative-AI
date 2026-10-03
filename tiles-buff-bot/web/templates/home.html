@@ -26,6 +26,8 @@
 <a class="pin-strip soon" href="/events"><span class="badge">📅 {{ "идёт" if o.ongoing(now_ts) else local(o.start, "%H:%M") }}</span> <b>{{ o.event.title }}</b>{% if o.event.prepare %} — {{ o.event.prepare|truncate(90) }}{% endif %}</a>
 {% endfor %}
 
+{% include "_tip.html" %}
+
 <div class="alert alert-info push-banner" data-push data-push-banner hidden>
   <span>🔔 <b>Включи уведомления</b> — сайт сам скажет, когда твой баф готов и кому его отдать.</span>
   <button class="btn btn-sm btn-primary" type="button" data-push-on>Включить</button>

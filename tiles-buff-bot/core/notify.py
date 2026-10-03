@@ -12,6 +12,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from . import crm, gamedata
+from .tips import player_tip
 from .service import KIND_ACC, KIND_NAME, KINDS, Service
 from .timeparse import DAY, HOUR, format_duration
 
@@ -22,6 +23,7 @@ NOTICE_KINDS = {
     "next": "Я следующий в очереди",
     "done": "Стройка или исследование закончились — встать со следующей",
     "check": "Сверить время с игрой (раз в день и после бафа)",
+    "tips": "Совет дня — один полезный совет по игре в день",
     "news": "Важные объявления R4",
     "events": "События союза: напоминание перед началом",
 }
@@ -145,13 +147,19 @@ def due_notices(svc: Service, tz: ZoneInfo, now: int) -> list[Notice]:
             mine.append(Notice(pid, f"done:{t['id']}", "done", f"🏁 {what} — закончилось",
                                f"Запустил следующее? Встань в очередь в одно нажатие.{nxt}", "/"))
 
-        # 6. Важные объявления R4.
+        # 6. Совет дня — один раз в день, днём (11:00–20:00 по местному времени).
+        local = datetime.fromtimestamp(now, tz)
+        if 11 <= local.hour < 20:
+            tip = player_tip(svc, player, now, tz)
+            mine.append(Notice(pid, f"tip:{local:%Y-%m-%d}", "tips", "💡 Совет дня", tip.text, tip.link or "/"))
+
+        # 7. Важные объявления R4.
         for post in news:
             if post["author_id"] != pid:
                 first_line = post["text"].strip().splitlines()[0][:120]
                 mine.append(Notice(pid, f"post:{post['id']}", "news", "📣 Объявление союза", first_line, "/board"))
 
-        # 7. События союза — напоминание перед началом.
+        # 8. События союза — напоминание перед началом.
         for o in upcoming:
             when = datetime.fromtimestamp(o.start, tz).strftime("%H:%M")
             head = "идёт сейчас" if o.ongoing(now) else f"начало в {when}"
