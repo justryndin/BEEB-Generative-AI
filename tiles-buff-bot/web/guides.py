@@ -21,6 +21,20 @@ DD = "dandangers.ru (союз [Dan]Dangers, штат 174)"
 OFF = "tilessurvive.com — официальный сайт"
 
 GUIDES = [
+    Guide("news", "📰", "Что нового в игре",
+          "Обновления 2.5.900–2.6.200 и планы разработчиков — коротко и по делу.",
+          [(OFF + ": 2.6.200", "https://tilessurvive.com/ru/blog/1194"),
+           (OFF + ": обратная связь 26 сентября", "https://tilessurvive.com/ru/blog/1187"),
+           (OFF + ": 2.6.100", "https://tilessurvive.com/ru/blog/1179"),
+           (OFF + ": обратная связь 11 сентября", "https://tilessurvive.com/ru/blog/1140"),
+           (OFF + ": 2.6.0", "https://tilessurvive.com/ru/blog/1127"),
+           (OFF + ": 2.5.900", "https://tilessurvive.com/ru/blog/1113")]),
+    Guide("pets", "🐾", "Питомцы",
+          "Новая система с 2.6.100: как получить питомцев, что они дают героям и как не распылить ресурсы.",
+          [(OFF + ": 2.6.100", "https://tilessurvive.com/ru/blog/1179"),
+           (OFF + ": обратная связь 11 сентября", "https://tilessurvive.com/ru/blog/1140"),
+           (OFF + ": 2.6.200", "https://tilessurvive.com/ru/blog/1194"),
+           ("Гайд игрока по питомцам (скриншоты, прислали в союзе)", "")]),
     Guide("season", "❄️", "Сезон IV: «Эра метели»",
           "Что нового в сезоне: Печь Судного дня, холод, бастионы и города, природный газ, Ледяной гигант, очки прогресса сезона.",
           [(OFF + ": обновление 2.5.900", "https://tilessurvive.com/ru/blog/1113"),
