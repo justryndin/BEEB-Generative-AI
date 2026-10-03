@@ -31,8 +31,7 @@
   <hr class="sep">
   <div class="row">
     <span>Его баф: {{ buff_line(kind, buffs[kind]) }}</span><span class="spacer"></span>
-    <form method="post" action="/admin/p/{{ p.id }}/assign"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
-      <button class="btn btn-sm btn-primary" type="submit">🎁 Кому отдать его баф?</button></form>
+    <a class="btn btn-sm btn-primary" href="/give?kind={{ kind }}&donor={{ p.id }}">🎁 Отметить: он отдал баф</a>
   </div>
 </section>
 {% endfor %}

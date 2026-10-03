@@ -17,8 +17,7 @@ from fastapi.templating import Jinja2Templates
 
 from core import gamedata
 from core.db import Database
-from core.forecast import VIRTUAL_ID
-from core.logic import STATUS_NEED, buff_reduction, buffs_needed, timer_status
+from core.logic import STATUS_NEED, buffs_needed, timer_status
 from core.service import KIND_ACC, KIND_EMOJI, KIND_NAME, KINDS, SETTINGS, Service, clean_nick, valid_pin
 from core.timeparse import DAY, HOUR, MINUTE, format_duration
 
@@ -107,8 +106,6 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                 "csrf": me["csrf"] if me else "",
                 "flash": flash,
                 "path": request.url.path,
-                "refresh_seconds": int(svc.setting_float("refresh_minutes") * 60),
-                "updated_at": local(now(), "%H:%M"),
                 **ctx,
             },
             status_code=status_code,
@@ -255,74 +252,22 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
 
     # ---------- главная ----------
 
-    def eta(seconds) -> str:
-        if seconds is None:
-            return "больше 4 мес."
-        if seconds < 10 * MINUTE:
-            return "сейчас"
-        return "через " + format_duration(seconds)
-
-    def eta_short(seconds) -> str:
-        if seconds is None:
-            return "—"
-        if seconds < 10 * MINUTE:
-            return "сейчас"
-        return "~" + format_duration(seconds)
-
-    templates.env.globals.update(eta=eta, eta_short=eta_short)
-
-    def board(kind: str, t: int) -> dict:
-        """Очередь + прогноз: кто следующий получит бафы и когда все получат своё."""
-        fc = svc.forecast(kind, t)
-        view = svc.queue_view(kind, t)
-        rows = []
-        for r in view.rows:
-            st = fc.timers.get(r.candidate.player_id)
-            rows.append({
-                "r": r,
-                "will_get": len(st.gets) if st else 0,
-                "done_in": int(st.done_at - t) if st and st.done_at is not None else None,
-                "left": st.left_at_done if st else None,
-            })
-        nxt = [
-            {"n": i + 1, "nick": e.nick, "pid": e.pid, "in": int(e.at - t), "at": int(e.at)}
-            for i, e in enumerate(fc.events[:30])
-        ]
-        return {
-            "fc": fc,
-            "next": nxt,
-            "rows": rows,
-            "need": sum(1 for r in view.rows if r.status == STATUS_NEED),
-            "per_day": fc.buffs_per_day,
-        }
-
-    def my_forecast(fc, pid: int, t: int) -> dict | None:
-        st = fc.timers.get(pid)
-        if st is None:
-            return None
-        return {
-            "remaining": int(st.start_remaining),
-            "gets": [(int(at - t), cut) for at, cut in st.gets],
-            "self_n": len(st.self_cuts),
-            "self_sum": sum(c for _, c in st.self_cuts),
-            "done_in": int(st.done_at - t) if st.done_at is not None else None,
-            "left": int(st.left_at_done) if st.left_at_done is not None else None,
-        }
-
-    def calc(kind: str, days: float, t: int, donates: bool = True, donors: int | None = None,
-             replace_pid: int | None = None) -> dict:
-        seconds = int(days * DAY)
-        rules = svc.rules(kind)
-        fc = svc.forecast(kind, t, virtual_seconds=seconds, virtual_donates=donates,
-                          replace_pid=replace_pid, donors=donors)
-        mine = my_forecast(fc, VIRTUAL_ID, t)
-        return {
-            "days": days,
-            "ideal": buffs_needed(seconds, seconds, rules),
-            "per_buff": buff_reduction(seconds, seconds, rules),
-            "per_day": fc.buffs_per_day,
-            **mine,
-        }
+    def boards(me, t: int) -> dict:
+        """Живые блоки очереди: кто в каком порядке, сколько получил, сколько осталось, сколько ждёт."""
+        midnight = int(datetime.now(cfg.tz).replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+        out = {}
+        for kind in KINDS:
+            rows = svc.queue_order(kind, t)
+            need = [r for r in rows if r.need]
+            mine = next((r for r in rows if me and r.candidate.player_id == me["id"]), None)
+            out[kind] = {
+                "need": need,
+                "reached": [r for r in rows if not r.need],
+                "mine": mine,
+                "today": svc.given_since(kind, midnight),
+                "received_total": sum(r.candidate.received for r in rows),
+            }
+        return out
 
     def need_agreed(me):
         if not me["agreed_at"]:
@@ -338,21 +283,24 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             })
         received = svc.received_since(me["id"], me["last_seen_at"] or t)
         svc.touch_seen(me["id"], t)
-        boards = {k: board(k, t) for k in KINDS}
         return render(
-            request,
-            "home.html",
-            me,
-            boards=boards,
-            timers=my_timers(me["id"], t),
-            mine={k: my_forecast(boards[k]["fc"], me["id"], t) for k in KINDS},
-            buffs={k: buff_state(me["id"], k, t) for k in KINDS},
+            request, "home.html", me,
+            boards=boards(me, t),
             received=received,
-            incoming=svc.incoming_pending(me["id"]),
-            pending=svc.pending_by_requester(me["id"]),
-            presets={k: [calc(k, d, t, replace_pid=me["id"]) for d in (10, 20, 30, 40)] for k in KINDS},
-            donors=svc.donor_count(),
-            cooldown=svc.setting_float("cooldown_hours"),
+            updated=local(t, "%H:%M:%S"),
+            now_ts=t,
+            gap=svc.setting_float("min_gap_hours"),
+        )
+
+    @app.get("/live", response_class=HTMLResponse)
+    def live(request: Request):
+        """Кусок главной с блоками очереди — страница подтягивает его каждые несколько секунд."""
+        me = current(request)
+        if me is None:
+            return HTMLResponse("", status_code=401)
+        t = now()
+        return templates.TemplateResponse(
+            request, "_boards.html", {"me": me, "boards": boards(me, t), "updated": local(t, "%H:%M:%S"), "now_ts": t},
         )
 
     # ---------- условия и калькулятор ----------
@@ -367,7 +315,6 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             pattern=svc.setting("pattern"),
             streak=int(svc.setting_float("max_streak")),
             cooldown=svc.setting_float("cooldown_hours"),
-            confirm=svc.setting_float("confirm_minutes"),
             gap=svc.setting_float("min_gap_hours"),
             fair=svc.setting_float("fair_round") > 0,
         )
@@ -379,41 +326,9 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         svc.agree(me["id"], now())
         return go("/", "✅ Спасибо! Условия приняты — теперь можно вставать в очередь и отдавать бафы.")
 
-    @app.get("/calc", response_class=HTMLResponse)
-    def calculator(request: Request, days: float = 0, hours: int = 0, kind: str = "research",
-                   donates: int = 1, donors: int = 0):
-        me = need_login(request)
-        t = now()
-        kind = kind if kind in KINDS else "research"
-        total = svc.donor_count()
-        donors = donors if 0 < donors <= 500 else total
-        days_total = max(0.0, min(400.0, days + hours / 24))
-        result = calc(kind, days_total, t, bool(donates), donors, me["id"]) if days_total > 0 else None
-        return render(
-            request, "calc.html", me,
-            kind=kind, days=days, hours=hours, donates=donates, donors=donors, total_donors=total,
-            result=result,
-            presets={k: [calc(k, d, t, bool(donates), donors, me["id"]) for d in (10, 20, 30, 40)] for k in KINDS},
-            cooldown=svc.setting_float("cooldown_hours"),
-        )
-
-    # ---------- очередь ----------
-
-    @app.get("/queue", response_class=HTMLResponse)
-    def queue(request: Request, kind: str = "build"):
-        me = need_login(request)
-        if kind not in KINDS:
-            kind = "build"
-        view = svc.queue_view(kind, now())
-        return render(
-            request,
-            "queue.html",
-            me,
-            kind=kind,
-            view=view,
-            need=[r for r in view.rows if r.status == STATUS_NEED],
-            reached=[r for r in view.rows if r.status != STATUS_NEED],
-        )
+    @app.get("/queue")
+    def queue_redirect():
+        return RedirectResponse("/", status_code=303)
 
     # ---------- встать в очередь: здание → уровень → время ----------
 
@@ -427,6 +342,13 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                 raise HTTPException(status_code=404, detail="Игрок не найден")
             return target
         return me
+
+    @app.get("/join", response_class=HTMLResponse)
+    def join_choose(request: Request):
+        me = need_login(request)
+        need_agreed(me)
+        t = now()
+        return render(request, "join_choose.html", me, timers={k: svc.timer_candidate(me["id"], k, t) for k in KINDS})
 
     @app.get("/join/{kind}", response_class=HTMLResponse)
     def join(request: Request, kind: str, item: str = "", level: int = 0, fix: int = 0, player: int = 0):
@@ -491,7 +413,10 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         warn = f" ⚠️ Это намного больше справочного времени ({format_duration(ref)}) — проверь таймер." if ref and seconds > ref * 1.5 else ""
         if target["id"] != me["id"]:
             return go(f"/admin/p/{target['id']}", f"✅ Записал игрока {target['nick']}: осталось {format_duration(seconds)}.{warn}")
-        text = "✅ Остаток обновлён." if fix else "✅ Ты в очереди! Когда тебе отдадут баф — увидишь это на главной."
+        c = svc.timer_candidate(target["id"], kind, now())
+        owed = buffs_needed(c.remaining, c.base, svc.rules(kind)) if c else 0
+        tail = f" Тебе положено {owed} баф. до цели." if owed else " Бафы не нужны — ты уже около цели."
+        text = ("✅ Остаток обновлён." if fix else "✅ Ты в очереди!") + tail
         return go("/", text + warn)
 
     @app.post("/timer/{kind}/close")
@@ -501,66 +426,57 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         svc.close_timer(me["id"], kind)
         return go("/", f"🏁 Готово — ты убран из очереди ({KIND_NAME.get(kind, '')}).")
 
-    # ---------- отдать баф ----------
+    # ---------- я отдал баф ----------
 
-    @app.post("/give/{kind}")
-    def give(request: Request, kind: str, csrf: str = Form("")):
+    def gift_donor(me, donor_id: int):
+        """Админ может отметить баф за другого игрока (у кого нет доступа к сайту)."""
+        if donor_id and donor_id != me["id"]:
+            if not svc.is_admin_player(me):
+                raise HTTPException(status_code=403)
+            donor = svc.player(donor_id)
+            if donor is None:
+                raise HTTPException(status_code=404, detail="Игрок не найден")
+            return donor
+        return me
+
+    @app.get("/give", response_class=HTMLResponse)
+    def give_page(request: Request, kind: str = "research", donor: int = 0):
+        me = need_login(request)
+        need_agreed(me)
+        kind = kind if kind in KINDS else "research"
+        who = gift_donor(me, donor)
+        t = now()
+        return render(
+            request, "give.html", me,
+            kind=kind,
+            donor=who,
+            for_other=who["id"] != me["id"],
+            rows=[r for r in svc.queue_order(kind, t) if r.need],
+            buff=buff_state(who["id"], kind, t),
+            gap=svc.setting_float("min_gap_hours"),
+        )
+
+    @app.post("/gave")
+    def gave(request: Request, csrf: str = Form(""), kind: str = Form(""), recipient: int = Form(0),
+             donor: int = Form(0)):
         me = need_login(request)
         check_csrf(me, csrf)
         need_agreed(me)
         if kind not in KINDS:
-            raise HTTPException(status_code=404)
-        a = svc.assign(kind, me["id"], me["id"], now())
-        if a is None:
-            return go(f"/queue?kind={kind}", f"👍 Сейчас никому не нужен баф на {KIND_ACC[kind]}. Придержи его и загляни позже.")
-        return go(f"/give/d/{a.donation_id}")
-
-    def own_donation(me, donation_id: int):
-        d = svc.donation(donation_id)
-        if d is None:
-            raise HTTPException(status_code=404, detail="Бронь не найдена")
-        if d["requested_by"] != me["id"] and not svc.is_admin_player(me):
-            raise HTTPException(status_code=403, detail="Это не твоя бронь")
-        return d
-
-    @app.get("/give/d/{donation_id}", response_class=HTMLResponse)
-    def give_page(request: Request, donation_id: int):
-        me = need_login(request)
-        d = own_donation(me, donation_id)
-        a = svc._assignment(d, now(), reused=False) if d["status"] == "pending" else None
-        donor = svc.player(d["donor_id"])
-        return render(
-            request,
-            "give.html",
-            me,
-            d=d,
-            a=a,
-            donor=donor,
-            for_other=d["donor_id"] != me["id"],
-            confirm_minutes=svc.setting_float("confirm_minutes"),
-            expires_at=d["created_at"] + int(svc.setting_float("confirm_minutes") * MINUTE),
-        )
-
-    @app.post("/give/d/{donation_id}/{action}")
-    def give_action(request: Request, donation_id: int, action: str, csrf: str = Form("")):
-        me = need_login(request)
-        check_csrf(me, csrf)
-        d = own_donation(me, donation_id)
-        if d["status"] != "pending":
-            return go("/", "Эта бронь уже закрыта.")
-        if action == "ok":
-            r = svc.confirm(donation_id, now())
-            if r is None:
-                return go("/", "Эта бронь уже закрыта.")
-            who = "Ты" if r.donor_id == me["id"] else r.donor_nick
-            return go("/", f"✅ Записал: {who} отдал баф игроку {r.recipient_nick} (−{format_duration(r.reduction)}). Спасибо! 🙌")
-        if action == "other":
-            a = svc.reassign(donation_id, me["id"], now())
-            if a is None:
-                return go(f"/queue?kind={d['kind']}", "Больше некому отдать этот баф 🤷 Придержи его и загляни позже.")
-            return go(f"/give/d/{a.donation_id}")
-        svc.cancel(donation_id, now())
-        return go("/", "Отменено. Баф остаётся у тебя 👌")
+            raise HTTPException(status_code=400)
+        who = gift_donor(me, donor)
+        back = f"/give?kind={kind}" + (f"&donor={who['id']}" if who["id"] != me["id"] else "")
+        result, error = svc.record_gift(kind, who["id"], recipient, me["id"], now())
+        if error:
+            messages = {
+                "self": "⚠️ Себе баф отдать нельзя.",
+                "not_in_queue": "⚠️ Этого игрока уже нет в очереди — обнови страницу.",
+                "duplicate": f"⚠️ Баф на {KIND_ACC[kind]} уже записан несколько минут назад. Если отдал ещё один — подожди 10 минут.",
+            }
+            return go(back, messages[error])
+        who_text = "Ты" if who["id"] == me["id"] else who["nick"]
+        done = f"✅ Записано: {who_text} → {result.recipient_nick}, баф на {KIND_ACC[kind]} (−{format_duration(result.reduction)}). Спасибо! 🙌"
+        return go(f"/admin/p/{who['id']}" if who["id"] != me["id"] else "/", done)
 
     # ---------- профиль ----------
 
@@ -653,7 +569,6 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             pattern=svc.setting("pattern"),
             streak=int(svc.setting_float("max_streak")),
             cooldown=svc.setting_float("cooldown_hours"),
-            confirm=svc.setting_float("confirm_minutes"),
             observed=svc.observed_times(),
         )
 
@@ -730,11 +645,6 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         if action == "close" and kind in KINDS:
             svc.close_timer(pid, kind)
             return go(back, f"🏁 Убран из очереди: {KIND_NAME[kind]}")
-        if action == "assign" and kind in KINDS:
-            a = svc.assign(kind, pid, me["id"], now())
-            if a is None:
-                return go(back, f"Сейчас никому не нужен баф на {KIND_ACC[kind]}.")
-            return go(f"/give/d/{a.donation_id}")
         if action == "resetpin":
             svc.set_pin(pid, None)
             return go(back, f"🔑 PIN сброшен. {p['nick']} может заново зарегистрироваться под своим ником и задать новый PIN.")

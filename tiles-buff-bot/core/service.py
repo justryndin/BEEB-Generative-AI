@@ -10,7 +10,6 @@ from dataclasses import dataclass
 
 from . import gamedata
 from .db import Database
-from .forecast import VIRTUAL_ID, Forecast, SimTimer, simulate
 from .logic import (
     SLOT_URGENT,
     STATUS_NEED,
@@ -48,8 +47,6 @@ SETTINGS: dict[str, tuple[str, str]] = {
     "cooldown_hours": ("48", "Через сколько часов у игрока снова готов баф"),
     "confirm_minutes": ("30", "Сколько минут держится бронь на назначенный баф"),
     "alliance_code": ("", "Код союза для регистрации на сайте (пусто — регистрация открыта всем)"),
-    "donors": ("0", "Сколько игроков реально отдают бафы — для прогноза (0 — считать всех игроков)"),
-    "refresh_minutes": ("15", "Как часто главная, очередь и статистика сами обновляют данные, минут (0 — не обновлять)"),
 }
 _INTERNAL_SETTINGS: set[str] = set()
 _TEXT_SETTINGS = {"mode", "pattern", "alliance_code"}
@@ -147,6 +144,18 @@ class QueueRow:
 
 
 @dataclass
+class OrderRow:
+    position: int | None
+    candidate: Candidate
+    label: str
+    needed: int
+    paused_for: int
+    joined_at: int
+    slot: str
+    need: bool
+
+
+@dataclass
 class QueueView:
     kind: str
     rows: list[QueueRow]
@@ -193,8 +202,6 @@ class Service:
             value = f"{number:g}"
             if key == "pct" and not 0 < number < 100:
                 return "pct: от 0 до 100"
-            if key == "refresh_minutes" and number > 240:
-                return "refresh_minutes: не больше 240"
             if key in ("cooldown_hours", "confirm_minutes") and number <= 0:
                 return f"{key}: должно быть больше 0"
             if number < 0:
@@ -886,70 +893,72 @@ class Service:
             limit,
         )
 
-    # ---------- прогноз ----------
+    # ---------- очередь по порядку и «я отдал баф» ----------
 
-    def donor_count(self) -> int:
-        total = self.db.one("SELECT COUNT(*) AS n FROM players")["n"]
-        wanted = int(self.setting_float("donors"))
-        return max(1, min(wanted, total) if wanted > 0 else total)
-
-    def forecast(
-        self,
-        kind: str,
-        now: int,
-        virtual_seconds: int | None = None,
-        virtual_donates: bool = True,
-        replace_pid: int | None = None,
-        donors: int | None = None,
-    ) -> Forecast:
-        """Прогноз очереди. virtual_seconds — «а если бы у меня было столько»: добавляет
-        виртуального игрока (VIRTUAL_ID), заменяя настоящий таймер replace_pid."""
+    def queue_order(self, kind: str, now: int) -> list[OrderRow]:
+        """Очередь в том порядке, в каком бафы положено отдавать по правилам
+        (пауза после бафа, справедливый круг, цикл ротации, «срочно»).
+        Первый в списке — «следующий». В конце — те, кто уже дошёл до цели."""
         rules = self.rules(kind)
-        cooldown = self.setting_float("cooldown_hours") * HOUR
-        timers = []
+        rows = {}
         for row in self._timer_rows(kind):
-            if row["player_id"] == replace_pid:
-                continue
-            remaining = row["end_at"] - now
-            if remaining <= 0:
-                continue
-            timers.append(SimTimer(
-                pid=row["player_id"], nick=row["nick"], remaining=remaining, base=row["base_seconds"],
-                urgent=bool(row["urgent"]), waiting_since=row["last_buff_at"] or row["created_at"],
-                received=row["buffs_received"], label=gamedata.label(row["item"], row["level"], row["note"]),
-                last_got=row["last_buff_at"],
-            ))
-        if virtual_seconds:
-            timers.append(SimTimer(VIRTUAL_ID, "Ты", virtual_seconds, virtual_seconds, waiting_since=now))
+            c = self.candidate_from_row(row, rules, now)
+            if c.remaining > 0:
+                rows[c.player_id] = (c, row)
+        pool = [c for c, _ in rows.values() if timer_status(c, rules) == STATUS_NEED]
+        slot_index = self._slot_index(kind)
+        recent = self._recent_recipients(kind, rules.max_streak)
+        ordered: list[tuple[Candidate, str]] = []
+        while pool:
+            pick, slot = choose_recipient(pool, rules, slot_index, recent, now)
+            if pick is None:
+                break
+            ordered.append((pick, slot))
+            pool = [c for c in pool if c.player_id != pick.player_id]
+            recent.insert(0, pick.player_id)
+            if slot != SLOT_URGENT:
+                slot_index += 1
+        ordered += [(c, "") for c in sorted(pool, key=lambda c: -c.remaining)]
+        reached = sorted(
+            (c for c, _ in rows.values() if timer_status(c, rules) != STATUS_NEED), key=lambda c: c.remaining
+        )
 
-        # Доноры: сначала те, кто отдавал недавно (они точно активны), потом остальные.
-        rows = self.db.all(
-            "SELECT p.id, c.ready_at, (SELECT MAX(resolved_at) FROM donations d "
-            " WHERE d.donor_id = p.id AND d.status = 'done') AS last_given "
-            "FROM players p LEFT JOIN cooldowns c ON c.player_id = p.id AND c.kind = ? "
-            "ORDER BY last_given IS NULL, last_given DESC, p.id",
+        def make(c: Candidate, slot: str, pos: int | None, need: bool) -> OrderRow:
+            row = rows[c.player_id][1]
+            return OrderRow(
+                position=pos,
+                candidate=c,
+                label=gamedata.label(row["item"], row["level"], row["note"]),
+                needed=buffs_needed(c.remaining, c.base, rules) if need else 0,
+                paused_for=max(0, c.paused_until(rules) - now),
+                joined_at=row["created_at"],
+                slot=slot,
+                need=need,
+            )
+
+        return [make(c, slot, i, True) for i, (c, slot) in enumerate(ordered, 1)] + [
+            make(c, "", None, False) for c in reached
+        ]
+
+    def given_since(self, kind: str, since: int) -> int:
+        return self.db.one(
+            "SELECT COUNT(*) AS n FROM donations WHERE kind = ? AND status = 'done' AND resolved_at >= ?",
             kind,
-        )
-        if replace_pid is not None:
-            rows = [r for r in rows if r["id"] != replace_pid]
-        count = donors if donors else self.donor_count()
-        if virtual_seconds and virtual_donates:
-            count = max(count - 1, 0)
-        rows = rows[:count]
-        unknown = [r for r in rows if r["ready_at"] is None]
-        schedule = []
-        for r in rows:
-            if r["ready_at"] is not None:
-                schedule.append((r["id"], max(now, r["ready_at"])))
-        for i, r in enumerate(unknown):
-            # Когда баф готов — неизвестно: считаем, что готовность равномерно распределена.
-            schedule.append((r["id"], now + cooldown * (i + 0.5) / len(unknown)))
-        if virtual_seconds and virtual_donates:
-            schedule.append((VIRTUAL_ID, now))
+            since,
+        )["n"]
 
-        return simulate(
-            timers, schedule, rules, cooldown, now,
-            slot_index=self._slot_index(kind),
-            recent=self._recent_recipients(kind, rules.max_streak),
-            kind=kind,
+    def record_gift(self, kind: str, donor_id: int, recipient_id: int, by_id: int, now: int):
+        """Игрок отметил: «я отдал баф вот ему». Возвращает (результат, ошибка)."""
+        if donor_id == recipient_id:
+            return None, "self"
+        if self.active_timer(recipient_id, kind) is None:
+            return None, "not_in_queue"
+        recent = self.db.one(
+            "SELECT id FROM donations WHERE kind = ? AND donor_id = ? AND status = 'done' AND resolved_at > ?",
+            kind,
+            donor_id,
+            now - 10 * MINUTE,
         )
+        if recent is not None:
+            return None, "duplicate"
+        return self.record_manual(donor_id, recipient_id, kind, by_id, now), None

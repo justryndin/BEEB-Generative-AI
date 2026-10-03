@@ -8,13 +8,13 @@
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/static/icon.svg">
-  <link rel="stylesheet" href="/static/style.css?v=5">
+  <link rel="stylesheet" href="/static/style.css?v=7">
 </head>
-<body data-refresh="{% block refresh %}0{% endblock %}">
+<body>
 {% set nav = [
   ("/", "🏠", "Главная"),
-  ("/queue", "📋", "Очередь"),
-  ("/calc", "🧮", "Калькулятор"),
+  ("/join", "➕", "Встать"),
+  ("/give", "🎁", "Я отдал"),
   ("/stats", "📊", "Статистика"),
   ("/me", "👤", "Профиль"),
 ] %}
@@ -33,14 +33,11 @@
   </div>
 </header>
 
-<main>
+<main class="{% block main_class %}{% endblock %}">
   {% if flash %}
   <div class="alert {{ 'alert-warn' if flash.startswith('⚠️') else 'alert-good' }} flash" role="status">{{ flash }}</div>
   {% endif %}
   {% block content %}{% endblock %}
-  {% if self.refresh() != "0" %}
-  <p class="refresh-note">🔄 Данные обновляются сами каждые {{ refresh_seconds // 60 }} мин · обновлено в <span id="updated">{{ updated_at }}</span> · <button type="button" class="linklike" data-refresh-now>Обновить сейчас</button></p>
-  {% endif %}
 </main>
 
 {% if me %}
@@ -55,6 +52,6 @@
 </nav>
 {% endif %}
 <p class="footer"><a href="/tips">💡 Советы</a> · <a href="/rules">📜 Условия</a>{% if me and is_admin %} · <a href="/me">👤 Профиль</a>{% endif %}<br>© {{ site_name }} · Tiles Survive · сезон «Эра метели»</p>
-<script src="/static/app.js?v=3" defer></script>
+<script src="/static/app.js?v=4" defer></script>
 </body>
 </html>

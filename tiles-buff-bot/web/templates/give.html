@@ -1,54 +1,47 @@
 {% extends "base.html" %}
-{% block title %}Отдать баф · {{ site_name }}{% endblock %}
+{% block title %}Я отдал баф · {{ site_name }}{% endblock %}
 {% block content %}
-{% if not a %}
-<div class="card center">
-  <h1>Бронь уже закрыта</h1>
-  <p class="text-2">Этот баф уже записан, отменён или бронь истекла.</p>
-  <a class="btn btn-primary" href="/">На главную</a>
+<h1>🎁 Я отдал баф</h1>
+{% if for_other %}<div class="alert alert-info">⚙️ Отмечаешь баф за игрока <b>{{ donor.nick }}</b>.</div>{% endif %}
+
+<nav class="tabs">
+  {% for k in ["research", "build"] %}
+  <a href="/give?kind={{ k }}{{ '&donor=' ~ donor.id if for_other }}" class="{{ 'on' if k == kind }}">{{ KIND_EMOJI[k] }} {{ "Исследование" if k == "research" else "Стройка" }}</a>
+  {% endfor %}
+</nav>
+
+<div class="alert alert-info">
+  <b>1.</b> Отдай баф в игре — лучше тому, кто <b>первый 👉</b>.<br>
+  <b>2.</b> Нажми ниже на игрока, <b>которому отдал</b>.
 </div>
+{% set s, left = buff %}
+{% if s == "wait" %}<div class="alert alert-warn">⚠️ По записям {{ "твой" if not for_other else "его" }} баф на {{ KIND_ACC[kind] }} будет готов только через {{ dur(left) }}. Если уже отдал — всё равно отметь.</div>{% endif %}
+
+{% if rows %}
+<ol class="give-list">
+  {% for r in rows %}{% set c = r.candidate %}
+  <li>
+    <form method="post" action="/gave" data-confirm="Записать: баф на {{ KIND_ACC[kind] }} → {{ c.nick }}?">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="kind" value="{{ kind }}">
+      <input type="hidden" name="recipient" value="{{ c.player_id }}">
+      <input type="hidden" name="donor" value="{{ donor.id if for_other else 0 }}">
+      <button type="submit" class="give-row{{ ' next' if r.position == 1 }}{{ ' paused' if r.paused_for }}" {{ 'disabled' if c.player_id == donor.id }}>
+        <span class="pos">{{ r.position }}</span>
+        <span class="who"><b>{{ c.nick }}</b>
+          {% if r.position == 1 %}<span class="badge badge-accent">👉 следующий</span>{% endif %}
+          {% if c.urgent %}<span class="badge badge-urgent">🔥 срочно</span>{% endif %}
+          {% if r.paused_for %}<span class="badge">⏸ только что получил</span>{% endif %}
+          {% if c.player_id == donor.id %}<span class="badge">это ты</span>{% endif %}
+          <small>{{ r.label or "" }}{{ " · " if r.label }}получил {{ c.received }} · осталось {{ dur(c.remaining) }}</small></span>
+        <span class="go">Отдал ✓</span>
+      </button>
+    </form>
+  </li>
+  {% endfor %}
+</ol>
 {% else %}
-<h1>🎁 Баф на {{ KIND_ACC[a.kind] }}</h1>
-{% if for_other %}<div class="alert alert-info">⚙️ Баф игрока <b>{{ donor.nick }}</b> — ты оформляешь за него.</div>{% endif %}
-
-<div class="give-target">
-  <div class="muted">Отдай баф игроку</div>
-  <div class="nick">{{ a.recipient_nick }}</div>
-  {% if a.recipient_label %}<div class="text-2">{{ a.recipient_label }}</div>{% endif %}
-  <div class="copy"><button class="btn btn-sm" type="button" data-copy="{{ a.recipient_nick }}">📋 Скопировать ник</button></div>
-</div>
-
-<section class="card">
-  <ul class="kv">
-    <li><span class="k">Осталось у него</span><span class="v">{{ dur(a.remaining) }} → после бафа ≈ {{ dur(a.remaining - a.reduction) }}</span></li>
-    <li><span class="k">Почему он</span><span class="v">{{ SLOT_REASON[a.slot] }}</span></li>
-    {% if a.waiting %}<li><span class="k">Без помощи уже</span><span class="v">{{ dur(a.waiting) }}</span></li>{% endif %}
-    <li><span class="k">Бронь держится до</span><span class="v">{{ local(expires_at, "%H:%M") }} ({{ confirm_minutes|int }} мин)</span></li>
-  </ul>
-  {% if a.donor_ready_in %}<div class="alert alert-warn" style="margin-top:12px">⚠️ По записям сайта баф будет готов только через {{ dur(a.donor_ready_in) }}. Если он уже готов — всё равно можно отдать.</div>{% endif %}
-</section>
-
-<section class="card">
-  <h2>Что делать</h2>
-  <ol class="text-2">
-    <li>В игре найди игрока <b>{{ a.recipient_nick }}</b> и отдай ему баф.</li>
-    <li>Вернись сюда и нажми <b>«✅ Я отдал»</b>.</li>
-  </ol>
-  <form method="post" action="/give/d/{{ d.id }}/ok">
-    <input type="hidden" name="csrf" value="{{ csrf }}">
-    <button class="btn btn-good btn-big btn-block" type="submit">✅ Я отдал</button>
-  </form>
-  <div class="grid2" style="margin-top:10px">
-    <form method="post" action="/give/d/{{ d.id }}/other">
-      <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button class="btn btn-block" type="submit">🔁 Не нашёл — другой игрок</button>
-    </form>
-    <form method="post" action="/give/d/{{ d.id }}/cancel">
-      <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button class="btn btn-ghost btn-block" type="submit">❌ Отмена</button>
-    </form>
-  </div>
-  <p class="hint">Баф в игре действует и на тебя — твой таймер тоже сократится.</p>
-</section>
+<div class="card center"><p class="mb0">Сейчас никому не нужен баф на {{ KIND_ACC[kind] }} 👍 Придержи его.</p></div>
 {% endif %}
+<p class="hint center">Баф в игре действует и на тебя — твой таймер тоже сократится, сайт это учтёт.</p>
 {% endblock %}

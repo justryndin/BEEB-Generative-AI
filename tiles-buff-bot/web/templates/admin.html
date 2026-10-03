@@ -85,9 +85,7 @@
         </select>
       </div>
       <div class="field"><label for="cooldown_hours">♻️ Баф восстанавливается, часов</label><input id="cooldown_hours" name="cooldown_hours" type="number" step="1" min="1" value="{{ settings.cooldown_hours }}"></div>
-      <div class="field"><label for="confirm_minutes">⏱ Бронь держится, минут</label><input id="confirm_minutes" name="confirm_minutes" type="number" step="5" min="5" value="{{ settings.confirm_minutes }}"></div>
-      <div class="field"><label for="refresh_minutes">🔄 Автообновление страниц, минут</label><input id="refresh_minutes" name="refresh_minutes" type="number" step="1" min="0" max="240" value="{{ settings.refresh_minutes }}">
-        <div class="hint">Главная, очередь и статистика сами подтягивают свежие данные. 0 — выключить.</div></div>
+
     </div>
     <button class="btn btn-primary btn-block" type="submit">💾 Сохранить настройки</button>
   </form>

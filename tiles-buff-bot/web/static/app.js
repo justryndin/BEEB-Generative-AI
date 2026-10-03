@@ -41,36 +41,27 @@
       });
     }
 
-    root.querySelectorAll("[data-refresh-now]").forEach(function (btn) {
-      btn.addEventListener("click", function () { refresh(true); });
-    });
   }
 
-  // Автообновление данных: каждые N секунд страница тихо подтягивает свежую версию
-  // и заменяет содержимое, если человек сейчас ничего не вводит и вкладка открыта.
-  var every = parseInt(document.body.dataset.refresh || "0", 10) * 1000;
-  var last = Date.now();
+  // Живые данные: блок с атрибутом data-live каждые 10 секунд подтягивает свежую версию
+  // с сервера. Раскрытые списки остаются раскрытыми. Пока вкладка скрыта — пауза.
+  var LIVE_MS = 10000;
   var loading = false;
 
-  function busy() {
-    return document.querySelector("main input:focus, main select:focus, main textarea:focus, main details[open]");
-  }
-
-  function refresh(force) {
-    if (loading || (!force && (document.hidden || busy()))) return;
+  function refresh() {
+    var box = document.querySelector("[data-live]");
+    if (!box || loading || document.hidden) return;
     loading = true;
-    fetch(location.href, { credentials: "same-origin", cache: "no-store" })
-      .then(function (r) {
-        if (!r.ok || r.redirected) throw new Error("skip");
-        return r.text();
-      })
+    var open = {};
+    box.querySelectorAll("details[open][data-key]").forEach(function (d) { open[d.dataset.key] = true; });
+    fetch(box.dataset.live, { credentials: "same-origin", cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("skip"); return r.text(); })
       .then(function (html) {
-        var fresh = new DOMParser().parseFromString(html, "text/html").querySelector("main");
-        var current = document.querySelector("main");
-        if (!fresh || !current) return;
+        var fresh = new DOMParser().parseFromString(html, "text/html").querySelector("[data-live]");
+        if (!fresh) return;
+        fresh.querySelectorAll("details[data-key]").forEach(function (d) { if (open[d.dataset.key]) d.open = true; });
         fresh.classList.add("no-anim");
-        current.replaceWith(fresh);
-        last = Date.now();
+        box.replaceWith(fresh);
         bind(fresh);
       })
       .catch(function () {})
@@ -78,10 +69,8 @@
   }
 
   bind(document);
-  if (every > 0) {
-    setInterval(function () { refresh(false); }, every);
-    document.addEventListener("visibilitychange", function () {
-      if (!document.hidden && Date.now() - last >= every) refresh(false);
-    });
+  if (document.querySelector("[data-live]")) {
+    setInterval(refresh, LIVE_MS);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) refresh(); });
   }
 })();

@@ -35,7 +35,8 @@ def test_public_pages(site):
     _, owner, _ = site
     for path in ("/", "/login", "/register", "/tips", "/healthz", "/manifest.webmanifest"):
         assert owner.get(path).status_code == 200
-    assert owner.get("/queue").url.path == "/login"
+    assert owner.get("/give").url.path == "/login"
+    assert owner.get("/live").status_code == 401
 
 
 def test_register_login_and_lockout(site):
@@ -57,32 +58,42 @@ def test_alliance_code_required(site):
     assert register(player, "Мура", code="метель").url.path == "/"
 
 
-def test_join_give_confirm_flow(site):
+def test_join_and_gave_flow(site):
     svc, owner, player = site
     register(owner, "Иван")
     register(player, "Мура")
     r = player.get("/join/build?item=pp&level=24")
     assert "13д 2ч" in r.text and "Шаг 3 из 3" in r.text
     r = player.post("/join/build", data={"csrf": csrf(r.text), "item": "pp", "level": 24, "days": 18, "hours": 3})
-    assert "Ты в очереди" in r.text
+    assert "Ты в очереди" in r.text and "положено" in r.text
     mura = svc.player_by_nick("Мура")
     assert svc.active_timer(mura["id"], "build")["level"] == 24
 
-    token = csrf(owner.get("/").text)
-    r = owner.post("/give/build", data={"csrf": token})
-    assert r.url.path.startswith("/give/d/") and "Мура" in r.text
-    donation = r.url.path.rsplit("/", 1)[1]
-    assert player.get(f"/give/d/{donation}").status_code == 403  # чужая бронь
-    r = owner.post(f"/give/d/{donation}/ok", data={"csrf": token})
-    assert "Записал" in r.text
+    # главная и живой блок показывают очередь
+    home = owner.get("/")
+    assert "Мура" in home.text and "следующий" in home.text and "Как это работает" in home.text
+    live = owner.get("/live")
+    assert live.status_code == 200 and "Мура" in live.text and "в очереди" in live.text
+
+    # «Я отдал баф»: список, выбор получателя
+    page = owner.get("/give?kind=build")
+    assert "Мура" in page.text and "следующий" in page.text
+    token = csrf(page.text)
+    r = owner.post("/gave", data={"csrf": token, "kind": "build", "recipient": mura["id"]})
+    assert "Записано" in r.text
+    assert svc.active_timer(mura["id"], "build")["buffs_received"] == 1
     assert "отдал тебе баф" in player.get("/").text
-    assert owner.post("/give/build", data={"csrf": "wrong"}).status_code == 400
+    # повторная запись в течение 10 минут — защита от двойного нажатия
+    r = owner.post("/gave", data={"csrf": token, "kind": "build", "recipient": mura["id"]})
+    assert "уже записан" in r.text
+    assert svc.active_timer(mura["id"], "build")["buffs_received"] == 1
+    assert owner.post("/gave", data={"csrf": "wrong", "kind": "build", "recipient": mura["id"]}).status_code == 400
 
 
 def test_fix_keeps_item(site):
     svc, _, player = site
     register(player, "Мура")
-    token = csrf(player.get("/").text)
+    token = csrf(player.get("/me").text)
     player.post("/join/build", data={"csrf": token, "item": "lab", "level": 25, "days": 20})
     r = player.get("/join/build?fix=1")
     assert "Поправить время" in r.text
@@ -130,7 +141,7 @@ def test_stats_page(site):
         assert r.status_code == 200 and "<svg" in r.text
 
 
-def test_rules_consent_and_calculator(site):
+def test_rules_consent(site):
     svc, owner, player = site
     register(owner, "Иван")
     # регистрация без согласия не проходит
@@ -143,7 +154,23 @@ def test_rules_consent_and_calculator(site):
     owner.post("/rules/agree", data={"csrf": token})
     assert owner.get("/join/build").url.path == "/join/build"
 
-    home = owner.get("/")
-    assert "Кому следующие бафы" in home.text and "Калькулятор" in home.text
-    r = owner.get("/calc?kind=research&days=27&hours=5")
-    assert r.status_code == 200 and "Таймер 27д 5ч" in r.text and "бафов от союза" in r.text
+    assert owner.get("/calc").status_code == 404
+
+
+def test_admin_marks_gift_for_offline_player(site):
+    svc, owner, player = site
+    register(owner, "Иван")
+    register(player, "Мура")
+    svc.set_owner(svc.player_by_nick("Иван")["id"])
+    token = csrf(owner.get("/admin").text)
+    owner.post("/admin/add", data={"csrf": token, "nick": "Офлайн"})
+    offline = svc.player_by_nick("Офлайн")
+    mura = svc.player_by_nick("Мура")
+    svc.set_timer(mura["id"], "research", 30 * 86400, 1_700_000_000)
+    page = owner.get(f"/give?kind=research&donor={offline['id']}")
+    assert "Отмечаешь баф за игрока" in page.text
+    r = owner.post("/gave", data={"csrf": token, "kind": "research", "recipient": mura["id"], "donor": offline["id"]})
+    assert "Офлайн → Мура" in r.text
+    # обычный игрок не может отмечать за других
+    ptoken = csrf(player.get("/me").text)
+    assert player.post("/gave", data={"csrf": ptoken, "kind": "research", "recipient": mura["id"], "donor": offline["id"]}).status_code == 403

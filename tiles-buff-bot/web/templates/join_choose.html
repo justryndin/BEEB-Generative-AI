@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Встать в очередь · {{ site_name }}{% endblock %}
+{% block content %}
+<h1>➕ Встать в очередь</h1>
+<p class="text-2">Что у тебя сейчас идёт в игре?</p>
+<div class="grid2">
+  {% for kind in ["research", "build"] %}{% set t = timers[kind] %}
+  <div class="card">
+    <h2>{{ KIND_EMOJI[kind] }} {{ "Исследование" if kind == "research" else "Стройка" }}</h2>
+    {% if t and t.remaining > 0 %}
+    <p class="text-2">Ты уже в очереди: осталось <b>{{ dur(t.remaining) }}</b>.</p>
+    <div class="stack">
+      <a class="btn btn-block" href="/join/{{ kind }}?fix=1">🔧 Поправить время</a>
+      <a class="btn btn-ghost btn-block" href="/join/{{ kind }}">✏️ Началось новое</a>
+      <form method="post" action="/timer/{{ kind }}/close" data-confirm="Убрать тебя из очереди ({{ KIND_NAME[kind] }})?">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="btn btn-ghost btn-block" type="submit">🏁 Готово — бафы больше не нужны</button>
+      </form>
+    </div>
+    {% else %}
+    <a class="btn btn-primary btn-big btn-block" href="/join/{{ kind }}">➕ Встать: {{ KIND_NAME[kind] }}</a>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

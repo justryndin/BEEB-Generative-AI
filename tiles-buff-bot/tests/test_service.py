@@ -130,3 +130,36 @@ def test_split_nick_kind():
     assert split_nick_kind("Тёмный Страж стройка 21д 5ч") == ("Тёмный Страж", "build", "21д 5ч")
     assert split_nick_kind("Мура иссл") == ("Мура", "research", "")
     assert split_nick_kind("стройка 5д") is None
+
+
+def test_queue_order_respects_pause_and_fair_round():
+    svc = make()
+    big = reg(svc, 1, "Большой")
+    mid = reg(svc, 2, "Средний")
+    small = reg(svc, 3, "Малый")
+    donor = reg(svc, 4, "Донор")
+    svc.set_timer(big["id"], "build", 60 * DAY, T0)
+    svc.set_timer(mid["id"], "build", 30 * DAY, T0)
+    svc.set_timer(small["id"], "build", 12 * DAY, T0)
+    order = [r.candidate.nick for r in svc.queue_order("build", T0 + HOUR) if r.need]
+    assert order[0] == "Большой" and set(order) == {"Большой", "Средний", "Малый"}
+
+    result, error = svc.record_gift("build", donor["id"], big["id"], donor["id"], T0 + HOUR)
+    assert error is None and result.recipient_nick == "Большой"
+    rows = svc.queue_order("build", T0 + 2 * HOUR)
+    first = rows[0]
+    assert first.candidate.nick != "Большой"  # у него пауза и он уже на круг впереди
+    paused = next(r for r in rows if r.candidate.nick == "Большой")
+    assert paused.paused_for > 0
+
+
+def test_record_gift_guards():
+    svc = make()
+    a = reg(svc, 1, "А")
+    b = reg(svc, 2, "Б")
+    svc.set_timer(b["id"], "research", 30 * DAY, T0)
+    assert svc.record_gift("research", a["id"], a["id"], a["id"], T0)[1] == "self"
+    assert svc.record_gift("build", a["id"], b["id"], a["id"], T0)[1] == "not_in_queue"
+    assert svc.record_gift("research", a["id"], b["id"], a["id"], T0)[1] is None
+    assert svc.record_gift("research", a["id"], b["id"], a["id"], T0 + 60)[1] == "duplicate"
+    assert svc.record_gift("research", a["id"], b["id"], a["id"], T0 + 11 * 60)[1] is None
