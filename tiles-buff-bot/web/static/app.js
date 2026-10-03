@@ -11,6 +11,31 @@
       });
     });
 
+    // Цикл раздачи: готовые варианты «1 : 2» и подпись, как будет идти раздача.
+    root.querySelectorAll("[data-cycle]").forEach(function (box) {
+      var big = box.querySelector("#cycle_big"), wait = box.querySelector("#cycle_wait");
+      var first = box.querySelector("#cycle_first"), text = box.querySelector("[data-cycle-text]");
+      var chips = box.querySelectorAll("[data-big]");
+      function update() {
+        var b = +big.value, w = +wait.value, wf = first.value === "wait";
+        if (!b && !w) text.textContent = "нужно хотя бы 1 баф в цикле";
+        else if (!w) text.textContent = "только большим таймерам";
+        else if (!b) text.textContent = "только тем, кому досталось меньше всех";
+        else if (wf) text.textContent = b + " : " + w + " — сначала " + w + " меньше получившим, потом " + b + " большим";
+        else text.textContent = b + " : " + w + " — сначала " + b + " большим, потом " + w + " меньше получившим";
+        chips.forEach(function (c) {
+          c.setAttribute("aria-pressed", String(+c.dataset.big === b && +c.dataset.wait === w));
+        });
+      }
+      chips.forEach(function (c) {
+        c.addEventListener("click", function () {
+          big.value = c.dataset.big; wait.value = c.dataset.wait; update();
+        });
+      });
+      [big, wait, first].forEach(function (el) { el.addEventListener("change", update); });
+      update();
+    });
+
     // Подтверждение важных действий.
     root.querySelectorAll("form[data-confirm]").forEach(function (form) {
       form.addEventListener("submit", function (e) {

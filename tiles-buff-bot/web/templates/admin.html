@@ -48,14 +48,37 @@
       <div class="hint">Без кода зарегистрироваться нельзя. Пусто — регистрация открыта всем.</div>
     </div>
     <div class="grid2">
-      <div class="field">
-        <label for="pattern">🔄 Ротация (большим : ждущим)</label>
-        <select id="pattern" name="pattern">
-          {% for v, t in [("BBBWWW", "3 : 3"), ("BW", "1 : 1"), ("BBW", "2 : 1"), ("BBBW", "3 : 1"), ("B", "только большим")] %}
-          <option value="{{ v }}" {{ 'selected' if settings.pattern == v }}>{{ t }}</option>
+      <fieldset class="field cycle span2" data-cycle>
+        <legend>🔄 Цикл раздачи</legend>
+        <div class="hint" style="margin:0 0 10px">Первое число — бафы большим таймерам, второе — тем, кому досталось меньше.</div>
+        <div class="cycle-presets" role="group" aria-label="Готовые циклы">
+          {% for b, w in [(1, 1), (1, 2), (2, 1), (1, 3), (3, 1), (2, 3), (3, 2), (3, 3)] %}
+          <button type="button" class="chip" data-big="{{ b }}" data-wait="{{ w }}">{{ b }} : {{ w }}</button>
           {% endfor %}
-        </select>
-      </div>
+        </div>
+        <div class="grid3">
+          <div>
+            <label for="cycle_big">Большим таймерам</label>
+            <select id="cycle_big" name="cycle_big">
+              {% for n in range(cycle_max + 1) %}<option value="{{ n }}" {{ 'selected' if cycle[0] == n }}>{{ n }}</option>{% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="cycle_wait">Кому досталось меньше</label>
+            <select id="cycle_wait" name="cycle_wait">
+              {% for n in range(cycle_max + 1) %}<option value="{{ n }}" {{ 'selected' if cycle[1] == n }}>{{ n }}</option>{% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="cycle_first">Кто первый</label>
+            <select id="cycle_first" name="cycle_first">
+              <option value="big" {{ 'selected' if not cycle[2] }}>большие таймеры</option>
+              <option value="wait" {{ 'selected' if cycle[2] }}>меньше получившие</option>
+            </select>
+          </div>
+        </div>
+        <div class="hint">Сейчас: <b data-cycle-text>{{ pattern_text(settings.pattern) }}</b>. Потом цикл повторяется. «Большим» — у кого больше всего осталось (баф экономит больше дней), «меньше получившим» — кому досталось меньше всех и кто дольше ждёт.</div>
+      </fieldset>
       <div class="field">
         <label for="min_gap_hours">⏸ Пауза после бафа, часов</label>
         <input id="min_gap_hours" name="min_gap_hours" type="number" step="1" min="0" max="72" value="{{ settings.min_gap_hours }}">

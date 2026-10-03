@@ -17,7 +17,7 @@ from fastapi.templating import Jinja2Templates
 
 from core import gamedata
 from core.db import Database
-from core.logic import STATUS_NEED, buffs_needed, timer_status
+from core.logic import CYCLE_MAX, STATUS_NEED, buffs_needed, make_pattern, parse_pattern, timer_status
 from core.service import KIND_ACC, KIND_EMOJI, KIND_NAME, KINDS, SETTINGS, Service, clean_nick, valid_pin
 from core.timeparse import DAY, HOUR, MINUTE, format_duration
 
@@ -76,8 +76,14 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         return f"{hi:g} дн." if lo == hi else f"{lo:g}–{hi:g} дн."
 
     def pattern_text(pattern: str) -> str:
-        big, wait = pattern.count("B"), pattern.count("W")
-        return f"{big} : {wait}"
+        big, wait, wait_first = parse_pattern(pattern)
+        if not wait:
+            return "только большим таймерам"
+        if not big:
+            return "только тем, кому досталось меньше всех"
+        if wait_first:
+            return f"{big} : {wait} — сначала {wait} меньше получившим, потом {big} большим"
+        return f"{big} : {wait} — сначала {big} большим, потом {wait} меньше получившим"
 
     templates.env.globals.update(
         dur=format_duration,
@@ -619,6 +625,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             request, "admin.html", me,
             rows=rows,
             settings={k: svc.setting(k) for k in SETTINGS},
+            cycle=parse_pattern(svc.setting("pattern")),
+            cycle_max=CYCLE_MAX,
         )
 
     @app.post("/admin/add")
@@ -637,6 +645,14 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         form = await request.form()
         check_csrf(me, form.get("csrf", ""))
         errors = []
+        if "cycle_big" in form and "cycle_wait" in form:
+            try:
+                big, wait = int(str(form["cycle_big"])), int(str(form["cycle_wait"]))
+            except ValueError:
+                big, wait = parse_pattern(svc.setting("pattern"))[:2]
+            pattern = make_pattern(big, wait, str(form.get("cycle_first", "big")) == "wait")
+            if pattern != svc.setting("pattern"):
+                svc.set_setting("pattern", pattern)
         for key in SETTINGS:
             if key in form and str(form[key]).strip() != svc.setting(key):
                 error = svc.set_setting(key, str(form[key]))

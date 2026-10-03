@@ -94,6 +94,24 @@ def buffs_needed(remaining: int, base: int, rules: Rules) -> int:
     return count
 
 
+CYCLE_MAX = 6  # сколько бафов подряд одной группе можно задать в цикле
+
+
+def make_pattern(big: int, wait: int, wait_first: bool = False) -> str:
+    """Цикл «big большим : wait меньше получившим». wait_first — начинать с меньше получивших."""
+    big = max(0, min(CYCLE_MAX, big))
+    wait = max(0, min(CYCLE_MAX, wait))
+    if big + wait == 0:
+        big = 1
+    return SLOT_WAIT * wait + SLOT_BIG * big if wait_first else SLOT_BIG * big + SLOT_WAIT * wait
+
+
+def parse_pattern(pattern: str) -> tuple[int, int, bool]:
+    """Обратно к (большим, меньше получившим, начинать с меньше получивших)."""
+    pattern = pattern or SLOT_BIG
+    return pattern.count(SLOT_BIG), pattern.count(SLOT_WAIT), pattern[0] == SLOT_WAIT
+
+
 def slot_for(index: int, pattern: str) -> str:
     pattern = pattern or SLOT_BIG
     return pattern[index % len(pattern)]

@@ -8,6 +8,9 @@ from core.logic import (
     buffs_needed,
     choose_recipient,
     is_eligible,
+    make_pattern,
+    parse_pattern,
+    slot_for,
 )
 from core.timeparse import DAY, HOUR
 
@@ -114,3 +117,16 @@ def test_wait_slot_prefers_who_got_least():
     veteran = cand(1, 40, waiting_since=0, received=3)
     newbie = cand(2, 20, waiting_since=500, received=0)
     assert choose_recipient([veteran, newbie], rules, 0, [])[0] == newbie
+
+
+def test_cycle_patterns_both_ways():
+    assert make_pattern(1, 2) == "BWW"
+    assert make_pattern(2, 1) == "BBW"
+    assert make_pattern(1, 2, wait_first=True) == "WWB"
+    assert make_pattern(3, 0) == "BBB" and make_pattern(0, 2) == "WW"
+    assert make_pattern(0, 0) == "B"  # пустой цикл не бывает
+    assert make_pattern(9, 9) == "B" * 6 + "W" * 6  # не больше 6 подряд
+    for big, wait, first in [(1, 1, False), (1, 2, True), (3, 3, False), (2, 3, True)]:
+        assert parse_pattern(make_pattern(big, wait, first)) == (big, wait, first)
+    # Цикл «1 : 2, сначала меньше получившим» повторяется: W W B W W B …
+    assert "".join(slot_for(i, make_pattern(1, 2, True)) for i in range(6)) == "WWBWWB"

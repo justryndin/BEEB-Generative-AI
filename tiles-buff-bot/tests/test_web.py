@@ -133,6 +133,13 @@ def test_admin_panel(site):
     r = owner.post("/admin/settings", data={"csrf": token, "pattern": "BBBW", "build_min": "9"})
     assert svc.setting("pattern") == "BBBW" and "build_min" in r.text
 
+    owner.post("/admin/settings", data={"csrf": token, "cycle_big": "1", "cycle_wait": "2", "cycle_first": "big"})
+    assert svc.setting("pattern") == "BWW"
+    owner.post("/admin/settings", data={"csrf": token, "cycle_big": "1", "cycle_wait": "2", "cycle_first": "wait"})
+    assert svc.setting("pattern") == "WWB"
+    page = owner.get("/admin").text
+    assert "1 : 2 — сначала 2 меньше получившим, потом 1 большим" in page and 'data-big="1" data-wait="2"' in page
+
 
 def test_stats_page(site):
     _, owner, _ = site

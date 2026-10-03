@@ -196,6 +196,20 @@ form.inline { display: inline; }
 label { display: block; font-weight: 600; margin-bottom: 6px; }
 .field { margin-bottom: 16px; }
 .hint { font-size: .9rem; color: var(--muted); margin-top: 4px; }
+
+/* Цикл раздачи в настройках: готовые варианты + свои числа. */
+.cycle { border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px 16px; min-width: 0; }
+.cycle legend { font-weight: 700; padding: 0 6px; }
+.span2 { grid-column: 1 / -1; }
+.cycle-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.chip {
+  min-height: 44px; min-width: 64px; padding: 0 14px; font: inherit; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--text-2); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 999px; cursor: pointer;
+}
+.chip:hover { border-color: var(--accent-ring); }
+.chip[aria-pressed="true"] { color: var(--accent-text); background: var(--accent-soft); border-color: var(--accent-ring); }
+.grid3 { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .grid3 { grid-template-columns: repeat(3, 1fr); } }
 input[type=text], input[type=password], input[type=number], input[type=search], select {
   width: 100%; min-height: 52px; padding: 12px 14px; font: inherit; font-size: 1.05rem; letter-spacing: -.01em;
   color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 14px;
