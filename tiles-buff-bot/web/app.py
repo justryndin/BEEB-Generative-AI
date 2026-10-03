@@ -25,6 +25,7 @@ from core.service import KIND_ACC, KIND_EMOJI, KIND_NAME, KINDS, SETTINGS, Servi
 from core.timeparse import DAY, HOUR, MINUTE, format_duration
 
 from . import charts, push
+from .guides import BY_SLUG as GUIDE_BY_SLUG, GUIDES
 from .config import Config, load_config
 
 log = logging.getLogger(__name__)
@@ -880,17 +881,21 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             site_url=str(request.base_url).rstrip("/"),
         )
 
-    @app.get("/tips", response_class=HTMLResponse)
-    def tips(request: Request):
-        me = current(request)
-        return render(
-            request, "tips.html", me,
-            pct=svc.setting_float("pct"),
-            pattern=svc.setting("pattern"),
-            streak=int(svc.setting_float("max_streak")),
-            cooldown=svc.setting_float("cooldown_hours"),
-            observed=svc.observed_times(),
-        )
+    @app.get("/tips")
+    def tips():
+        return RedirectResponse("/guides", status_code=303)
+
+    @app.get("/guides", response_class=HTMLResponse)
+    def guides_index(request: Request):
+        return render(request, "guides/index.html", current(request), guides=GUIDES)
+
+    @app.get("/guides/{slug}", response_class=HTMLResponse)
+    def guide_page(request: Request, slug: str):
+        guide = GUIDE_BY_SLUG.get(slug)
+        if guide is None:
+            raise HTTPException(status_code=404, detail="Такого гайда нет")
+        return render(request, f"guides/{slug}.html", current(request), guide=guide, guides=GUIDES,
+                      observed=svc.observed_times() if slug == "build" else [])
 
     # ---------- управление ----------
 

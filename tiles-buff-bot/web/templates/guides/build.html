@@ -1,0 +1,76 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<nav class="toc">
+  <a href="#order">Что строить первым</a>
+  <a href="#roles">Зачем каждое здание</a>
+  <a href="#pp">Электростанция: время</a>
+  <a href="#barracks">Казармы: время</a>
+</nav>
+
+<section class="card" id="order">
+  <h2>🥇 Что строить первым</h2>
+  <p><b>Главная цель — поднимать Электростанцию.</b> Это главное здание (максимум — 30 ур.), от неё зависит общий прогресс и уровни остальных зданий.</p>
+  <ol class="steps-list">
+    <li><b>Электростанция</b></li>
+    <li><b>Лаборатория</b> — проценты ко всему: скорость стройки, госпиталь, лимит обучения.</li>
+    <li><b>Госпиталь</b> — сколько раненых можно спасти.</li>
+    <li><b>Гарнизон</b> — сколько войск вмещает база.</li>
+    <li>Остальные здания.</li>
+  </ol>
+  <p class="hint">Другой рабочий цикл из советов опытных: Электростанция → Станция связи → Лаборатория, и по кругу; гарнизон подтягивайте по мере роста армии. Ресурсные здания в начале не качайте — с плиток ресурсов намного больше.</p>
+  <div class="example"><b>У нас в союзе:</b> стройки Электростанции ниже {{ pp_goal }} ур. получают бафы союза в приоритете, а при пустой очереди — первыми по рулетке. Укажи свой уровень в <a href="/me">профиле</a>.</div>
+</section>
+
+<section class="card" id="roles">
+  <h2>🏢 Зачем каждое здание</h2>
+  <ul class="rules-list">
+    <li><span class="ico">⚡</span><div><b>Электростанция</b> — главное здание. Совет: подарки за стройку не открывайте сразу — дождитесь подходящего события.</div></li>
+    <li><span class="ico">🔬</span><div><b>Лаборатория</b> — процентные бонусы для всей игры. Подробно — гайд <a href="/guides/research">«Лаборатория»</a>. Вторая лаборатория позволяет исследовать параллельно.</div></li>
+    <li><span class="ico">🏥</span><div><b>Госпиталь</b> — вместимость раненых. Пример: при 471 тыс. войск и вместимости 222 тыс. вылечат только 222 тыс.</div></li>
+    <li><span class="ico">🪖</span><div><b>Гарнизон</b> — максимум войск; на 30 ур. — до 1,9 млн солдат.</div></li>
+    <li><span class="ico">📡</span><div><b>Станция связи</b> — помощь от союзников («тапы»). Критически важна для игры в союзе.</div></li>
+    <li><span class="ico">🛠</span><div><b>Мастерская артефактов</b> — усиливает помощь союзников: без неё тап сокращает таймер на 32 сек, с ней — на 45+ сек. Сокращает и время стройки.</div></li>
+    <li><span class="ico">🎓</span><div><b>Академия героев</b> — приток книг талантов.</div></li>
+    <li><span class="ico">📯</span><div><b>Призывной пункт</b> — частично возвращает погибших безвозвратно.</div></li>
+    <li><span class="ico">🗿</span><div><b>Монументы</b>: «Хранитель жизни» и «Вестник войны» стоит качать, остальные второстепенные (особняки, морозная крепость) дают мелкие бонусы.</div></li>
+    <li><span class="ico">🏠</span><div><b>Дома</b> — до 10 ур. <b>Кухня</b> — томатная пицца повышает насыщение.</div></li>
+    <li><span class="ico">👷</span><div><b>Второй строитель</b> — две стройки одновременно. Одно из самых полезных вложений при минимальном донате.</div></li>
+  </ul>
+  <p class="hint">Любую постройку можно переместить: удерживайте на ней палец.</p>
+</section>
+
+<section class="card" id="pp">
+  <h2>⚡ Электростанция: время улучшения</h2>
+  <p class="hint mt0">Без бонусов к скорости, по данным {{ gamedata.SOURCE }}. С вашими бонусами будет быстрее.</p>
+  {% set pp = gamedata.ITEMS["pp"] %}
+  <div class="table-wrap"><table>
+    <tr><th class="num">Ур.</th><th class="num">Время</th><th>Что нужно</th></tr>
+    {% for lvl in range(10, 31) %}
+    <tr><td class="num">{{ lvl }}</td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="text-2">{{ pp.requires.get(lvl, "—") }}</td></tr>
+    {% endfor %}
+  </table></div>
+</section>
+
+<section class="card" id="barracks">
+  <h2>🪖 Казармы: время улучшения</h2>
+  <p class="hint mt0">≈ Данные неточные (местами уровень выше строится быстрее) — ориентир, а не точное значение.</p>
+  {% set b1 = gamedata.ITEMS["bar1"] %}{% set b2 = gamedata.ITEMS["bar23"] %}
+  <div class="table-wrap"><table>
+    <tr><th class="num">Ур.</th><th class="num">Казарма 1</th><th class="num">Казарма 2/3</th></tr>
+    {% for lvl in range(15, 31) %}
+    <tr><td class="num">{{ lvl }}</td><td class="num">{{ dur(b1.time_for(lvl)) }}</td><td class="num">{{ dur(b2.time_for(lvl)) }}</td></tr>
+    {% endfor %}
+  </table></div>
+  {% if observed %}
+  <h3 style="margin-top:16px">👥 Реальные времена в нашем союзе</h3>
+  <p class="hint mt0">Сколько заявляют игроки при записи в очередь (медиана).</p>
+  <div class="table-wrap"><table>
+    <tr><th>Здание</th><th class="num">Ур.</th><th class="num">Обычно</th><th class="num">Записей</th></tr>
+    {% for code, lvl, median, count in observed %}
+    {% set it = gamedata.item(code) %}
+    <tr><td>{{ it.ru if it else code }}</td><td class="num">{{ lvl }}</td><td class="num">{{ dur(median) }}</td><td class="num">{{ count }}</td></tr>
+    {% endfor %}
+  </table></div>
+  {% endif %}
+</section>
+{% endblock %}

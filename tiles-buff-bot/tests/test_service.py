@@ -379,3 +379,18 @@ def test_build_threshold_three_days_helps_more():
     svc.set_timer(p["id"], "build", 12 * DAY, T0)
     row = next(r for r in svc.queue_order("build", T0) if r.candidate.player_id == p["id"])
     assert row.needed == 5  # срез 1,8 д: 12 → 10,2 → 8,4 → 6,6 → 4,8 → 3,0 (при пороге 5–7 было бы 3)
+
+
+def test_daily_time_check_notice():
+    from zoneinfo import ZoneInfo
+    from core.notify import due_notices
+    svc = make()
+    a = reg(svc, 1, "Аня")
+    svc.add_push(a["id"], "https://push.example/a", "k", "a", T0)
+    svc.set_timer(a["id"], "build", 30 * DAY, T0)
+    noon = T0 - T0 % DAY + DAY + 12 * HOUR
+    later = noon + DAY  # больше суток без сверки
+    keys = [n.key for n in due_notices(svc, ZoneInfo("UTC"), later) if n.kind == "check"]
+    assert len(keys) == 1
+    svc.confirm_time(a["id"], "build", later)
+    assert not [n for n in due_notices(svc, ZoneInfo("UTC"), later + 60) if n.kind == "check"]

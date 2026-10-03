@@ -21,6 +21,7 @@ NOTICE_KINDS = {
     "got": "Мне отдали баф — сверить время",
     "next": "Я следующий в очереди",
     "done": "Стройка или исследование закончились — встать со следующей",
+    "check": "Сверить время с игрой (раз в день и после бафа)",
     "news": "Важные объявления R4",
     "events": "События союза: напоминание перед началом",
 }
@@ -127,7 +128,16 @@ def due_notices(svc: Service, tz: ZoneInfo, now: int) -> list[Notice]:
                                    + " запущенным — баф придёт в ближайшее время.",
                                    "/"))
 
-        # 4. Закончилось — встань со следующей.
+        # 4. Сверь время: в игре каждый день ускоряются — сайт этого не видит.
+        for ch in svc.time_checks(pid, now):
+            if ch["why"] == "stale":
+                t = ch["timer"]
+                mine.append(Notice(pid, f"check:{t['id']}:{t['checked_at'] or t['created_at']}", "check",
+                                   f"🔁 Сверь время: {KIND_NAME[ch['kind']]}",
+                                   f"На сайте осталось {format_duration(ch['remaining'])}. Ускорялся? Впиши, сколько в игре, — одна кнопка.",
+                                   "/"))
+
+        # 5. Закончилось — встань со следующей.
         for f in svc.finished_timers(pid, now):
             t = f["timer"]
             what = gamedata.label(t["item"], t["level"], t["note"]) or KIND_NAME[f["kind"]].capitalize()
@@ -135,13 +145,13 @@ def due_notices(svc: Service, tz: ZoneInfo, now: int) -> list[Notice]:
             mine.append(Notice(pid, f"done:{t['id']}", "done", f"🏁 {what} — закончилось",
                                f"Запустил следующее? Встань в очередь в одно нажатие.{nxt}", "/"))
 
-        # 5. Важные объявления R4.
+        # 6. Важные объявления R4.
         for post in news:
             if post["author_id"] != pid:
                 first_line = post["text"].strip().splitlines()[0][:120]
                 mine.append(Notice(pid, f"post:{post['id']}", "news", "📣 Объявление союза", first_line, "/board"))
 
-        # 6. События союза — напоминание перед началом.
+        # 7. События союза — напоминание перед началом.
         for o in upcoming:
             when = datetime.fromtimestamp(o.start, tz).strftime("%H:%M")
             head = "идёт сейчас" if o.ongoing(now) else f"начало в {when}"

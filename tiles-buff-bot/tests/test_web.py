@@ -253,7 +253,7 @@ def test_push_subscribe_and_settings(site):
     assert owner.post("/push/subscribe", json={**sub, "csrf": "bad"}).status_code == 400
     owner.post("/me/notify", data={"csrf": token, "on_got": "1", "quiet": "1"})
     from core.notify import prefs
-    assert set(prefs(svc.player(ivan["id"]))["off"]) == {"ready", "next", "done", "news", "events"}
+    assert set(prefs(svc.player(ivan["id"]))["off"]) == {"ready", "next", "done", "news", "events", "check"}
     owner.post("/push/unsubscribe", json={"csrf": token, "endpoint": "https://push.example/1"})
     assert svc.push_subs(ivan["id"]) == []
 
@@ -379,3 +379,16 @@ def test_help_page_for_players_and_r4(site):
     assert "Для R4" not in text and "Готовые тексты для чата" not in text
     r4 = owner.get("/help").text
     assert "Готовые тексты для чата" in r4 and "data-copy=" in r4 and "Электростанцию 30" in r4
+
+
+def test_guides_section(site):
+    _, owner, _ = site
+    index = owner.get("/guides")
+    assert index.status_code == 200 and "Неделя: когда что тратить" in index.text
+    from web.guides import GUIDES
+    for g in GUIDES:
+        page = owner.get(f"/guides/{g.slug}")
+        assert page.status_code == 200 and g.title in page.text and "Источники" in page.text
+    assert owner.get("/guides/nope").status_code == 404
+    assert owner.get("/tips").url.path == "/guides"
+    assert "Электростанция: время улучшения" in owner.get("/guides/build").text

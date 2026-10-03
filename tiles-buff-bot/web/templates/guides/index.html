@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Гайды · {{ site_name }}{% endblock %}
+{% block content %}
+<h1>📣 Союз</h1>
+<nav class="tabs" style="grid-template-columns:repeat(3,1fr)">
+  <a href="/board">Объявления</a>
+  <a href="/events">📅 События</a>
+  <a href="/guides" class="on">📚 Гайды</a>
+</nav>
+<p class="text-2">Коротко и по делу: как развиваться, когда что тратить и как играть вместе с союзом. Начни с «Недели» — от неё зависит, сколько очков ты получишь за те же ускорения.</p>
+<div class="guide-grid">
+  {% for g in guides %}
+  <a class="card guide-card" href="/guides/{{ g.slug }}">
+    <span class="guide-emoji">{{ g.emoji }}</span>
+    <b>{{ g.title }}</b>
+    <small>{{ g.summary }}</small>
+  </a>
+  {% endfor %}
+</div>
+<section class="card">
+  <h2>🧊 Бафы союза и ускорения</h2>
+  <ul class="checks">
+    <li><b>Баф срезает время всех твоих строек</b> (или исследований) сразу — и у того, кто отдал, тоже.</li>
+    <li><b>Ускорители и помощь союза</b> тоже сокращают время каждый день — сайт этого не видит. Поэтому он регулярно спрашивает «В игре так же?» — ответь «Да» или впиши время. Так очередь считает честно.</li>
+    <li><b>Готовую стройку не спеши забирать</b>, если скоро день стройки в Дуэли или окно «Строительство» в Игре по-крупному — завершение тоже приносит очки. Подробно — в гайде <a href="/guides/week">«Неделя»</a>.</li>
+  </ul>
+</section>
+{% endblock %}
