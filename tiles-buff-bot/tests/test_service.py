@@ -285,3 +285,31 @@ def test_finished_timer_suggests_next_level():
     assert f["next_level"] == 27
     # Через 3 дня подсказка исчезает сама.
     assert svc.finished_timers(a["id"], T0 + 9 * DAY) == []
+
+
+def test_due_notices_ready_got_next_and_quiet():
+    from zoneinfo import ZoneInfo
+    from core.notify import due_notices
+    utc = ZoneInfo("UTC")
+    svc = make()
+    svc.set_setting("min_gap_hours", "0")
+    a = reg(svc, 1, "Аня")
+    b = reg(svc, 2, "Борис")
+    svc.set_timer(a["id"], "build", 30 * DAY, T0)
+    svc.set_timer(b["id"], "build", 20 * DAY, T0)
+    noon = T0 - T0 % DAY + 12 * HOUR + DAY
+    assert due_notices(svc, utc, noon) == []  # никто не подписан
+    svc.add_push(b["id"], "https://push.example/b", "k", "a", noon)
+    keys = {n.key.split(":")[0] for n in due_notices(svc, utc, noon)}
+    assert "ready" in keys  # Борис должен отдать баф Ане
+    svc.record_gift("build", a["id"], b["id"], a["id"], noon)
+    got = [n for n in due_notices(svc, utc, noon + 60) if n.key.startswith("got:")]
+    assert got and "Аня" in got[0].title
+    svc.mark_notice(b["id"], got[0].key, noon + 60)
+    assert svc.notice_sent(b["id"], got[0].key)
+    # Ночью — тишина, если игрок не выключил «тихие часы»
+    night = noon - 9 * HOUR  # 03:00 UTC
+    assert due_notices(svc, utc, night) == []
+    svc.set_notify_prefs(b["id"], {"off": ["ready"], "quiet": False})
+    keys = {n.key.split(":")[0] for n in due_notices(svc, utc, night)}
+    assert "ready" not in keys and "got" in keys

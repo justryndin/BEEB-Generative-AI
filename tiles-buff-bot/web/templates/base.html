@@ -7,10 +7,12 @@
   <meta name="theme-color" content="#0d0a14">
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="apple-touch-icon" href="/static/icon.svg">
-  <link rel="stylesheet" href="/static/style.css?v=11">
+  <link rel="apple-touch-icon" href="/static/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="/static/style.css?v=12">
 </head>
-<body>
+<body{% if me %} data-vapid="{{ vapid_public }}" data-csrf="{{ csrf }}"{% endif %}>
 {% set nav = [
   ("/", "🏠", "Главная"),
   ("/join", "➕", "Встать"),
@@ -52,6 +54,6 @@
 </nav>
 {% endif %}
 <p class="footer"><a href="/tips">💡 Советы</a> · <a href="/rules">📜 Условия</a>{% if me and is_admin %} · <a href="/me">👤 Профиль</a>{% endif %}<br>© {{ site_name }} · Tiles Survive · сезон «Эра метели»</p>
-<script src="/static/app.js?v=5" defer></script>
+<script src="/static/app.js?v=6" defer></script>
 </body>
 </html>

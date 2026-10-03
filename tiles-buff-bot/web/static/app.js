@@ -94,6 +94,78 @@
       .then(function () { loading = false; });
   }
 
+  // Уведомления на телефон (Web Push): включить/выключить на этом устройстве.
+  function initPush() {
+    var boxes = document.querySelectorAll("[data-push]");
+    var key = document.body.dataset.vapid, csrf = document.body.dataset.csrf;
+    if (!boxes.length || !csrf) return;
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+    var supported = !!key && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    function all(sel, fn) { document.querySelectorAll(sel).forEach(fn); }
+    function show(sel, on) { all(sel, function (el) { el.hidden = !on; }); }
+    function status(text) { all("[data-push-status]", function (el) { el.textContent = text; }); }
+    function post(url, body) {
+      body.csrf = csrf;
+      return fetch(url, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    }
+    function bytes(b64) {
+      var pad = "=".repeat((4 - b64.length % 4) % 4);
+      var raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+      var out = new Uint8Array(raw.length);
+      for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+      return out;
+    }
+    function state(on) {
+      show("[data-push-on]", !on); show("[data-push-off]", on); show("[data-push-banner]", !on);
+      if (on) status("✅ Включено на этом устройстве.");
+    }
+    if (!supported) {
+      if (ios && !standalone) {
+        show("[data-push-ios]", true); show("[data-push-banner]", true);
+        all("[data-push-banner] [data-push-on]", function (b) { b.addEventListener("click", function () { location.href = "/me#notify"; }); });
+        all("#notify [data-push-on]", function (b) { b.hidden = true; });
+      } else {
+        status("Этот браузер не умеет уведомления. На Android открой сайт в Chrome, на iPhone — добавь на экран «Домой».");
+        show("[data-push-on]", false);
+      }
+      return;
+    }
+    var regPromise = navigator.serviceWorker.register("/sw.js");
+    regPromise.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+      if (sub) { post("/push/subscribe", sub.toJSON()); state(true); }
+      else { state(false); if (Notification.permission === "denied") show("[data-push-denied]", true); }
+    }).catch(function () {});
+
+    all("[data-push-on]", function (btn) {
+      btn.addEventListener("click", function () {
+        btn.disabled = true;
+        Notification.requestPermission().then(function (perm) {
+          if (perm !== "granted") { show("[data-push-denied]", true); throw new Error("denied"); }
+          return regPromise;
+        }).then(function (reg) {
+          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: bytes(key) });
+        }).then(function (sub) {
+          return post("/push/subscribe", sub.toJSON());
+        }).then(function (r) {
+          if (!r.ok) throw new Error("server");
+          state(true); show("[data-push-denied]", false);
+        }).catch(function (e) {
+          if (e.message !== "denied") status("Не получилось включить. Обнови страницу и попробуй ещё раз.");
+        }).then(function () { btn.disabled = false; });
+      });
+    });
+    all("[data-push-off]", function (btn) {
+      btn.addEventListener("click", function () {
+        regPromise.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+          if (!sub) return;
+          return post("/push/unsubscribe", { endpoint: sub.endpoint }).then(function () { return sub.unsubscribe(); });
+        }).then(function () { state(false); status("Выключено на этом устройстве."); });
+      });
+    });
+  }
+
+  initPush();
   bind(document);
   if (document.querySelector("[data-live]")) {
     setInterval(refresh, LIVE_MS);

@@ -17,11 +17,12 @@ from fastapi.templating import Jinja2Templates
 
 from core import gamedata
 from core.db import Database
+from core.notify import NOTICE_KINDS, Notice, prefs as notify_prefs
 from core.logic import CYCLE_MAX, STATUS_NEED, buffs_needed, make_pattern, parse_pattern, timer_status
 from core.service import KIND_ACC, KIND_EMOJI, KIND_NAME, KINDS, SETTINGS, Service, clean_nick, valid_pin
 from core.timeparse import DAY, HOUR, MINUTE, format_duration
 
-from . import charts
+from . import charts, push
 from .config import Config, load_config
 
 log = logging.getLogger(__name__)
@@ -53,9 +54,15 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                     t = now()
                     svc.expire_pending(t)
                     svc.deactivate_finished(t)
+                    await asyncio.to_thread(push.run_once, svc, cfg.tz, t)
                 except Exception:
                     log.exception("Ошибка фоновой задачи")
                 await asyncio.sleep(60)
+
+        try:
+            push.ensure_keys(svc)
+        except Exception:
+            log.exception("Не удалось создать ключи для уведомлений")
 
         task = asyncio.create_task(housekeeping())
         yield
@@ -102,6 +109,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         target_text=target_text,
         pattern_text=pattern_text,
         site_name=cfg.site_name,
+        NOTICE_KINDS=NOTICE_KINDS,
         gamedata=gamedata,
     )
 
@@ -119,6 +127,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                 "csrf": me["csrf"] if me else "",
                 "flash": flash,
                 "path": request.url.path,
+                "vapid_public": svc.setting("vapid_public") if me else "",
                 **ctx,
             },
             status_code=status_code,
@@ -561,7 +570,58 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             timers=my_timers(me["id"], t),
             buffs={k: buff_state(me["id"], k, t) for k in KINDS},
             given=given, received=received, saved=saved,
+            notify=notify_prefs(me),
+            devices=len(svc.push_subs(me["id"])),
+            quiet=(int(svc.setting_float("quiet_from")), int(svc.setting_float("quiet_to"))),
         )
+
+    # ---------- уведомления на телефон ----------
+
+    @app.get("/sw.js")
+    def service_worker():
+        body = (BASE / "static" / "sw.js").read_text(encoding="utf-8")
+        return Response(body, media_type="application/javascript",
+                        headers={"Cache-Control": "no-cache", "Service-Worker-Allowed": "/"})
+
+    @app.post("/push/subscribe")
+    async def push_subscribe(request: Request):
+        me = need_login(request)
+        data = await request.json()
+        check_csrf(me, str(data.get("csrf", "")))
+        endpoint = str(data.get("endpoint", ""))
+        keys = data.get("keys") or {}
+        if not endpoint.startswith("https://") or not keys.get("p256dh") or not keys.get("auth"):
+            raise HTTPException(status_code=400, detail="Неверная подписка")
+        svc.add_push(me["id"], endpoint, str(keys["p256dh"]), str(keys["auth"]), now())
+        return {"ok": True}
+
+    @app.post("/push/unsubscribe")
+    async def push_unsubscribe(request: Request):
+        me = need_login(request)
+        data = await request.json()
+        check_csrf(me, str(data.get("csrf", "")))
+        svc.drop_push(str(data.get("endpoint", "")), me["id"])
+        return {"ok": True}
+
+    @app.post("/push/test")
+    def push_test(request: Request, csrf: str = Form("")):
+        me = need_login(request)
+        check_csrf(me, csrf)
+        t = now()
+        n = Notice(me["id"], f"test:{t}", "test", "🔔 Проверка", "Уведомления работают. Так придёт «баф готов — отдай X».", "/")
+        if not svc.push_subs(me["id"]):
+            return go("/me#notify", "⚠️ На этом аккаунте нет устройств — сначала нажми «Включить уведомления».")
+        ok = push.deliver(svc, n, t)
+        return go("/me#notify", "✅ Отправил — посмотри на телефон." if ok else "⚠️ Не дошло. Нажми «Включить уведомления» ещё раз.")
+
+    @app.post("/me/notify")
+    async def notify_settings(request: Request):
+        me = need_login(request)
+        form = await request.form()
+        check_csrf(me, str(form.get("csrf", "")))
+        off = [k for k in NOTICE_KINDS if form.get(f"on_{k}") != "1"]
+        svc.set_notify_prefs(me["id"], {"off": off, "quiet": form.get("quiet") == "1"})
+        return go("/me#notify", "✅ Настройки уведомлений сохранены.")
 
     @app.post("/me/nick")
     def change_nick(request: Request, csrf: str = Form(""), nick: str = Form("")):
@@ -750,7 +810,9 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         body = (
             '{"name": "%s", "short_name": "Бафы", "start_url": "/", "display": "standalone", '
             '"background_color": "#0d0a14", "theme_color": "#0d0a14", '
-            '"icons": [{"src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml"}]}' % cfg.site_name
+            '"icons": [{"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png"}, '
+            '{"src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png"}, '
+            '{"src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml"}]}' % cfg.site_name
         )
         return Response(body, media_type="application/manifest+json")
 

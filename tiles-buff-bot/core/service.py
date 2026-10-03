@@ -57,11 +57,13 @@ SETTINGS: dict[str, tuple[str, str]] = {
     "min_gap_hours": ("12", "Пауза после полученного бафа, часов: пока она идёт, бафы получают другие"),
     "fair_round": ("1", "Справедливый круг: 1 — сначала все по одному бафу, потом по второму…; 0 — выключить"),
     "check_hours": ("48", "Через сколько часов просить игрока сверить время с игрой (0 — не просить)"),
+    "quiet_from": ("0", "Тихие часы: с какого часа не присылать уведомления"),
+    "quiet_to": ("8", "Тихие часы: до какого часа"),
     "cooldown_hours": ("48", "Через сколько часов у игрока снова готов баф"),
     "confirm_minutes": ("30", "Сколько минут держится бронь на назначенный баф"),
     "alliance_code": ("", "Код союза для регистрации на сайте (пусто — регистрация открыта всем)"),
 }
-_INTERNAL_SETTINGS: set[str] = set()
+_INTERNAL_SETTINGS: set[str] = {"vapid_private", "vapid_public"}
 _TEXT_SETTINGS = {"mode", "pattern", "alliance_code", "queue_order", "priority_item"}
 
 MAX_FAILED_LOGINS = 5
@@ -979,6 +981,37 @@ class Service:
 
     def drop_session(self, token: str) -> None:
         self.db.run("DELETE FROM sessions WHERE token = ?", token)
+
+    # ---------- уведомления ----------
+
+    def add_push(self, player_id: int, endpoint: str, p256dh: str, auth: str, now: int) -> None:
+        self.db.run(
+            "INSERT INTO push_subs(player_id, endpoint, p256dh, auth, created_at) VALUES(?, ?, ?, ?, ?) "
+            "ON CONFLICT(endpoint) DO UPDATE SET player_id = excluded.player_id, p256dh = excluded.p256dh, "
+            "auth = excluded.auth",
+            player_id, endpoint, p256dh, auth, now,
+        )
+
+    def drop_push(self, endpoint: str, player_id: int | None = None) -> None:
+        if player_id is None:
+            self.db.run("DELETE FROM push_subs WHERE endpoint = ?", endpoint)
+        else:
+            self.db.run("DELETE FROM push_subs WHERE endpoint = ? AND player_id = ?", endpoint, player_id)
+
+    def push_subs(self, player_id: int):
+        return self.db.all("SELECT * FROM push_subs WHERE player_id = ?", player_id)
+
+    def push_count(self) -> int:
+        return self.db.one("SELECT COUNT(DISTINCT player_id) AS n FROM push_subs")["n"]
+
+    def notice_sent(self, player_id: int, key: str) -> bool:
+        return self.db.one("SELECT 1 FROM notify_log WHERE player_id = ? AND key = ?", player_id, key) is not None
+
+    def mark_notice(self, player_id: int, key: str, now: int) -> None:
+        self.db.run("INSERT OR IGNORE INTO notify_log(player_id, key, sent_at) VALUES(?, ?, ?)", player_id, key, now)
+
+    def set_notify_prefs(self, player_id: int, prefs: dict) -> None:
+        self.db.run("UPDATE players SET notify_prefs = ? WHERE id = ?", json.dumps(prefs), player_id)
 
     def touch_seen(self, player_id: int, now: int) -> None:
         self.db.run("UPDATE players SET last_seen_at = ? WHERE id = ?", now, player_id)

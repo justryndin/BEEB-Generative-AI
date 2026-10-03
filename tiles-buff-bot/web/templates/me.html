@@ -22,6 +22,37 @@
   <p class="hint">Сайт узнаёт, когда твой баф готов, после того как ты отдашь его через сайт (баф восстанавливается за 48 ч).</p>
 </section>
 
+<section class="card" id="notify">
+  <h2>🔔 Уведомления на телефон</h2>
+  <p class="text-2 mt0">Сайт сам напишет, когда твой баф готов и кому его отдать, когда тебе отдали баф и когда ты следующий. Следить не нужно.</p>
+  <div data-push>
+    <p class="push-status" data-push-status>{% if devices %}Включено на {{ devices }} устр.{% else %}Пока выключено.{% endif %}</p>
+    <div class="row">
+      <button class="btn btn-primary" type="button" data-push-on>🔔 Включить на этом устройстве</button>
+      <button class="btn" type="button" data-push-off hidden>Выключить здесь</button>
+    </div>
+    <div class="alert alert-info push-ios" data-push-ios hidden>📱 <b>iPhone:</b> открой сайт в Safari → «Поделиться» → «На экран Домой». Потом открой сайт с иконки на экране и нажми «Включить» здесь.</div>
+    <div class="alert alert-warn" data-push-denied hidden>Уведомления запрещены в настройках браузера. Разреши их для этого сайта (значок замка в адресной строке → Уведомления) и нажми «Включить» ещё раз.</div>
+  </div>
+  {% if devices %}
+  <form method="post" action="/push/test" style="margin-top:10px">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn btn-sm" type="submit">Прислать проверочное</button>
+  </form>
+  {% endif %}
+  <details class="more" data-key="notify-kinds" style="margin-top:12px">
+    <summary>О чём присылать</summary>
+    <form method="post" action="/me/notify" class="stack" style="margin-top:10px">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      {% for k, label in NOTICE_KINDS.items() %}
+      <label class="check"><input type="checkbox" name="on_{{ k }}" value="1" {{ 'checked' if k not in notify.off }}> {{ label }}</label>
+      {% endfor %}
+      <label class="check"><input type="checkbox" name="quiet" value="1" {{ 'checked' if notify.quiet }}> Не беспокоить ночью ({{ "%02d:00" % quiet[0] }}–{{ "%02d:00" % quiet[1] }})</label>
+      <button class="btn" type="submit">Сохранить</button>
+    </form>
+  </details>
+</section>
+
 <section class="card">
   <h2>✏️ Сменить ник</h2>
   <form method="post" action="/me/nick" class="row">

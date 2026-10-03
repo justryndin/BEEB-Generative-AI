@@ -71,6 +71,24 @@ CREATE TABLE IF NOT EXISTS sessions (
     csrf       TEXT NOT NULL,
     created_at INTEGER NOT NULL
 );
+
+-- Подписки на уведомления (Web Push): одна строка — одно устройство.
+CREATE TABLE IF NOT EXISTS push_subs (
+    id         INTEGER PRIMARY KEY,
+    player_id  INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    endpoint   TEXT NOT NULL UNIQUE,
+    p256dh     TEXT NOT NULL,
+    auth       TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+);
+
+-- Что уже отправлено, чтобы не присылать одно и то же дважды.
+CREATE TABLE IF NOT EXISTS notify_log (
+    player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    key       TEXT NOT NULL,
+    sent_at   INTEGER NOT NULL,
+    PRIMARY KEY (player_id, key)
+);
 """
 
 # Колонки, добавленные после первой версии: таблица → [(колонка, тип)].
@@ -90,6 +108,7 @@ MIGRATIONS = {
         ("is_owner", "INTEGER NOT NULL DEFAULT 0"),
         ("last_seen_at", "INTEGER"),
         ("agreed_at", "INTEGER"),
+        ("notify_prefs", "TEXT"),  # JSON: какие уведомления выключены
     ],
     "donations": [("undo", "TEXT"), ("undone_by", "INTEGER"), ("undone_at", "INTEGER")],
 }

@@ -238,3 +238,21 @@ def test_time_check_and_next_cards(site):
     assert "Встать со следующим" in home.text and "item=pp&amp;level=25" in home.text
     r = player.post("/timer/build/skip-next", data={"csrf": ptoken})
     assert "Встать со следующим" not in r.text
+
+
+def test_push_subscribe_and_settings(site):
+    svc, owner, _ = site
+    register(owner, "Иван")
+    me = owner.get("/me")
+    assert "Уведомления на телефон" in me.text and owner.get("/sw.js").status_code == 200
+    token = csrf(me.text)
+    sub = {"csrf": token, "endpoint": "https://push.example/1", "keys": {"p256dh": "x", "auth": "y"}}
+    assert owner.post("/push/subscribe", json=sub).json() == {"ok": True}
+    ivan = svc.player_by_nick("Иван")
+    assert len(svc.push_subs(ivan["id"])) == 1
+    assert owner.post("/push/subscribe", json={**sub, "csrf": "bad"}).status_code == 400
+    owner.post("/me/notify", data={"csrf": token, "on_got": "1", "quiet": "1"})
+    from core.notify import prefs
+    assert set(prefs(svc.player(ivan["id"]))["off"]) == {"ready", "next", "done", "news"}
+    owner.post("/push/unsubscribe", json={"csrf": token, "endpoint": "https://push.example/1"})
+    assert svc.push_subs(ivan["id"]) == []

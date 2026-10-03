@@ -482,6 +482,9 @@ main.wide { max-width: 1180px; }
 .brow.hold { opacity: .8; }
 .sharebar { flex-basis: 100%; height: 6px; border-radius: 3px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; margin-top: 2px; }
 .sharebar > span { display: block; height: 100%; background: var(--grad); border-radius: 3px; min-width: 2px; }
+.push-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.push-banner > span { flex: 1 1 220px; }
+[hidden] { display: none !important; }
 .life-card { border-color: var(--accent-ring); }
 .inline-time { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; margin-top: 12px; }
 .inline-time button { grid-column: 1 / -1; }

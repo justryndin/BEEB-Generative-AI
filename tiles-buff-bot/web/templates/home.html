@@ -19,6 +19,12 @@
 <div class="alert alert-warn">📜 Прими <a href="/rules"><b>условия очереди</b></a> — без этого нельзя вставать в очередь и отмечать бафы.</div>
 {% endif %}
 
+<div class="alert alert-info push-banner" data-push data-push-banner hidden>
+  <span>🔔 <b>Включи уведомления</b> — сайт сам скажет, когда твой баф готов и кому его отдать.</span>
+  <button class="btn btn-sm btn-primary" type="button" data-push-on>Включить</button>
+  <a class="btn btn-sm btn-ghost" href="/me#notify">Подробнее</a>
+</div>
+
 {% for f in finished %}{% set t = f.timer %}{% set what = gamedata.label(t.item, t.level, t.note) %}
 <section class="card life-card">
   <h2>🏁 {{ KIND_EMOJI[f.kind] }} {{ what or ("Стройка" if f.kind == "build" else "Исследование") }} — закончилось</h2>
