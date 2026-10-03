@@ -72,6 +72,7 @@ def test_join_and_gave_flow(site):
     # главная и живой блок показывают очередь
     home = owner.get("/")
     assert "Мура" in home.text and "следующий" in home.text and "Как это работает" in home.text
+    assert "Отдай сейчас" in home.text
     live = owner.get("/live")
     assert live.status_code == 200 and "Мура" in live.text and "в очереди" in live.text
 

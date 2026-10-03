@@ -438,6 +438,13 @@ tr.hl td { background: var(--accent-soft); }
 main.wide { max-width: 1180px; }
 .boards { display: grid; gap: 16px; margin-bottom: 16px; }
 @media (min-width: 900px) { .boards { grid-template-columns: 1fr 1fr; align-items: start; } .live-note { grid-column: 1 / -1; } }
+.now-card { grid-column: 1 / -1; border-radius: var(--radius); padding: 18px; background: var(--grad-soft); border: 1px solid rgba(255, 95, 162, .35); box-shadow: var(--glow-shadow); }
+.now-card h2 { margin: 0 0 12px; font-size: 1.15rem; }
+.now-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.now-item { display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px; min-width: 0; }
+.now-kind { font-size: .82rem; color: var(--muted); }
+.now-nick { font-size: 1.35rem; letter-spacing: -.03em; word-break: break-word; }
+.now-item .btn { min-height: 44px; margin-top: auto; }
 .live-note { margin: 0; font-size: .85rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
 .live-note .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 4px var(--good-soft); animation: blink 2s ease-in-out infinite; }
 .board { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); min-width: 0; }

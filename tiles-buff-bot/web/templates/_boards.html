@@ -19,6 +19,23 @@
 {%- endmacro %}
 
 <div class="boards" id="boards" data-live="/live">
+  <section class="now-card">
+    <h2>🎁 Баф готов? Отдай сейчас:</h2>
+    <div class="now-grid">
+      {% for kind in ["research", "build"] %}{% set first = boards[kind].need[0] if boards[kind].need else none %}
+      <div class="now-item">
+        <span class="now-kind">{{ KIND_EMOJI[kind] }} {{ "Исследование" if kind == "research" else "Стройка" }}</span>
+        {% if first %}
+        <b class="now-nick">{{ first.candidate.nick }}</b>
+        {% if me and first.candidate.player_id == me.id %}<span class="badge badge-accent">это ты — отдай следующему</span>{% endif %}
+        <a class="btn btn-primary btn-block" href="/give?kind={{ kind }}">Отдал ✓</a>
+        {% else %}
+        <b class="now-nick muted">никому не нужно 👍</b>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
   <p class="live-note"><span class="dot"></span> Обновляется в реальном времени · {{ updated }}</p>
   {% for kind in ["research", "build"] %}{% set b = boards[kind] %}
   <section class="board">
