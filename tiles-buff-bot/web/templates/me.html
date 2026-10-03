@@ -32,6 +32,17 @@
   <p class="hint">Сайт узнаёт, когда твой баф готов, после того как ты отдашь его через сайт (баф восстанавливается за 48 ч).</p>
 </section>
 
+<section class="card">
+  <h2>⚡ Моя Электростанция</h2>
+  <p class="text-2 mt0">Если очередь на стройку пуста, бафы идут по рулетке — и первыми тем, кто ещё не построил Электростанцию {{ pp_goal }}. Сайт сам узнаёт уровень, когда ты встаёшь в очередь со стройкой Электростанции; можно указать и вручную.</p>
+  <form method="post" action="/me/pp" class="row">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label for="pp" class="sr-only">Уровень Электростанции</label>
+    <input id="pp" name="level" type="number" inputmode="numeric" min="1" max="99" value="{{ me.pp_level or '' }}" placeholder="уровень, например 27" style="flex:1;min-width:160px">
+    <button class="btn" type="submit">Сохранить</button>
+  </form>
+</section>
+
 <section class="card" id="notify">
   <h2>🔔 Уведомления на телефон</h2>
   <p class="text-2 mt0">Сайт сам напишет, когда твой баф готов и кому его отдать, когда тебе отдали баф и когда ты следующий. Следить не нужно.</p>

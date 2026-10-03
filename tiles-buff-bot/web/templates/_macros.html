@@ -37,7 +37,7 @@
   {% for d in rows %}
   <li class="{{ 'undone' if d.status == 'undone' }}">
     <div class="j-main">
-      <span>{{ KIND_EMOJI[d.kind] }} <b>{{ d.donor_nick or "—" }}</b> → <b>{{ d.recipient_nick or "—" }}</b> <span class="muted">−{{ dur(d.reduction or 0) }}</span></span>
+      <span>{{ KIND_EMOJI[d.kind] }} <b>{{ d.donor_nick or "—" }}</b> → <b>{{ d.recipient_nick or "—" }}</b> <span class="muted">{% if d.slot == "R" %}🎲 рулетка{% if d.reduction %} · −{{ dur(d.reduction) }}{% endif %}{% else %}−{{ dur(d.reduction or 0) }}{% endif %}</span></span>
       <small class="muted">{{ local(d.resolved_at) }}{% if d.by_nick and d.requested_by != d.donor_id %} · отметил {{ d.by_nick }}{% endif %}</small>
       {% if d.status == 'undone' %}<small class="j-undone">↩️ отменено{% if d.undone_nick %} · {{ d.undone_nick }}{% endif %} · {{ local(d.undone_at) }}</small>{% endif %}
     </div>

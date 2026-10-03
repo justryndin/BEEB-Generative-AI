@@ -40,7 +40,29 @@
   </li>
   {% endfor %}
 </ol>
-{% else %}
+{% endif %}
+{% if roulette %}
+<div class="alert alert-info">🎲 <b>Рулетка.</b> В очереди на {{ KIND_ACC[kind] }} {{ "кроме тебя " if rows }}никого нет — отдай баф игроку, которому выпало. Первыми идут те, кто не построил Электростанцию {{ pp_goal }}. Баф срежет время всех его строек.</div>
+<ol class="give-list">
+  {% for r in roulette[:12] %}
+  <li>
+    <form method="post" action="/gave" data-confirm="Записать: баф на {{ KIND_ACC[kind] }} → {{ r.nick }} (рулетка)?">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="kind" value="{{ kind }}">
+      <input type="hidden" name="recipient" value="{{ r.player_id }}">
+      <input type="hidden" name="donor" value="{{ donor.id if for_other else 0 }}">
+      <button type="submit" class="give-row{{ ' next' if loop.first }}{{ ' paused' if r.paused }}">
+        <span class="pos">{{ loop.index }}</span>
+        <span class="who"><b>{{ r.nick }}</b>
+          {% if loop.first %}<span class="badge badge-accent">🎲 выпал</span>{% endif %}
+          <small>{{ r.why }}</small></span>
+        <span class="go">Отдал ✓</span>
+      </button>
+    </form>
+  </li>
+  {% endfor %}
+</ol>
+{% elif not rows %}
 <div class="card center"><p class="mb0">Сейчас никому не нужен баф на {{ KIND_ACC[kind] }} 👍 Придержи его.</p></div>
 {% endif %}
 <p class="hint center">Баф в игре действует и на тебя — твой таймер тоже сократится, сайт это учтёт.</p>

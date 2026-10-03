@@ -83,7 +83,10 @@ def due_notices(svc: Service, tz: ZoneInfo, now: int) -> list[Notice]:
         # 1. Баф готов — отдай первому в очереди (не себе).
         for kind in KINDS:
             target = next((r for r in orders[kind] if r.need and r.candidate.player_id != pid), None)
-            if target is None:
+            spin = None
+            if target is None and svc.roulette_on(kind):
+                spin = next(iter(svc.roulette_order(kind, now, exclude=pid)), None)
+            if target is None and spin is None:
                 continue
             cd = svc.cooldown(pid, kind)
             if cd is not None and cd["ready_at"] > now:
@@ -91,10 +94,10 @@ def due_notices(svc: Service, tz: ZoneInfo, now: int) -> list[Notice]:
             stamp = cd["ready_at"] if cd is not None else f"d{now // DAY}"
             if cd is None and not svc.active_timer(pid, kind) and not svc.active_timer(pid, _other(kind)):
                 continue  # не знаем, играет ли он сейчас, — не тревожим каждый день
-            nick = target.candidate.nick
-            mine.append(Notice(pid, f"ready:{kind}:{stamp}", "ready",
-                               f"🎁 Баф на {KIND_ACC[kind]} готов",
-                               f"Отдай его {nick} — он первый в очереди. Потом нажми «Я отдал».",
+            nick = target.candidate.nick if target is not None else spin.nick
+            body = (f"Отдай его {nick} — он первый в очереди. Потом нажми «Я отдал»." if target is not None else
+                    f"Очередь пуста — по рулетке выпал {nick}. Отдай ему и нажми «Я отдал».")
+            mine.append(Notice(pid, f"ready:{kind}:{stamp}", "ready", f"🎁 Баф на {KIND_ACC[kind]} готов", body,
                                f"/give?kind={kind}"))
             if pid in holding and holding[pid][0] == kind and hold_limit > 0:
                 mine.append(Notice(pid, f"hold:{kind}:{stamp}", "ready",
@@ -109,7 +112,8 @@ def due_notices(svc: Service, tz: ZoneInfo, now: int) -> list[Notice]:
         ):
             mine.append(Notice(pid, f"got:{d['id']}", "got",
                                f"🎁 {d['donor_nick'] or 'Кто-то'} отдал тебе баф на {KIND_ACC[d['kind']]}",
-                               f"−{format_duration(d['reduction'] or 0)}. Сверь время с игрой — одна кнопка на сайте.",
+                               (f"−{format_duration(d['reduction'])}. Сверь время с игрой — одна кнопка на сайте."
+                                if d["reduction"] else "🎲 По рулетке: очередь была пуста. Баф срежет время твоих строек."),
                                "/"))
 
         # 3. Я следующий.

@@ -343,3 +343,24 @@ def test_undone_test_buff_disappears_everywhere(site, old_record):
     assert '<div class="num">0</div>\n    <div class="lbl">бафов отдано' in stats
     log = owner.get("/admin/log").text
     assert "отменено" in log
+
+
+def test_roulette_on_pages_when_build_queue_empty(site):
+    svc, owner, player = site
+    register(owner, "Иван")
+    register(player, "Мура")
+    ivan, mura = svc.player_by_nick("Иван"), svc.player_by_nick("Мура")
+    token = csrf(player.get("/me").text)
+    player.post("/me/pp", data={"csrf": token, "level": "26"})
+    assert svc.player(mura["id"])["pp_level"] == 26
+    owner.get("/")  # Иван заходил — он активный
+    home = player.get("/").text
+    assert "🎲 рулетка — очередь пуста" in home and "Иван" in home
+    give = player.get("/give?kind=build").text
+    assert "🎲 выпал" in give
+    r = player.post("/gave", data={"csrf": token, "kind": "build", "recipient": ivan["id"]})
+    assert "по рулетке" in r.text
+    assert "рулетке" in owner.get("/admin/log").text or svc.journal(1)[0]["slot"] == "R"
+    # Кто-то записался на стройку — рулетки больше нет, баф ему
+    svc.set_timer(ivan["id"], "build", 12 * 86400, int(__import__("time").time()))
+    assert "🎲 рулетка — очередь пуста" not in player.get("/").text

@@ -35,7 +35,8 @@ SLOT_REASON = {
     "B": "у него самый большой остаток",
     "W": "он дольше всех ждёт помощи",
     "U": "🔥 срочная помощь (отметил админ)",
-    "M": "записано админом",
+    "M": "записано вручную",
+    "R": "🎲 по рулетке — очередь была пуста",
 }
 
 
@@ -135,6 +136,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                 "path": request.url.path,
                 "vapid_public": svc.setting("vapid_public") if me else "",
                 "unread": crm.unread(svc, me["id"]) if me else 0,
+                "pp_goal": int(svc.setting_float("priority_below")),
                 **ctx,
             },
             status_code=status_code,
@@ -289,7 +291,11 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             rows = svc.queue_order(kind, t)
             need = [r for r in rows if r.need]
             mine = next((r for r in rows if me and r.candidate.player_id == me["id"]), None)
+            others = [r for r in need if not me or r.candidate.player_id != me["id"]]
+            roulette = (svc.roulette_order(kind, t, exclude=me["id"] if me else None)
+                        if not others and svc.roulette_on(kind) else [])
             out[kind] = {
+                "roulette": roulette,
                 "need": need,
                 "reached": [r for r in rows if not r.need],
                 "mine": mine,
@@ -337,7 +343,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         t = now()
         return templates.TemplateResponse(
             request, "_boards.html", {"me": me, "boards": boards(me, t), "updated": local(t, "%H:%M:%S"), "now_ts": t,
-                                      "order": svc.setting("queue_order"), "pattern": svc.setting("pattern")},
+                                      "order": svc.setting("queue_order"), "pattern": svc.setting("pattern"),
+                                      "pp_goal": int(svc.setting_float("priority_below"))},
         )
 
     # ---------- условия и калькулятор ----------
@@ -359,6 +366,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             hold_hours=svc.setting_float("hold_hours"),
             prio=priority_text(),
             prio_weight=svc.setting_float("priority_weight"),
+            roulette_build=svc.roulette_on("build"),
+            roulette_research=svc.roulette_on("research"),
         )
 
     @app.post("/rules/agree")
@@ -509,6 +518,9 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             donor=who,
             for_other=who["id"] != me["id"],
             rows=[r for r in svc.queue_order(kind, t) if r.need],
+            roulette=(svc.roulette_order(kind, t, exclude=who["id"])
+                      if svc.roulette_on(kind) and not [r for r in svc.queue_order(kind, t)
+                                                         if r.need and r.candidate.player_id != who["id"]] else []),
             buff=buff_state(who["id"], kind, t),
             gap=svc.setting_float("min_gap_hours"),
         )
@@ -532,7 +544,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             }
             return go(back, messages[error])
         who_text = "Ты" if who["id"] == me["id"] else who["nick"]
-        done = f"✅ Записано: {who_text} → {result.recipient_nick}, баф на {KIND_ACC[kind]} (−{format_duration(result.reduction)}). Спасибо! 🙌"
+        cut = f" (−{format_duration(result.reduction)})" if result.reduction else " (🎲 по рулетке)"
+        done = f"✅ Записано: {who_text} → {result.recipient_nick}, баф на {KIND_ACC[kind]}{cut}. Спасибо! 🙌"
         return go(f"/admin/p/{who['id']}" if who["id"] != me["id"] else "/", done)
 
     # ---------- отмена записанного бафа ----------
@@ -712,6 +725,15 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         crm.save_note(svc, pid, note, tags)
         return go(f"/admin/p/{pid}", "✅ Заметка сохранена.")
 
+    @app.post("/admin/p/{pid}/pp")
+    def player_pp(request: Request, pid: int, csrf: str = Form(""), level: str = Form("")):
+        me = need_admin(request)
+        check_csrf(me, csrf)
+        if svc.player(pid) is None:
+            raise HTTPException(status_code=404)
+        svc.set_pp_level(pid, int(level) if level.strip().isdigit() else None)
+        return go(f"/admin/p/{pid}", "✅ Уровень Электростанции сохранён.")
+
     # ---------- уведомления на телефон ----------
 
     @app.get("/sw.js")
@@ -759,6 +781,13 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         off = [k for k in NOTICE_KINDS if form.get(f"on_{k}") != "1"]
         svc.set_notify_prefs(me["id"], {"off": off, "quiet": form.get("quiet") == "1"})
         return go("/me#notify", "✅ Настройки уведомлений сохранены.")
+
+    @app.post("/me/pp")
+    def me_pp(request: Request, csrf: str = Form(""), level: str = Form("")):
+        me = need_login(request)
+        check_csrf(me, csrf)
+        svc.set_pp_level(me["id"], int(level) if level.strip().isdigit() else None)
+        return go("/me", "✅ Уровень Электростанции сохранён.")
 
     @app.post("/me/nick")
     def change_nick(request: Request, csrf: str = Form(""), nick: str = Form("")):

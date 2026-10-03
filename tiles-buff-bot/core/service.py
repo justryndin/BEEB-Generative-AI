@@ -42,8 +42,8 @@ _KIND_WORDS = {
 SETTINGS: dict[str, tuple[str, str]] = {
     "pct": ("15", "Сколько % срезает один баф"),
     "mode": ("declared", "От чего считать %: declared — от заявленного времени, remaining — от остатка"),
-    "build_min": ("5", "Стройка: ниже этого остатка (дней) бафом не опускаем"),
-    "build_max": ("7", "Стройка: при остатке не больше этого (дней) бафы уже не нужны"),
+    "build_min": ("3", "Стройка: ниже этого остатка (дней) бафом не опускаем"),
+    "build_max": ("3", "Стройка: при остатке не больше этого (дней) бафы уже не нужны"),
     "research_min": ("7", "Исследование: ниже этого остатка (дней) бафом не опускаем"),
     "research_max": ("8", "Исследование: при остатке не больше этого (дней) бафы уже не нужны"),
     "queue_order": (ORDER_SHARE, "Порядок очереди: share — по доле от положенного; cycle — круг и цикл"),
@@ -52,6 +52,9 @@ SETTINGS: dict[str, tuple[str, str]] = {
     "priority_item": ("pp", "Приоритетная стройка (код из справочника, пусто — без приоритета)"),
     "priority_below": ("30", "Приоритет — для уровней ниже этого"),
     "priority_weight": ("2", "Во сколько раз быстрее растёт помощь приоритетной стройке"),
+    "roulette_build": ("1", "Очередь стройки пуста — баф по рулетке активному игроку (1 — да, 0 — нет)"),
+    "roulette_research": ("0", "Очередь исследований пуста — баф по рулетке (1 — да, 0 — нет)"),
+    "roulette_active_days": ("3", "Рулетка: только среди тех, кто заходил на сайт за столько дней"),
     "pattern": ("BBBWWW", "Цикл ротации: B — самому большому остатку, W — кому досталось меньше всех и кто дольше ждёт"),
     "max_streak": ("2", "Не больше стольких бафов подряд одному игроку"),
     "min_gap_hours": ("12", "Пауза после полученного бафа, часов: пока она идёт, бафы получают другие"),
@@ -172,6 +175,18 @@ class OrderRow:
     total: int = 0  # всего положено на эту стройку (получил + ещё положено)
     fire_in: int | None = None  # «горит»: через сколько секунд сам дойдёт до цели
     why: str = ""  # почему он на этом месте — простыми словами
+
+
+@dataclass
+class RouletteRow:
+    """Кандидат рулетки — когда в очереди никого нет, баф получает активный игрок союза."""
+    player_id: int
+    nick: str
+    pp_level: int | None
+    group: int  # 0 — приоритет (Электростанция ниже цели), 1 — уровень неизвестен, 2 — уже построил
+    got_week: int  # сколько бафов этого типа получил по рулетке за 7 дней
+    why: str = ""
+    paused: int = 0  # пауза после недавнего бафа, сек: такие идут после остальных
 
 
 @dataclass
@@ -408,6 +423,7 @@ class Service:
             self.db.run(
                 "UPDATE timers SET next_dismissed = 1 WHERE player_id = ? AND kind = ? AND active = 0", player_id, kind
             )
+            self._note_pp(player_id, item, level, finished=False)
             cur = self.db.run(
                 "INSERT INTO timers(player_id, kind, base_seconds, end_at, created_at, item, level, note, checked_at) "
                 "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -425,6 +441,9 @@ class Service:
 
     def close_timer(self, player_id: int, kind: str, now: int | None = None, suggest_next: bool = True) -> bool:
         """suggest_next=False — закрыл админ: игроку не предлагаем «встать со следующей»."""
+        timer = self.active_timer(player_id, kind)
+        if timer is not None and suggest_next:
+            self._note_pp(player_id, timer["item"], timer["level"], finished=True)
         cur = self.db.run(
             "UPDATE timers SET active = 0, closed_at = ?, next_dismissed = ? "
             "WHERE player_id = ? AND kind = ? AND active = 1",
@@ -444,6 +463,8 @@ class Service:
         return flag
 
     def deactivate_finished(self, now: int) -> int:
+        for t in self.db.all("SELECT * FROM timers WHERE active = 1 AND end_at <= ? AND item = 'pp'", now):
+            self._note_pp(t["player_id"], t["item"], t["level"], finished=True)
         return self.db.run(
             "UPDATE timers SET active = 0, closed_at = end_at WHERE active = 1 AND end_at <= ?", now
         ).rowcount
@@ -821,15 +842,17 @@ class Service:
                 return None
             return self._complete(d, now)
 
-    def record_manual(self, donor_id: int, recipient_id: int, kind: str, requested_by: int, now: int) -> BuffResult:
-        """Админ вручную записывает уже отданный баф."""
+    def record_manual(self, donor_id: int, recipient_id: int, kind: str, requested_by: int, now: int,
+                      slot: str = "M") -> BuffResult:
+        """Записывает уже отданный баф. slot «R» — отдан по рулетке (очередь была пуста)."""
         with self.db.tx():
             cur = self.db.run(
                 "INSERT INTO donations(kind, donor_id, recipient_id, slot, status, requested_by, created_at) "
-                "VALUES(?, ?, ?, 'M', 'pending', ?, ?)",
+                "VALUES(?, ?, ?, ?, 'pending', ?, ?)",
                 kind,
                 donor_id,
                 recipient_id,
+                slot,
                 requested_by,
                 now,
             )
@@ -1091,6 +1114,82 @@ class Service:
             limit,
         )
 
+    # ---------- рулетка: очередь пуста — баф всё равно не пропадает ----------
+
+    def roulette_on(self, kind: str) -> bool:
+        return self.setting_float(f"roulette_{kind}") > 0
+
+    def set_pp_level(self, player_id: int, level: int | None) -> None:
+        if level is not None and not 1 <= level <= 99:
+            level = None
+        self.db.run("UPDATE players SET pp_level = ? WHERE id = ?", level, player_id)
+
+    def _note_pp(self, player_id: int, item: str | None, level: int | None, finished: bool) -> None:
+        """Запись стройки Электростанции подсказывает её уровень: строит до N — значит уже N−1."""
+        if item != "pp" or not level:
+            return
+        known = level if finished else level - 1
+        self.db.run(
+            "UPDATE players SET pp_level = ? WHERE id = ? AND (pp_level IS NULL OR pp_level < ?)",
+            known, player_id, known,
+        )
+
+    def roulette_order(self, kind: str, now: int, exclude: int | None = None) -> list[RouletteRow]:
+        """Кому отдать баф по рулетке. Кто недавно получил баф (пауза) — в конце. Дальше приоритет —
+        кто не построил Электростанцию до цели (настройка priority_below), потом — кто меньше всех
+        получил по рулетке за неделю,
+        при равенстве — жребий. Жребий меняется только после каждого бафа по рулетке,
+        поэтому у всех на экране один и тот же «следующий»."""
+        goal = int(self.setting_float("priority_below"))
+        active_since = now - int(self.setting_float("roulette_active_days") * DAY)
+        rows = self.db.all(
+            "SELECT p.id, p.nick, p.pp_level, "
+            "(SELECT COUNT(*) FROM donations d WHERE d.recipient_id = p.id AND d.kind = ? AND d.slot = 'R' "
+            " AND d.status = 'done' AND d.resolved_at >= ?) AS got_week, "
+            "(SELECT MAX(d.resolved_at) FROM donations d WHERE d.recipient_id = p.id AND d.kind = ? "
+            " AND d.status = 'done') AS got_at "
+            "FROM players p WHERE p.last_seen_at >= ? "
+            "OR EXISTS(SELECT 1 FROM timers t WHERE t.player_id = p.id AND t.active = 1) "
+            "OR EXISTS(SELECT 1 FROM donations d WHERE d.donor_id = p.id AND d.status = 'done' AND d.resolved_at >= ?)",
+            kind, now - 7 * DAY, kind, active_since, active_since,
+        )
+        gap = int(self.setting_float("min_gap_hours") * HOUR)
+        draw = self.db.one(
+            "SELECT COUNT(*) AS n FROM donations WHERE kind = ? AND slot = 'R' AND status = 'done'", kind
+        )["n"]
+        out = []
+        for r in rows:
+            if r["id"] == exclude:
+                continue
+            level = r["pp_level"]
+            group = 1 if level is None else (0 if level < goal else 2)
+            if group == 0:
+                why = f"⚡ Электростанция {level} — ещё не построил {goal}"
+            elif group == 1:
+                why = "уровень Электростанции не указан"
+            else:
+                why = f"Электростанция {level} — уже построил"
+            if r["got_week"]:
+                why += f" · по рулетке за неделю: {r['got_week']}"
+            paused = max(0, (r["got_at"] or 0) + gap - now) if gap else 0
+            if paused:
+                why = f"⏸ пауза ещё {format_duration(paused)} · " + why
+            out.append(RouletteRow(r["id"], r["nick"], level, group, r["got_week"], why, paused))
+        lot = lambda pid: hashlib.sha1(f"{kind}:{draw}:{pid}".encode()).hexdigest()  # noqa: E731
+        out.sort(key=lambda x: (x.paused > 0, x.group, x.got_week, lot(x.player_id)))
+        return out
+
+    def give_target(self, kind: str, donor_id: int, now: int):
+        """Кому этот игрок должен отдать баф прямо сейчас: (ник, id, это рулетка?) или None."""
+        first = next((r for r in self.queue_order(kind, now) if r.need and r.candidate.player_id != donor_id), None)
+        if first is not None:
+            return first.candidate.nick, first.candidate.player_id, False
+        if self.roulette_on(kind):
+            pick = next(iter(self.roulette_order(kind, now, exclude=donor_id)), None)
+            if pick is not None:
+                return pick.nick, pick.player_id, True
+        return None
+
     # ---------- очередь по порядку и «я отдал баф» ----------
 
     def queue_order(self, kind: str, now: int) -> list[OrderRow]:
@@ -1182,7 +1281,12 @@ class Service:
         """Игрок отметил: «я отдал баф вот ему». Возвращает (результат, ошибка)."""
         if donor_id == recipient_id:
             return None, "self"
-        if self.active_timer(recipient_id, kind) is None:
+        need = [r.candidate.player_id for r in self.queue_order(kind, now) if r.need]
+        # Рулетка: в очереди нет никого, кроме самого донора, — баф может получить любой игрок союза.
+        roulette = recipient_id not in need and not [p for p in need if p != donor_id] and self.roulette_on(kind)
+        if roulette and self.player(recipient_id) is None:
+            return None, "not_in_queue"
+        if not roulette and self.active_timer(recipient_id, kind) is None:
             return None, "not_in_queue"
         recent = self.db.one(
             "SELECT id FROM donations WHERE kind = ? AND donor_id = ? AND status = 'done' AND resolved_at > ?",
@@ -1192,7 +1296,7 @@ class Service:
         )
         if recent is not None:
             return None, "duplicate"
-        return self.record_manual(donor_id, recipient_id, kind, by_id, now), None
+        return self.record_manual(donor_id, recipient_id, kind, by_id, now, slot="R" if roulette else "M"), None
 
     # ---------- отмена записанного бафа ----------
 

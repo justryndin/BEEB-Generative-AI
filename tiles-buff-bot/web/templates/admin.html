@@ -90,6 +90,26 @@
         <div class="hint">Доля помощи приоритетной стройке растёт во столько раз медленнее — бафы ей идут чаще, но остальных не забываем.</div>
       </div>
       <div class="field">
+        <label for="roulette_build">🎲 Рулетка для стройки</label>
+        <select id="roulette_build" name="roulette_build">
+          <option value="1" {{ 'selected' if settings.roulette_build == '1' }}>включена — очередь пуста, баф по рулетке</option>
+          <option value="0" {{ 'selected' if settings.roulette_build == '0' }}>выключена — придержать баф</option>
+        </select>
+        <div class="hint">Первыми — кто не построил Электростанцию до уровня из «Приоритет для уровней ниже».</div>
+      </div>
+      <div class="field">
+        <label for="roulette_research">🎲 Рулетка для исследований</label>
+        <select id="roulette_research" name="roulette_research">
+          <option value="1" {{ 'selected' if settings.roulette_research == '1' }}>включена</option>
+          <option value="0" {{ 'selected' if settings.roulette_research == '0' }}>выключена</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="roulette_active_days">🎲 Рулетка среди заходивших за, дней</label>
+        <input id="roulette_active_days" name="roulette_active_days" type="number" step="1" min="1" max="30" value="{{ settings.roulette_active_days }}">
+        <div class="hint">Плюс все, кто стоит в очереди или отдавал бафы за этот срок.</div>
+      </div>
+      <div class="field">
         <label for="check_hours">🔁 Просить сверить время, часов</label>
         <input id="check_hours" name="check_hours" type="number" step="1" min="0" max="168" value="{{ settings.check_hours }}">
         <div class="hint">После каждого полученного бафа и если игрок давно не сверялся (ускорения сайт не видит). 0 — не просить.</div>

@@ -513,6 +513,9 @@ main.wide { max-width: 1180px; }
 .ev-body small { display: block; margin-top: 2px; }
 .chip input { accent-color: var(--accent); margin-right: 4px; }
 label.chip { display: inline-flex; align-items: center; }
+.roulette { margin-top: 10px; padding: 12px 14px; border-radius: 16px; background: var(--surface-2); border: 1px dashed var(--accent-ring); }
+.roulette-list { margin-top: 6px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .life-card { border-color: var(--accent-ring); }
 .inline-time { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; margin-top: 12px; }
 .inline-time button { grid-column: 1 / -1; }

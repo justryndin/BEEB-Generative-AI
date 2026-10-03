@@ -166,6 +166,7 @@ MIGRATIONS = {
         ("notify_prefs", "TEXT"),  # JSON: какие уведомления выключены
         ("crm_note", "TEXT"),  # заметка R4 об игроке
         ("crm_tags", "TEXT"),  # метки через запятую: «актив, новичок»
+        ("pp_level", "INTEGER"),  # уровень Электростанции (сам игрок, R4 или по записям стройки)
     ],
     "donations": [("undo", "TEXT"), ("undone_by", "INTEGER"), ("undone_at", "INTEGER")],
 }

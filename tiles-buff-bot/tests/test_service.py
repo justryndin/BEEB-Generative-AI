@@ -5,8 +5,13 @@ from core.timeparse import DAY, HOUR
 T0 = 1_700_000_000
 
 
-def make():
-    return Service(Database(":memory:"))
+def make(classic=True):
+    """classic — прежние пороги стройки 5–7 дн. и без рулетки (на них написаны старые проверки)."""
+    svc = Service(Database(":memory:"))
+    if classic:
+        for key, value in (("build_min", "5"), ("build_max", "7"), ("roulette_build", "0")):
+            svc.set_setting(key, value)
+    return svc
 
 
 def reg(svc, tg, nick):
@@ -334,3 +339,43 @@ def test_notices_for_important_posts_and_events():
     assert "Сбор" in ev.title and "12:00" in ev.title and ev.body == "Щиты!"
     # Раньше чем за час до начала — ещё не напоминаем
     assert not any(k.startswith("event:") for k in (n.key for n in due_notices(svc, utc, monday + 10 * HOUR + 30 * 60)))
+
+
+
+def test_roulette_when_build_queue_is_empty():
+    svc = make(classic=False)
+    donor = reg(svc, 1, "Донор")
+    low = reg(svc, 2, "Низкий")
+    high = reg(svc, 3, "Высокий")
+    unknown = reg(svc, 4, "Безуровня")
+    gone = reg(svc, 5, "Пропал")
+    for p in (donor, low, high, unknown):
+        svc.touch_seen(p["id"], T0)
+    svc.touch_seen(gone["id"], T0 - 10 * DAY)  # давно не заходил — в рулетку не попадает
+    svc.set_pp_level(high["id"], 30)
+    svc.set_timer(low["id"], "research", 20 * DAY, T0, item="eco")
+    svc._note_pp(low["id"], "pp", 27, finished=False)  # строит 27 → уже 26
+    assert svc.player(low["id"])["pp_level"] == 26
+
+    order = svc.roulette_order("build", T0, exclude=donor["id"])
+    assert [r.nick for r in order] == ["Низкий", "Безуровня", "Высокий"]
+    assert svc.give_target("build", donor["id"], T0) == ("Низкий", low["id"], True)
+
+    result, error = svc.record_gift("build", donor["id"], low["id"], donor["id"], T0)
+    assert error is None and svc.donation(result.donation_id)["slot"] == "R"
+    # Получил по рулетке — у него пауза, следующий «Безуровня», а «Низкий» уходит в конец
+    assert svc.roulette_order("build", T0 + 60, exclude=donor["id"])[-1].nick == "Низкий"
+    assert svc.roulette_order("build", T0 + 60, exclude=donor["id"])[0].nick == "Безуровня"
+
+    # Кто-то записался на стройку — рулетка выключается, баф ему; чужому без записи — нельзя
+    svc.set_timer(high["id"], "build", 12 * DAY, T0)
+    assert svc.give_target("build", donor["id"], T0 + 60) == ("Высокий", high["id"], False)
+    assert svc.record_gift("build", donor["id"], unknown["id"], donor["id"], T0 + 20 * 60)[1] == "not_in_queue"
+
+
+def test_build_threshold_three_days_helps_more():
+    svc = make(classic=False)
+    p = reg(svc, 1, "П")
+    svc.set_timer(p["id"], "build", 12 * DAY, T0)
+    row = next(r for r in svc.queue_order("build", T0) if r.candidate.player_id == p["id"])
+    assert row.needed == 5  # срез 1,8 д: 12 → 10,2 → 8,4 → 6,6 → 4,8 → 3,0 (при пороге 5–7 было бы 3)

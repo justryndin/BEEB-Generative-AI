@@ -30,9 +30,14 @@
       {% for kind in ["research", "build"] %}{% set first = boards[kind].need[0] if boards[kind].need else none %}
       <div class="now-item">
         <span class="now-kind">{{ KIND_EMOJI[kind] }} {{ "Исследование" if kind == "research" else "Стройка" }}</span>
-        {% if first %}
+        {% set spin = boards[kind].roulette[0] if boards[kind].roulette else none %}
+        {% if first and not (spin and me and first.candidate.player_id == me.id) %}
         <b class="now-nick">{{ first.candidate.nick }}</b>
         {% if me and first.candidate.player_id == me.id %}<span class="badge badge-accent">это ты — отдай следующему</span>{% endif %}
+        <a class="btn btn-primary btn-block" href="/give?kind={{ kind }}">Отдал ✓</a>
+        {% elif spin %}
+        <b class="now-nick">{{ spin.nick }}</b>
+        <span class="badge">🎲 рулетка — очередь пуста</span>
         <a class="btn btn-primary btn-block" href="/give?kind={{ kind }}">Отдал ✓</a>
         {% else %}
         <b class="now-nick muted">никому не нужно 👍</b>
@@ -71,7 +76,16 @@
       <ol class="blist">{% for r in b.need[10:] %}{{ brow(r, me, now_ts) }}{% endfor %}</ol>
     </details>
     {% endif %}
-    {% else %}
+    {% endif %}
+    {% if b.roulette %}
+    <div class="roulette">
+      <p class="mt0"><b>🎲 Рулетка.</b> {% if b.need %}Кроме тебя в очереди никого нет{% else %}В очереди никого нет{% endif %} — чтобы баф не пропал, отдаём активным игрокам союза по кругу. Первыми — кто ещё не построил Электростанцию {{ pp_goal }}.
+        <a href="/join/{{ kind }}">Строишь что-то? Встань в очередь</a> — записавшимся помогаем первыми.</p>
+      <ol class="feed roulette-list">
+        {% for r in b.roulette[:5] %}<li><span><b>{{ r.nick }}</b>{% if loop.first %} <span class="badge badge-accent">🎲 сейчас</span>{% endif %}<br><small class="muted">{{ r.why }}</small></span></li>{% endfor %}
+      </ol>
+    </div>
+    {% elif not b.need %}
     <p class="empty">Сейчас никому не нужен баф 👍</p>
     {% endif %}
 

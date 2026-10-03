@@ -11,6 +11,17 @@
 </div>
 
 <section class="card">
+  <h2>⚡ Электростанция</h2>
+  <form method="post" action="/admin/p/{{ p.id }}/pp" class="row">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label for="pp" class="sr-only">Уровень Электростанции</label>
+    <input id="pp" name="level" type="number" inputmode="numeric" min="1" max="99" value="{{ p.pp_level or '' }}" placeholder="уровень не указан" style="flex:1;min-width:160px">
+    <button class="btn" type="submit">Сохранить</button>
+  </form>
+  <p class="hint">Нужен для рулетки: первыми бафы по рулетке получают те, кто ещё не построил цель.</p>
+</section>
+
+<section class="card">
   <h2>🗂 Заметка R4</h2>
   <form method="post" action="/admin/p/{{ p.id }}/crm" class="stack">
     <input type="hidden" name="csrf" value="{{ csrf }}">
