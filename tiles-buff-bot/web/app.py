@@ -14,10 +14,12 @@ from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from markupsafe import Markup
 
 from core import gamedata
 from core.db import Database
-from core import crm
+from core import crm, i18n
+from core.i18n import LANGS, SHORT, t
 from core.analytics import benefit, r4_report
 from core.tips import player_tip
 from core.notify import NOTICE_KINDS, Notice, prefs as notify_prefs
@@ -78,6 +80,26 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         task.cancel()
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+
+    class LangMiddleware:
+        """Язык запроса: cookie «lang» → настройки браузера → русский. Кладём в contextvar."""
+
+        def __init__(self, inner):
+            self.inner = inner
+
+        async def __call__(self, scope, receive, send):
+            if scope["type"] != "http":
+                return await self.inner(scope, receive, send)
+            headers = {k.decode().lower(): v.decode() for k, v in scope.get("headers", [])}
+            cookie = None
+            for part in headers.get("cookie", "").split(";"):
+                name, _, value = part.strip().partition("=")
+                if name == "lang":
+                    cookie = value
+            with i18n.using(i18n.pick_lang(cookie, headers.get("accept-language"))):
+                await self.inner(scope, receive, send)
+
+    app.add_middleware(LangMiddleware)
     app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
     templates = Jinja2Templates(directory=BASE / "templates")
     app.state.svc, app.state.cfg = svc, cfg
@@ -87,7 +109,17 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     def local(ts: int | None, fmt: str = "%d.%m %H:%M") -> str:
         return datetime.fromtimestamp(ts, cfg.tz).strftime(fmt) if ts else "—"
 
-    tz_label = "МСК" if str(cfg.tz) in ("Europe/Moscow", "MSK") else datetime.now(cfg.tz).strftime("%Z")
+    class _TzLabel:
+        """Подпись часового пояса сайта: «МСК» по-русски, «MSK» на других языках."""
+
+        raw = "МСК" if str(cfg.tz) in ("Europe/Moscow", "MSK") else datetime.now(cfg.tz).strftime("%Z")
+
+        def __str__(self) -> str:
+            return i18n.translate(self.raw)
+
+        __html__ = __str__
+
+    tz_label = _TzLabel()
 
     def utc_offset_min() -> int:
         return int(datetime.now(cfg.tz).utcoffset().total_seconds() // 60)
@@ -146,16 +178,32 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         site_name=cfg.site_name,
         NOTICE_KINDS=NOTICE_KINDS,
         gamedata=gamedata,
+        _=lambda text, **kw: Markup(i18n.translate(text)).format(**kw) if kw else Markup(i18n.translate(text)),
+        LANGS=LANGS,
+        SHORT=SHORT,
+        lang=i18n.get_lang,
     )
 
     def current(request: Request):
         return svc.session(request.cookies.get("sid"), now(), max_age)
 
+    def localized(name: str) -> str:
+        """Большие тексты (справка, условия, гайды) переведены целыми страницами: help.en.html и т. п.
+        Нет страницы на нужном языке — берём английскую, нет и её — русскую."""
+        lang = i18n.get_lang()
+        if lang == "ru":
+            return name
+        stem = name[: -len(".html")]
+        for code in (lang, "en"):
+            if (BASE / "templates" / f"{stem}.{code}.html").exists():
+                return f"{stem}.{code}.html"
+        return name
+
     def render(request: Request, name: str, me=None, status_code: int = 200, **ctx) -> HTMLResponse:
         flash = unquote(request.cookies.get("flash", ""))
         resp = templates.TemplateResponse(
             request,
-            name,
+            localized(name),
             {
                 "me": me,
                 "is_admin": svc.is_admin_player(me),
@@ -242,6 +290,20 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             return "ready", 0
         return "wait", cd["ready_at"] - t
 
+    # ---------- язык ----------
+
+    @app.get("/lang/{code}")
+    def switch_lang(request: Request, code: str, next: str = "/"):
+        """Сменить язык: запоминаем в cookie (на год) и в профиле — для уведомлений."""
+        if code not in LANGS:
+            code = i18n.DEFAULT
+        me = current(request)
+        if me is not None:
+            svc.db.run("UPDATE players SET lang = ? WHERE id = ?", code, me["id"])
+        resp = RedirectResponse(next if next.startswith("/") and not next.startswith("//") else "/", status_code=303)
+        resp.set_cookie("lang", code, max_age=365 * DAY, samesite="lax", secure=cfg.secure_cookies)
+        return resp
+
     # ---------- вход и регистрация ----------
 
     @app.get("/login", response_class=HTMLResponse)
@@ -264,7 +326,15 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         token, _ = svc.create_session(player["id"], now())
         resp = go("/")
         resp.set_cookie("sid", token, max_age=max_age, httponly=True, samesite="lax", secure=cfg.secure_cookies)
+        remember_lang(resp, player)
         return resp
+
+    def remember_lang(resp, player) -> None:
+        """Язык игрока: в профиле есть — вернём его в cookie; нет — запишем текущий."""
+        if player["lang"] in LANGS:
+            resp.set_cookie("lang", player["lang"], max_age=365 * DAY, samesite="lax", secure=cfg.secure_cookies)
+        else:
+            svc.db.run("UPDATE players SET lang = ? WHERE id = ?", i18n.get_lang(), player["id"])
 
     @app.get("/register", response_class=HTMLResponse)
     def register_page(request: Request):
@@ -299,6 +369,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         token, _ = svc.create_session(player["id"], now())
         resp = go("/", f"Добро пожаловать, {player['nick']}! ✅")
         resp.set_cookie("sid", token, max_age=max_age, httponly=True, samesite="lax", secure=cfg.secure_cookies)
+        remember_lang(resp, svc.player(player["id"]))
         return resp
 
     @app.post("/logout")

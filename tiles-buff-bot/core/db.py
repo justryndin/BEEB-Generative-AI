@@ -167,6 +167,7 @@ MIGRATIONS = {
         ("crm_note", "TEXT"),  # заметка R4 об игроке
         ("crm_tags", "TEXT"),  # метки через запятую: «актив, новичок»
         ("pp_level", "INTEGER"),  # уровень Электростанции (сам игрок, R4 или по записям стройки)
+        ("lang", "TEXT"),  # язык сайта и уведомлений: ru, en, es, pt
     ],
     "donations": [("undo", "TEXT"), ("undone_by", "INTEGER"), ("undone_at", "INTEGER")],
 }

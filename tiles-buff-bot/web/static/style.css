@@ -519,6 +519,9 @@ label.chip { display: inline-flex; align-items: center; }
 /* ---------- часы ---------- */
 .clockbar { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 16px; padding: 4px 12px 6px; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .clockbar b { color: var(--text-2); font-weight: 600; }
+.langs { display: inline-flex; gap: 2px; }
+.langs a { padding: 2px 7px; min-height: 24px; border-radius: 8px; color: var(--muted); text-decoration: none; font-weight: 700; }
+.langs a.on { background: var(--accent-soft); color: var(--accent-text); }
 
 /* ---------- совет дня ---------- */
 .tip-card { border-color: var(--accent-ring); }

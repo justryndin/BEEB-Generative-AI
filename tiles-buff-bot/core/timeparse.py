@@ -77,14 +77,20 @@ def parse_duration(text: str) -> int | None:
     return int(round(total))
 
 
+_UNITS = {"ru": ("д", "ч", "м")}
+
+
 def format_duration(seconds: float) -> str:
+    from .i18n import get_lang  # язык текущего запроса: «2д 5ч» по-русски, «2d 5h» на остальных
+
+    d, h, m = _UNITS.get(get_lang(), ("d", "h", "m"))
     seconds = max(0, int(seconds))
     days, rest = divmod(seconds, DAY)
     hours, rest = divmod(rest, HOUR)
     minutes = rest // MINUTE
     if days:
-        return f"{days}д {hours}ч" if hours else f"{days}д"
+        return f"{days}{d} {hours}{h}" if hours else f"{days}{d}"
     if hours:
-        return f"{hours}ч {minutes}м" if minutes else f"{hours}ч"
-    return f"{minutes}м"
+        return f"{hours}{h} {minutes}{m}" if minutes else f"{hours}{h}"
+    return f"{minutes}{m}"
 

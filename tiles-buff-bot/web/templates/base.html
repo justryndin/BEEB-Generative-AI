@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="{{ lang() }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -37,7 +37,8 @@
   </div>
   <div class="clockbar" data-clock data-now="{{ now_epoch }}" data-off="{{ tz_offset_min }}">
     <span>🕒 {{ tz_label }} ({{ offset_text() }}) <b data-clock-local>{{ local(now_epoch, "%H:%M:%S") }}</b></span>
-    <span>🌐 Сервер (UTC) <b data-clock-utc>{{ utc(now_epoch, "%H:%M:%S") }}</b></span>
+    <span>🌐 {{ _("Сервер (UTC)") }} <b data-clock-utc>{{ utc(now_epoch, "%H:%M:%S") }}</b></span>
+    <span class="langs" aria-label="Language">{% for code in LANGS %}<a href="/lang/{{ code }}?next={{ path|urlencode }}" class="{{ 'on' if code == lang() }}" lang="{{ code }}" title="{{ LANGS[code] }}">{{ SHORT[code] }}</a>{% endfor %}</span>
   </div>
 </header>
 
