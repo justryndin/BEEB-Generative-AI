@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS donations (
     resolved_at  INTEGER
 );
 CREATE INDEX IF NOT EXISTS donations_kind_status ON donations(kind, status);
+CREATE INDEX IF NOT EXISTS donations_recipient ON donations(recipient_id, kind, status, resolved_at);
+CREATE INDEX IF NOT EXISTS donations_donor ON donations(donor_id, kind, status, resolved_at);
 
 CREATE TABLE IF NOT EXISTS cooldowns (
     player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
@@ -129,6 +131,21 @@ CREATE TABLE IF NOT EXISTS notify_log (
 );
 """
 
+# Живые данные из журнала бафов: сколько бафов получено на эту стройку и когда последний.
+# Считаем по таблице donations, а не храним счётчиком, — отменённая запись сразу пропадает отовсюду.
+VIEWS = """
+DROP VIEW IF EXISTS timers_live;
+CREATE VIEW timers_live AS
+SELECT t.*,
+    (SELECT COUNT(*) FROM donations d WHERE d.recipient_id = t.player_id AND d.kind = t.kind
+        AND d.status = 'done' AND d.resolved_at >= t.created_at
+        AND (t.closed_at IS NULL OR d.resolved_at <= t.closed_at)) AS got,
+    (SELECT MAX(d.resolved_at) FROM donations d WHERE d.recipient_id = t.player_id AND d.kind = t.kind
+        AND d.status = 'done' AND d.resolved_at >= t.created_at
+        AND (t.closed_at IS NULL OR d.resolved_at <= t.closed_at)) AS got_at
+FROM timers t;
+"""
+
 # Колонки, добавленные после первой версии: таблица → [(колонка, тип)].
 MIGRATIONS = {
     "timers": [
@@ -165,6 +182,7 @@ class Database:
             self.conn.execute("PRAGMA journal_mode = WAL")
         self.conn.executescript(SCHEMA)
         self._migrate()
+        self.conn.executescript(VIEWS)
 
     def _migrate(self) -> None:
         for table, wanted in MIGRATIONS.items():

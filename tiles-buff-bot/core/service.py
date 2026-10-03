@@ -462,12 +462,12 @@ class Service:
         if hours <= 0:
             return []
         rows = self.db.all(
-            "SELECT * FROM timers WHERE player_id = ? AND active = 1 AND end_at > ? ORDER BY kind", player_id, now
+            "SELECT * FROM timers_live WHERE player_id = ? AND active = 1 AND end_at > ? ORDER BY kind", player_id, now
         )
         out = []
         for row in rows:
             checked = row["checked_at"] or row["created_at"]
-            if row["last_buff_at"] and row["last_buff_at"] > checked:
+            if row["got_at"] and row["got_at"] > checked:
                 out.append({"timer": row, "kind": row["kind"], "remaining": row["end_at"] - now, "why": "buff"})
             elif now - checked >= hours * HOUR:
                 out.append({"timer": row, "kind": row["kind"], "remaining": row["end_at"] - now, "why": "stale"})
@@ -519,10 +519,10 @@ class Service:
             base=row["base_seconds"],
             reduction=buff_reduction(row["base_seconds"], remaining, rules),
             urgent=bool(row["urgent"]),
-            waiting_since=row["last_buff_at"] or row["created_at"],
-            received=row["buffs_received"],
+            waiting_since=row["got_at"] or row["created_at"],
+            received=row["got"],
             has_tg=row["tg_id"] is not None,
-            last_got=row["last_buff_at"],
+            last_got=row["got_at"],
             priority=self.is_priority(row["item"], row["level"]),
             holding=holding,
         )
@@ -547,7 +547,13 @@ class Service:
             r["player_id"]: r["t"]
             for r in self.db.all("SELECT player_id, MIN(created_at) AS t FROM timers WHERE active = 1 GROUP BY player_id")
         }
-        cds = {(r["player_id"], r["kind"]): r["ready_at"] for r in self.db.all("SELECT * FROM cooldowns")}
+        cooldown = int(self.setting_float("cooldown_hours") * HOUR)
+        cds = {
+            (r["donor_id"], r["kind"]): r["t"] + cooldown
+            for r in self.db.all(
+                "SELECT donor_id, kind, MAX(resolved_at) AS t FROM donations WHERE status = 'done' GROUP BY donor_id, kind"
+            )
+        }
         out: dict[int, tuple[str, int]] = {}
         for pid, since in joined.items():
             for kind in KINDS:
@@ -561,14 +567,14 @@ class Service:
 
     def _timer_rows(self, kind: str):
         return self.db.all(
-            "SELECT t.*, p.nick, p.tg_id FROM timers t JOIN players p ON p.id = t.player_id "
+            "SELECT t.*, p.nick, p.tg_id FROM timers_live t JOIN players p ON p.id = t.player_id "
             "WHERE t.active = 1 AND t.kind = ?",
             kind,
         )
 
     def timer_candidate(self, player_id: int, kind: str, now: int) -> Candidate | None:
         row = self.db.one(
-            "SELECT t.*, p.nick, p.tg_id FROM timers t JOIN players p ON p.id = t.player_id "
+            "SELECT t.*, p.nick, p.tg_id FROM timers_live t JOIN players p ON p.id = t.player_id "
             "WHERE t.active = 1 AND t.kind = ? AND t.player_id = ?",
             kind,
             player_id,
@@ -643,15 +649,18 @@ class Service:
         )
 
     def donor_ready_in(self, donor_id: int, kind: str, now: int) -> int:
-        row = self.db.one(
-            "SELECT ready_at FROM cooldowns WHERE player_id = ? AND kind = ?", donor_id, kind
-        )
-        return max(0, row["ready_at"] - now) if row else 0
+        cd = self.cooldown(donor_id, kind)
+        return max(0, cd["ready_at"] - now) if cd else 0
 
     def cooldown(self, player_id: int, kind: str):
-        return self.db.one(
-            "SELECT * FROM cooldowns WHERE player_id = ? AND kind = ?", player_id, kind
+        """Когда у игрока снова готов баф: по последней записи в журнале (отменённые не считаются)."""
+        row = self.db.one(
+            "SELECT MAX(resolved_at) AS t FROM donations WHERE donor_id = ? AND kind = ? AND status = 'done'",
+            player_id, kind,
         )
+        if row is None or row["t"] is None:
+            return None
+        return {"ready_at": row["t"] + int(self.setting_float("cooldown_hours") * HOUR), "reminded": 0}
 
     def _assignment(self, donation, now: int, reused: bool) -> Assignment:
         recipient = self.player(donation["recipient_id"])

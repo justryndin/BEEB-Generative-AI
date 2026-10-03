@@ -48,14 +48,14 @@ def give_delays(svc: Service, since: int, until: int) -> dict[int, list[int]]:
 def first_waits(svc: Service, since: int, now: int) -> tuple[list[int], int]:
     """Сколько ждали первого бафа записи, созданные за период: ([секунды], сколько ещё ждут)."""
     waits, waiting = [], 0
-    for t in svc.db.all("SELECT * FROM timers WHERE created_at >= ?", since):
+    for t in svc.db.all("SELECT * FROM timers_live WHERE created_at >= ?", since):
         first = svc.db.one(
             "SELECT MIN(resolved_at) AS t FROM donations WHERE recipient_id = ? AND kind = ? AND status = 'done' "
             "AND resolved_at >= ?", t["player_id"], t["kind"], t["created_at"],
         )["t"]
         if first is not None and (t["closed_at"] is None or first <= t["closed_at"]):
             waits.append(first - t["created_at"])
-        elif t["active"] and t["buffs_received"] == 0:
+        elif t["active"] and t["got"] == 0:
             waiting += 1
     return waits, waiting
 

@@ -308,3 +308,38 @@ def test_board_events_and_crm(site):
     # Заметка R4 об игроке
     owner.post(f"/admin/p/{mura['id']}/crm", data={"csrf": token, "note": "онлайн вечером", "tags": "актив, R3"})
     assert "R3" in owner.get("/admin").text and "онлайн вечером" in owner.get(f"/admin/p/{mura['id']}").text
+
+
+@pytest.mark.parametrize("old_record", [False, True])
+def test_undone_test_buff_disappears_everywhere(site, old_record):
+    """Отдал баф «на пробу» и отменил — нигде не должно остаться следов, кроме зачёркнутой строки в журнале."""
+    svc, owner, player = site
+    register(owner, "Иван")
+    register(player, "Мура")
+    svc.set_owner(svc.player_by_nick("Иван")["id"])
+    ivan, mura = svc.player_by_nick("Иван"), svc.player_by_nick("Мура")
+    t = int(__import__("time").time())
+    svc.set_timer(mura["id"], "build", 30 * 86400, t - 600)
+    svc.set_timer(ivan["id"], "build", 20 * 86400, t - 600)
+    before = svc.timer_candidate(mura["id"], "build", t)
+    token = csrf(owner.get("/me").text)
+
+    owner.post("/gave", data={"csrf": token, "kind": "build", "recipient": mura["id"]})
+    assert svc.timer_candidate(mura["id"], "build", t).received == 1
+    assert svc.cooldown(ivan["id"], "build") is not None
+    d = svc.journal(1)[0]
+    if old_record:  # запись, сделанная до появления отмены, — без сведений для отката
+        svc.db.run("UPDATE donations SET undo = NULL WHERE id = ?", d["id"])
+    owner.post(f"/undo/{d['id']}", data={"csrf": token, "next": "/admin/log"})
+
+    after = svc.timer_candidate(mura["id"], "build", t)
+    assert after.received == 0 and after.last_got is None and after.remaining == before.remaining
+    assert svc.cooldown(ivan["id"], "build") is None and svc.time_checks(mura["id"], t + 60) == []
+    home = player.get("/").text
+    assert "Сверь время" not in home and "отдал тебе баф" not in home and "получил 1 из" not in home
+    assert "получил <b>0 из" in player.get("/me").text
+    assert svc.totals()["buffs"] == 0 and svc.stats(mura["id"]) == (0, 0)
+    stats = owner.get("/admin/stats").text
+    assert '<div class="num">0</div>\n    <div class="lbl">бафов отдано' in stats
+    log = owner.get("/admin/log").text
+    assert "отменено" in log
