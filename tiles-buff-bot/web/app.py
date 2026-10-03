@@ -854,6 +854,32 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             players=len(svc.players()),
         )
 
+    @app.get("/help", response_class=HTMLResponse)
+    def help_page(request: Request):
+        """Справка: как устроено всё на сайте — для игроков и для R4. Числа берутся из настроек."""
+        me = current(request)
+        f = svc.setting_float
+        return render(
+            request, "help.html", me,
+            pct=int(f("pct")),
+            build_target=target_text("build"),
+            research_target=target_text("research"),
+            gap=int(f("min_gap_hours")),
+            fire=int(f("fire_hours")),
+            hold=int(f("hold_hours")),
+            cooldown=int(f("cooldown_hours")),
+            check=int(f("check_hours")),
+            prio=priority_text(),
+            prio_weight=f("priority_weight"),
+            roulette_build=svc.roulette_on("build"),
+            roulette_research=svc.roulette_on("research"),
+            roulette_days=int(f("roulette_active_days")),
+            quiet=(int(f("quiet_from")), int(f("quiet_to"))),
+            order=svc.setting("queue_order"),
+            self_undo=SELF_UNDO_SECONDS // 60,
+            site_url=str(request.base_url).rstrip("/"),
+        )
+
     @app.get("/tips", response_class=HTMLResponse)
     def tips(request: Request):
         me = current(request)

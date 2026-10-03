@@ -516,6 +516,25 @@ label.chip { display: inline-flex; align-items: center; }
 .roulette { margin-top: 10px; padding: 12px 14px; border-radius: 16px; background: var(--surface-2); border: 1px dashed var(--accent-ring); }
 .roulette-list { margin-top: 6px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* ---------- справка ---------- */
+.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.toc a { padding: 8px 12px; min-height: 36px; display: inline-flex; align-items: center; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); text-decoration: none; font-size: .92rem; }
+.toc a:hover { border-color: var(--accent-ring); color: var(--text); }
+.toc a.r4 { border-color: var(--accent-ring); color: var(--accent-text); }
+.help { scroll-margin-top: 80px; }
+.help p { line-height: 1.6; }
+.help .lead { font-size: 1.08rem; }
+.example { margin: 10px 0; padding: 12px 14px; border-radius: 14px; background: var(--accent-soft); line-height: 1.55; }
+.rules-list { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 10px; }
+.rules-list li { display: grid; grid-template-columns: 28px 1fr; gap: 8px; line-height: 1.55; }
+.lifeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 6px 0 12px; }
+.lifeline div { padding: 10px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); }
+.lifeline b, .lifeline small { display: block; }
+.lifeline small { color: var(--muted); margin-top: 2px; }
+.section-title { margin: 28px 0 12px; scroll-margin-top: 80px; }
+.chat-text { padding: 12px 14px; border-radius: 14px; background: var(--surface-2); margin-top: 10px; }
+.chat-text p { margin: 0 0 8px; }
+.help-link { margin-left: 8px; width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); text-decoration: none; }
 .life-card { border-color: var(--accent-ring); }
 .inline-time { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; margin-top: 12px; }
 .inline-time button { grid-column: 1 / -1; }

@@ -364,3 +364,18 @@ def test_roulette_on_pages_when_build_queue_empty(site):
     # Кто-то записался на стройку — рулетки больше нет, баф ему
     svc.set_timer(ivan["id"], "build", 12 * 86400, int(__import__("time").time()))
     assert "🎲 рулетка — очередь пуста" not in player.get("/").text
+
+
+def test_help_page_for_players_and_r4(site):
+    svc, owner, player = site
+    page = player.get("/help")
+    assert page.status_code == 200  # справку можно читать и без входа
+    register(owner, "Иван")
+    register(player, "Мура")
+    svc.set_owner(svc.player_by_nick("Иван")["id"])
+    text = player.get("/help").text
+    for part in ("За 30 секунд", "главное правило", "Рулетка", "Жизнь записи", "iPhone", "Ошибся"):
+        assert part.lower() in text.lower()
+    assert "Для R4" not in text and "Готовые тексты для чата" not in text
+    r4 = owner.get("/help").text
+    assert "Готовые тексты для чата" in r4 and "data-copy=" in r4 and "Электростанцию 30" in r4

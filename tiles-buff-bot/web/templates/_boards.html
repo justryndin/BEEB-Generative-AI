@@ -58,7 +58,7 @@
       </div>
     </div>
 
-    <p class="board-rule">{% if order == "share" %}Чья полоска короче — тот следующий: каждому помогаем в равной доле от положенного.{% else %}Порядок: справедливый круг и цикл {{ pattern_text(pattern) }}.{% endif %} <a href="/rules">Как это работает →</a></p>
+    <p class="board-rule">{% if order == "share" %}Чья полоска короче — тот следующий: каждому помогаем в равной доле от положенного.{% else %}Порядок: справедливый круг и цикл {{ pattern_text(pattern) }}.{% endif %} <a href="/help#queue">Как это работает →</a></p>
 
     {% if b.mine %}{% set m = b.mine %}
     <div class="mine">
@@ -80,7 +80,7 @@
     {% if b.roulette %}
     <div class="roulette">
       <p class="mt0"><b>🎲 Рулетка.</b> {% if b.need %}Кроме тебя в очереди никого нет{% else %}В очереди никого нет{% endif %} — чтобы баф не пропал, отдаём активным игрокам союза по кругу. Первыми — кто ещё не построил Электростанцию {{ pp_goal }}.
-        <a href="/join/{{ kind }}">Строишь что-то? Встань в очередь</a> — записавшимся помогаем первыми.</p>
+        <a href="/join/{{ kind }}">Строишь что-то? Встань в очередь</a> — записавшимся помогаем первыми. <a href="/help#roulette">Подробнее</a></p>
       <ol class="feed roulette-list">
         {% for r in b.roulette[:5] %}<li><span><b>{{ r.nick }}</b>{% if loop.first %} <span class="badge badge-accent">🎲 сейчас</span>{% endif %}<br><small class="muted">{{ r.why }}</small></span></li>{% endfor %}
       </ol>
