@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 from . import crm, gamedata
@@ -161,7 +161,8 @@ def due_notices(svc: Service, tz: ZoneInfo, now: int) -> list[Notice]:
 
         # 8. События союза — напоминание перед началом.
         for o in upcoming:
-            when = datetime.fromtimestamp(o.start, tz).strftime("%H:%M")
+            when = (datetime.fromtimestamp(o.start, tz).strftime("%H:%M") + " МСК · "
+                    + datetime.fromtimestamp(o.start, timezone.utc).strftime("%H:%M") + " UTC")
             head = "идёт сейчас" if o.ongoing(now) else f"начало в {when}"
             mine.append(Notice(pid, o.ref, "events", f"📅 {o.event['title']} — {head}",
                                o.event["prepare"][:160] or "Подробности — в календаре союза.", "/events"))

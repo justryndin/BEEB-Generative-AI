@@ -7,7 +7,7 @@
   <a href="/events" class="on">📅 События</a>
   <a href="/guides">📚 Гайды</a>
 </nav>
-<p class="hint">Время — местное (МСК). Новый игровой день начинается в {{ reset }} (00:00 по серверу).</p>
+<p class="hint">Время — {{ tz_label }} ({{ offset_text() }}) и серверное UTC. Новый игровой день начинается в {{ reset }} {{ tz_label }} = 00:00 UTC.</p>
 
 {% for d in days %}
 <section class="card">
@@ -15,7 +15,7 @@
   <ul class="events">
     {% for o in d.list %}{% set e = o.event %}
     <li class="ev{{ ' now' if o.ongoing(now_ts) }}">
-      <div class="ev-time">{% if o.ongoing(now_ts) %}<b>идёт</b><small>до {{ local(o.end, "%H:%M") }}</small>{% elif e.duration >= 1440 %}<b>весь день</b>{% else %}<b>{{ local(o.start, "%H:%M") }}</b><small>{{ dur(e.duration * 60) }}</small>{% endif %}</div>
+      <div class="ev-time">{% if o.ongoing(now_ts) %}<b>идёт</b><small>до {{ local(o.end, "%H:%M") }} {{ tz_label }}</small><small>{{ utc(o.end) }} UTC</small>{% elif e.duration >= 1440 %}<b>весь день</b><small>с {{ local(o.start) }} {{ tz_label }}</small><small>{{ utc(o.start) }} UTC</small>{% else %}<b>{{ local(o.start, "%H:%M") }} {{ tz_label }}</b><small>{{ utc(o.start) }} UTC</small><small>{{ dur(e.duration * 60) }}</small>{% endif %}</div>
       <div class="ev-body">
         <b>{{ e.title }}</b>{% if not e.checked %} <span class="badge badge-warn" title="Время взято из гайдов — R4, сверьте с игрой">проверить</span>{% endif %}
         {% if e.prepare %}<small>{{ e.prepare }}</small>{% endif %}
@@ -36,7 +36,7 @@
   <ul class="feed">
     {% for x in all_events %}{% set e = x.e %}
     <li><span><b>{{ e.title }}</b>{% if not e.checked %} <span class="badge badge-warn">проверить</span>{% endif %}<br>
-      <small class="muted">{% for i in range(7) if (i|string) in x.local[0] %}{{ WEEKDAYS[i] }}{{ ", " if not loop.last }}{% endfor %} · {{ x.local[1] }} · {{ dur(e.duration * 60) }}{% if e.remind_min >= 0 %} · 🔔 за {{ dur(e.remind_min * 60) if e.remind_min else "0м" }}{% endif %}</small></span>
+      <small class="muted">{% for i in range(7) if (i|string) in x.local[0] %}{{ WEEKDAYS[i] }}{{ ", " if not loop.last }}{% endfor %} · {{ x.local[1] }} {{ tz_label }} ({{ "%02d:%02d"|format(e.start_min // 60, e.start_min % 60) }} UTC) · {{ dur(e.duration * 60) }}{% if e.remind_min >= 0 %} · 🔔 за {{ dur(e.remind_min * 60) if e.remind_min else "0м" }}{% endif %}</small></span>
       <a class="btn btn-sm" href="/events/edit?id={{ e.id }}">Изменить</a></li>
     {% endfor %}
   </ul>

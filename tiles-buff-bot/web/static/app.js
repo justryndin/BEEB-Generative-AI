@@ -180,6 +180,25 @@
     });
   }
 
+  // Часы в шапке: местное время (МСК) и серверное (UTC), идут каждую секунду.
+  // Отсчёт — от времени сервера сайта, а не от часов телефона (они бывают сбиты).
+  function initClock() {
+    var box = document.querySelector("[data-clock]");
+    if (!box) return;
+    var skew = parseInt(box.dataset.now, 10) * 1000 - Date.now();
+    var off = parseInt(box.dataset.off, 10) * 60000;
+    var loc = box.querySelector("[data-clock-local]"), utc = box.querySelector("[data-clock-utc]");
+    function fmt(ms) { return new Date(ms).toISOString().substr(11, 8); }
+    function tick() {
+      var t = Date.now() + skew;
+      utc.textContent = fmt(t);
+      loc.textContent = fmt(t + off);
+    }
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  initClock();
   initPush();
   bind(document);
   if (document.querySelector("[data-live]")) {

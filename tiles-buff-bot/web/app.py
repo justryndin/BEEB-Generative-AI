@@ -6,7 +6,7 @@ import asyncio
 import contextlib
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote, unquote
 
@@ -87,6 +87,25 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     def local(ts: int | None, fmt: str = "%d.%m %H:%M") -> str:
         return datetime.fromtimestamp(ts, cfg.tz).strftime(fmt) if ts else "—"
 
+    tz_label = "МСК" if str(cfg.tz) in ("Europe/Moscow", "MSK") else datetime.now(cfg.tz).strftime("%Z")
+
+    def utc_offset_min() -> int:
+        return int(datetime.now(cfg.tz).utcoffset().total_seconds() // 60)
+
+    def offset_text() -> str:
+        m = utc_offset_min()
+        sign = "+" if m >= 0 else "−"
+        return f"UTC{sign}{abs(m) // 60}" + (f":{abs(m) % 60:02d}" if m % 60 else "")
+
+    def utc(ts: int | None, fmt: str = "%H:%M") -> str:
+        return datetime.fromtimestamp(ts, timezone.utc).strftime(fmt) if ts else "—"
+
+    def both(ts: int | None, fmt: str = "%H:%M") -> str:
+        """Время сразу в двух видах: местное (МСК) и серверное (UTC) — для международного союза."""
+        if not ts:
+            return "—"
+        return f"{local(ts, fmt)} {tz_label} · {utc(ts, fmt)} UTC"
+
     def target_text(kind: str) -> str:
         lo, hi = svc.setting_float(f"{kind}_min"), svc.setting_float(f"{kind}_max")
         return f"{hi:g} дн." if lo == hi else f"{lo:g}–{hi:g} дн."
@@ -113,6 +132,10 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     templates.env.globals.update(
         dur=format_duration,
         local=local,
+        both=both,
+        utc=utc,
+        tz_label=tz_label,
+        offset_text=offset_text,
         KIND_NAME=KIND_NAME,
         KIND_ACC=KIND_ACC,
         KIND_EMOJI=KIND_EMOJI,
@@ -142,6 +165,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                 "vapid_public": svc.setting("vapid_public") if me else "",
                 "unread": crm.unread(svc, me["id"]) if me else 0,
                 "pp_goal": int(svc.setting_float("priority_below")),
+                "now_epoch": now(),
+                "tz_offset_min": utc_offset_min(),
                 **ctx,
             },
             status_code=status_code,

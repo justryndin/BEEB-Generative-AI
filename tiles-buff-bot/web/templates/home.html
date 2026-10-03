@@ -23,7 +23,7 @@
 <a class="pin-strip" href="/board"><span class="badge badge-accent">📌 {{ p.author or "R4" }}</span> {{ p.text|truncate(160) }}</a>
 {% endfor %}
 {% for o in soon %}
-<a class="pin-strip soon" href="/events"><span class="badge">📅 {{ "идёт" if o.ongoing(now_ts) else local(o.start, "%H:%M") }}</span> <b>{{ o.event.title }}</b>{% if o.event.prepare %} — {{ o.event.prepare|truncate(90) }}{% endif %}</a>
+<a class="pin-strip soon" href="/events"><span class="badge">📅 {{ "идёт" if o.ongoing(now_ts) else both(o.start) }}</span> <b>{{ o.event.title }}</b>{% if o.event.prepare %} — {{ o.event.prepare|truncate(90) }}{% endif %}</a>
 {% endfor %}
 
 {% include "_tip.html" %}
