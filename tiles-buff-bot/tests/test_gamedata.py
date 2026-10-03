@@ -10,8 +10,11 @@ T0 = 1_700_000_000
 
 def test_power_plant_times_parse():
     pp = gamedata.item("pp")
-    assert pp.time_for(24) == 13 * DAY + 2 * HOUR + 33 * MINUTE
-    assert pp.time_for(30) == 40 * DAY + 4 * HOUR + 27 * MINUTE
+    assert pp.time_for(24) == 18 * DAY + 7 * HOUR + 48 * MINUTE + 41
+    assert pp.time_for(30) == 42 * DAY + 47 * MINUTE + 23
+    assert pp.time_for(16) == DAY + 3 * HOUR + 48 * MINUTE + 38
+    assert pp.costs[30] == ("255,94 млн", "255,94 млн", "51,19 млн", "12,80 млн")
+    assert "Вестник войны — 26" in pp.requires[30]
     assert all(pp.time_for(level) for level in range(2, 31))
     assert pp.time_for(1) is None and pp.time_for(31) is None
 

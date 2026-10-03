@@ -21,6 +21,15 @@ DD = "dandangers.ru (союз [Dan]Dangers, штат 174)"
 OFF = "tilessurvive.com — официальный сайт"
 
 GUIDES = [
+    Guide("season", "❄️", "Сезон IV: «Эра метели»",
+          "Что нового в сезоне: Печь Судного дня, холод, бастионы и города, природный газ, Ледяной гигант, очки прогресса сезона.",
+          [(OFF + ": обновление 2.5.900", "https://tilessurvive.com/ru/blog/1113"),
+           (OFF + ": обратная связь 29 августа", "https://tilessurvive.com/ru/blog/1120"),
+           (OFF + ": обновление 2.6.100", "https://tilessurvive.com/en/blog/1173"),
+           ("App Store — описание игры", "https://apps.apple.com/ru/app/tiles-survive/id6738109752")]),
+    Guide("boosts", "⚡", "Бафы и ускорения",
+          "Бафы союза −15%, бафы базы на 24 часа, помощь союза, ускорители: что сокращает время каждый день и как это учесть.",
+          [("Скриншоты из игры от игроков союза", ""), (DD, "https://dandangers.ru/guide-bigguide.html")]),
     Guide("week", "📅", "Неделя: когда что тратить",
           "В какие дни и часы (МСК) тратить ускорения стройки и исследований, героев, снаряжение — чтобы получить очки событий.",
           [(DD, "https://dandangers.ru/daily.html"), (DD, "https://dandangers.ru/guide-17sovetov.html")]),

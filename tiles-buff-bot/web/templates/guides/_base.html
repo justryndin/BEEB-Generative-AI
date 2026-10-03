@@ -8,7 +8,7 @@
 <section class="card sources">
   <h2>📎 Источники</h2>
   <p class="hint mt0">Пересказ своими словами. Игра обновляется — если что-то изменилось, напишите R4.</p>
-  <ul class="feed">{% for name, url in guide.sources %}<li><a href="{{ url }}" rel="noopener" target="_blank">{{ name }}</a></li>{% endfor %}</ul>
+  <ul class="feed">{% for name, url in guide.sources %}<li>{% if url %}<a href="{{ url }}" rel="noopener" target="_blank">{{ name }}</a>{% else %}{{ name }}{% endif %}</li>{% endfor %}</ul>
 </section>
 <nav class="toc" aria-label="Другие гайды">
   {% for g in guides if g.slug != guide.slug %}<a href="/guides/{{ g.slug }}">{{ g.emoji }} {{ g.title }}</a>{% endfor %}

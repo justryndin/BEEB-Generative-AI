@@ -527,6 +527,10 @@ table.week { font-size: .86rem; }
 table.week td, table.week th { white-space: nowrap; padding: 8px 6px; }
 table.week td:first-child { white-space: normal; min-width: 150px; }
 table.week tr.hl td { background: var(--accent-soft); }
+table.pp-table { font-size: .84rem; }
+table.pp-table td, table.pp-table th { white-space: nowrap; padding: 7px 6px; }
+table.pp-table td:last-child { white-space: normal; min-width: 300px; }
+table.pp-table tr.prio td:first-child { color: var(--accent-text); }
 .sources .feed a { word-break: break-word; }
 
 /* ---------- справка ---------- */

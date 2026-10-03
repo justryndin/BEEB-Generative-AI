@@ -63,7 +63,7 @@ def test_join_and_gave_flow(site):
     register(owner, "Иван")
     register(player, "Мура")
     r = player.get("/join/build?item=pp&level=24")
-    assert "13д 2ч" in r.text and "Шаг 3 из 3" in r.text
+    assert "18д 7ч" in r.text and "Шаг 3 из 3" in r.text
     r = player.post("/join/build", data={"csrf": csrf(r.text), "item": "pp", "level": 24, "days": 18, "hours": 3})
     assert "Ты в очереди" in r.text and "положено" in r.text
     mura = svc.player_by_nick("Мура")
@@ -391,4 +391,4 @@ def test_guides_section(site):
         assert page.status_code == 200 and g.title in page.text and "Источники" in page.text
     assert owner.get("/guides/nope").status_code == 404
     assert owner.get("/tips").url.path == "/guides"
-    assert "Электростанция: время улучшения" in owner.get("/guides/build").text
+    assert "Электростанция: время, ресурсы, требования" in owner.get("/guides/build").text

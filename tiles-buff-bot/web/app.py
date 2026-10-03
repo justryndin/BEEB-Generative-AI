@@ -895,7 +895,9 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         if guide is None:
             raise HTTPException(status_code=404, detail="Такого гайда нет")
         return render(request, f"guides/{slug}.html", current(request), guide=guide, guides=GUIDES,
-                      observed=svc.observed_times() if slug == "build" else [])
+                      observed=svc.observed_times() if slug == "build" else [],
+                      pct=int(svc.setting_float("pct")), cooldown=int(svc.setting_float("cooldown_hours")),
+                      hold=int(svc.setting_float("hold_hours")))
 
     # ---------- управление ----------
 

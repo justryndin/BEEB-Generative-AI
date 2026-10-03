@@ -33,6 +33,7 @@
     <li><span class="ico">🎓</span><div><b>Академия героев</b> — приток книг талантов.</div></li>
     <li><span class="ico">📯</span><div><b>Призывной пункт</b> — частично возвращает погибших безвозвратно.</div></li>
     <li><span class="ico">🗿</span><div><b>Монументы</b>: «Хранитель жизни» и «Вестник войны» стоит качать, остальные второстепенные (особняки, морозная крепость) дают мелкие бонусы.</div></li>
+    <li><span class="ico">🏆</span><div><b>Золотые статуи</b> — сильно повышают силу, защиту и здоровье <b>всех героев в отрядах</b> (растёт «Боевая мощь отряда»), а значит — арена и бои с игроками. Ресурсов едят много: качайте по мере сил, ощутимая прибавка — примерно с 10–15 ур.</div></li>
     <li><span class="ico">🏠</span><div><b>Дома</b> — до 10 ур. <b>Кухня</b> — томатная пицца повышает насыщение.</div></li>
     <li><span class="ico">👷</span><div><b>Второй строитель</b> — две стройки одновременно. Одно из самых полезных вложений при минимальном донате.</div></li>
   </ul>
@@ -40,15 +41,16 @@
 </section>
 
 <section class="card" id="pp">
-  <h2>⚡ Электростанция: время улучшения</h2>
-  <p class="hint mt0">Без бонусов к скорости, по данным {{ gamedata.SOURCE }}. С вашими бонусами будет быстрее.</p>
+  <h2>⚡ Электростанция: время, ресурсы, требования</h2>
+  <p class="hint mt0">Время без бонусов к скорости — по данным {{ gamedata.ITEMS["pp"].source }}. С вашими бонусами будет быстрее. Уровень в таблице — тот, <b>на который</b> строите.</p>
   {% set pp = gamedata.ITEMS["pp"] %}
-  <div class="table-wrap"><table>
-    <tr><th class="num">Ур.</th><th class="num">Время</th><th>Что нужно</th></tr>
-    {% for lvl in range(10, 31) %}
-    <tr><td class="num">{{ lvl }}</td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="text-2">{{ pp.requires.get(lvl, "—") }}</td></tr>
+  <div class="table-wrap"><table class="pp-table">
+    <tr><th class="num">Ур.</th><th class="num">Время</th><th class="num">Еда</th><th class="num">Древесина</th><th class="num">Металл</th><th class="num">Топливо</th><th>Что нужно</th></tr>
+    {% for lvl in range(2, 31)|reverse %}{% set c = pp.costs.get(lvl, ("—", "—", "—", "—")) %}
+    <tr{% if lvl < pp_goal %} class="prio"{% endif %}><td class="num"><b>{{ lvl }}</b></td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="num">{{ c[0] }}</td><td class="num">{{ c[1] }}</td><td class="num">{{ c[2] }}</td><td class="num">{{ c[3] }}</td><td class="text-2">{{ pp.requires.get(lvl, "—") }}</td></tr>
     {% endfor %}
   </table></div>
+  <p class="hint">Чем выше уровень, тем дороже и дольше: 27 → 30 — это 32–42 дня стройки на каждый уровень. Встаньте в очередь на бафы союза сразу после запуска — пока таймер длинный, каждый баф срезает больше всего.</p>
 </section>
 
 <section class="card" id="barracks">
