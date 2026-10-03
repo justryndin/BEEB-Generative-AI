@@ -75,6 +75,16 @@ GUIDES = [
     Guide("gear", "🛡", "Перековка снаряжения героев",
           "Какие характеристики выбирать танку, бойцу и лекарю.",
           [(OFF, "https://tilessurvive.com/en/blog/821")]),
+    Guide("collection", "📐", "Коллекция шефа",
+          "Что качать первым под свой состав, когда качать всё сразу, а когда по одному предмету, и где брать Точные чертежи.",
+          [(DTF + ": коллекция шефа", "https://dtf.ru/howto/5291783-kollektsiya-shefa-v-tiles-survive-prokatchka-chertyezhi-oshibki-i-luchshiye-predmety"),
+           (OFF + ": 2.6.100", "https://tilessurvive.com/ru/blog/1179")]),
+    Guide("events", "🎪", "Все события: что важно",
+          "Повторяющиеся, сезонные и мини-события: что делать в каждом, где не слить ресурсы и как выбрать приоритеты.",
+          [(DTF + ": все события", "https://dtf.ru/howto/5295020-gid-po-sobytiyam-v-tiles-survive"),
+           (OFF + ": 2.6.0", "https://tilessurvive.com/ru/blog/1127"),
+           (OFF + ": 2.6.100", "https://tilessurvive.com/ru/blog/1179"),
+           (OFF + ": 2.6.200", "https://tilessurvive.com/ru/blog/1194")]),
 ]
 
 BY_SLUG = {g.slug: g for g in GUIDES}

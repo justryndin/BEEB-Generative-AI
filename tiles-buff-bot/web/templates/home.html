@@ -1,57 +1,57 @@
 {% extends "base.html" %}
 {% block main_class %}wide{% endblock %}
 {% block content %}
-<h1>Привет, {{ me.nick }}! 👋</h1>
+<h1>{{ _("Привет, {nick}!", nick=me.nick) }} 👋</h1>
 
 {% for d in received %}
-<div class="alert alert-good">🎁 <b>{{ d.donor_nick or "Кто-то" }}</b> отдал тебе баф на {{ KIND_ACC[d.kind] }} (−{{ dur(d.reduction or 0) }}) · {{ local(d.resolved_at) }}</div>
+<div class="alert alert-good">🎁 {{ _("<b>{donor}</b> отдал тебе баф на {kind}", donor=d.donor_nick or _("Кто-то"), kind=_(KIND_ACC[d.kind])) }}{% if d.reduction %} (−{{ dur(d.reduction) }}){% else %} (🎲 {{ _("по рулетке") }}){% endif %} · {{ local(d.resolved_at) }}</div>
 {% endfor %}
 {% if own_gift %}
 <div class="alert alert-good row">
-  <span>✅ Ты отметил: баф на {{ KIND_ACC[own_gift.kind] }} → <b>{{ own_gift.recipient_nick }}</b>. Ошибся?</span>
-  <form method="post" action="/undo/{{ own_gift.id }}" data-confirm="Отменить запись: баф → {{ own_gift.recipient_nick }}?">
+  <span>{{ _("✅ Ты отметил: баф на {kind} → <b>{nick}</b>. Ошибся?", kind=_(KIND_ACC[own_gift.kind]), nick=own_gift.recipient_nick) }}</span>
+  <form method="post" action="/undo/{{ own_gift.id }}" data-confirm="{{ _("Отменить запись: баф → {nick}?", nick=own_gift.recipient_nick) }}">
     <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="/">
-    <button class="btn btn-sm btn-danger" type="submit">↩️ Отменить</button>
+    <button class="btn btn-sm btn-danger" type="submit">↩️ {{ _("Отменить") }}</button>
   </form>
 </div>
 {% endif %}
 {% if not me.agreed_at %}
-<div class="alert alert-warn">📜 Прими <a href="/rules"><b>условия очереди</b></a> — без этого нельзя вставать в очередь и отмечать бафы.</div>
+<div class="alert alert-warn">📜 {{ _("Прими <a href=\"/rules\"><b>условия очереди</b></a> — без этого нельзя вставать в очередь и отмечать бафы.") }}</div>
 {% endif %}
 
 {% for p in pinned %}
 <a class="pin-strip" href="/board"><span class="badge badge-accent">📌 {{ p.author or "R4" }}</span> {{ p.text|truncate(160) }}</a>
 {% endfor %}
 {% for o in soon %}
-<a class="pin-strip soon" href="/events"><span class="badge">📅 {{ "идёт" if o.ongoing(now_ts) else both(o.start) }}</span> <b>{{ o.event.title }}</b>{% if o.event.prepare %} — {{ o.event.prepare|truncate(90) }}{% endif %}</a>
+<a class="pin-strip soon" href="/events"><span class="badge">📅 {{ _("идёт") if o.ongoing(now_ts) else both(o.start) }}</span> <b>{{ _(o.event.title) }}</b>{% if o.event.prepare %} — {{ (_(o.event.prepare)|string)|truncate(90) }}{% endif %}</a>
 {% endfor %}
 
 {% include "_tip.html" %}
 
 <div class="alert alert-info push-banner" data-push data-push-banner hidden>
-  <span>🔔 <b>Включи уведомления</b> — сайт сам скажет, когда твой баф готов и кому его отдать.</span>
-  <button class="btn btn-sm btn-primary" type="button" data-push-on>Включить</button>
-  <a class="btn btn-sm btn-ghost" href="/me#notify">Подробнее</a>
+  <span>🔔 {{ _("<b>Включи уведомления</b> — сайт сам скажет, когда твой баф готов и кому его отдать.") }}</span>
+  <button class="btn btn-sm btn-primary" type="button" data-push-on>{{ _("Включить") }}</button>
+  <a class="btn btn-sm btn-ghost" href="/me#notify">{{ _("Подробнее") }}</a>
 </div>
 
 {% for f in finished %}{% set t = f.timer %}{% set what = gamedata.label(t.item, t.level, t.note) %}
 <section class="card life-card">
-  <h2>🏁 {{ KIND_EMOJI[f.kind] }} {{ what or ("Стройка" if f.kind == "build" else "Исследование") }} — закончилось</h2>
+  <h2>🏁 {{ KIND_EMOJI[f.kind] }} {{ _("{what} — закончилось", what=what or (_("Стройка") if f.kind == "build" else _("Исследование"))) }}</h2>
   {% if f.next_level %}
-  <p class="mt0">Следующая: <b>{{ f.item.ru }} → {{ f.next_level }}</b>{% if f.next_reference %} · по справочнику {{ dur(f.next_reference) }} без бонусов{% endif %}. Запустил? Встань в очередь — здание и уровень уже выбраны, останется время.</p>
+  <p class="mt0">{{ _("Следующая: <b>{item} → {level}</b>", item=_(f.item.ru), level=f.next_level) }}{% if f.next_reference %} · {{ _("по справочнику {time} без бонусов", time=dur(f.next_reference)) }}{% endif %}. {{ _("Запустил? Встань в очередь — здание и уровень уже выбраны, останется время.") }}</p>
   {% set href = "/join/build?item=" ~ f.item.code ~ "&level=" ~ f.next_level %}
   {% elif f.item %}
-  <p class="mt0">Запустил следующее? Встань в очередь — {{ "здание" if f.kind == "build" else "ветка" }} уже выбрано, останется время.</p>
+  <p class="mt0">{{ _("Запустил следующее? Встань в очередь — здание уже выбрано, останется время.") if f.kind == "build" else _("Запустил следующее? Встань в очередь — ветка уже выбрана, останется время.") }}</p>
   {% set href = "/join/" ~ f.kind ~ "?item=" ~ f.item.code %}
   {% else %}
-  <p class="mt0">Запустил следующее? Встань в очередь.</p>
+  <p class="mt0">{{ _("Запустил следующее? Встань в очередь.") }}</p>
   {% set href = "/join/" ~ f.kind %}
   {% endif %}
   <div class="row">
-    <a class="btn btn-primary" href="{{ href }}">➕ Встать со следующим</a>
+    <a class="btn btn-primary" href="{{ href }}">➕ {{ _("Встать со следующим") }}</a>
     <form method="post" action="/timer/{{ f.kind }}/skip-next">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button class="btn btn-ghost" type="submit">Не сейчас</button>
+      <button class="btn btn-ghost" type="submit">{{ _("Не сейчас") }}</button>
     </form>
   </div>
 </section>
@@ -59,25 +59,25 @@
 
 {% for ch in checks %}
 <section class="card life-card">
-  <h2>{{ KIND_EMOJI[ch.kind] }} Сверь время: {{ KIND_NAME[ch.kind] }}</h2>
-  <p class="mt0">{% if ch.why == "buff" %}Тебе отдали баф — сайт срезал время по расчёту.{% else %}Давно не сверяли — вдруг ты ускорялся.{% endif %}
-    На сайте осталось <b>{{ dur(ch.remaining) }}</b>. В игре так же?</p>
+  <h2>{{ KIND_EMOJI[ch.kind] }} {{ _("Сверь время: {kind}", kind=_(KIND_NAME[ch.kind])) }}</h2>
+  <p class="mt0">{% if ch.why == "buff" %}{{ _("Тебе отдали баф — сайт срезал время по расчёту.") }}{% else %}{{ _("Давно не сверяли — вдруг ты ускорялся.") }}{% endif %}
+    {{ _("На сайте осталось <b>{left}</b>. В игре так же?", left=dur(ch.remaining)) }}</p>
   <div class="row">
     <form method="post" action="/timer/{{ ch.kind }}/ok">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button class="btn btn-primary" type="submit">✅ Да, совпадает</button>
+      <button class="btn btn-primary" type="submit">✅ {{ _("Да, совпадает") }}</button>
     </form>
   </div>
   <details class="more" data-key="check-{{ ch.kind }}">
-    <summary>Нет, в игре другое время</summary>
+    <summary>{{ _("Нет, в игре другое время") }}</summary>
     <form method="post" action="/join/{{ ch.kind }}" class="inline-time">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <input type="hidden" name="fix" value="1">
       {% for name, label, max in [("days", "Дней", 400), ("hours", "Часов", 23), ("minutes", "Минут", 59)] %}
-      <div><label for="{{ ch.kind }}-{{ name }}">{{ label }}</label>
+      <div><label for="{{ ch.kind }}-{{ name }}">{{ _(label) }}</label>
         <input id="{{ ch.kind }}-{{ name }}" name="{{ name }}" type="number" inputmode="numeric" min="0" max="{{ max }}" value="0"></div>
       {% endfor %}
-      <button class="btn btn-primary" type="submit">Сохранить</button>
+      <button class="btn btn-primary" type="submit">{{ _("Сохранить") }}</button>
     </form>
   </details>
 </section>
@@ -86,18 +86,18 @@
 {% include "_boards.html" %}
 
 <div class="actions">
-  <a class="btn btn-big btn-block" href="/join">➕ Встать в очередь</a>
-  <a class="btn btn-primary btn-big btn-block" href="/give">🎁 Я отдал баф</a>
+  <a class="btn btn-big btn-block" href="/join">➕ {{ _("Встать в очередь") }}</a>
+  <a class="btn btn-primary btn-big btn-block" href="/give">🎁 {{ _("Я отдал баф") }}</a>
 </div>
 
 <section class="card explain">
-  <h2>Как это работает</h2>
+  <h2>{{ _("Как это работает") }}</h2>
   <ol class="steps-list">
-    <li><b>Строишь или исследуешь что-то долгое</b> → «➕ Встать», впиши время с таймера в игре. Встаёшь один раз на всю стройку.</li>
-    <li><b>Твой баф готов</b> → наверху написано, <b>кому</b> его отдать. Отдай в игре.</li>
-    <li><b>Отдал</b> → «Отдал ✓» и нажми на этого игрока. Очередь сразу пересчитается у всех.</li>
+    <li>{{ _("<b>Строишь или исследуешь что-то долгое</b> → «➕ Встать», впиши время с таймера в игре. Встаёшь один раз на всю стройку.") }}</li>
+    <li>{{ _("<b>Твой баф готов</b> → наверху написано, <b>кому</b> его отдать. Отдай в игре.") }}</li>
+    <li>{{ _("<b>Отдал</b> → «Отдал ✓» и нажми на этого игрока. Очередь сразу пересчитается у всех.") }}</li>
   </ol>
-  <p class="text-2">{% if order == "share" %}<b>Чья полоска «получил X из Y» короче — тот следующий.</b> Каждому положено столько бафов, сколько нужно до цели, и помогаем всем в равной доле.{% else %}Каждому <b>положено ровно столько бафов, сколько нужно до цели</b>.{% endif %} Под каждым ником написано, почему он на своём месте.</p>
-  <p class="hint mb0">Получил баф — пауза {{ gap|int }} ч. Очередь пуста — баф идёт по 🎲 рулетке. <a href="/help">Как всё устроено — подробно →</a></p>
+  <p class="text-2">{% if order == "share" %}{{ _("<b>Чья полоска «получил X из Y» короче — тот следующий.</b> Каждому положено столько бафов, сколько нужно до цели, и помогаем всем в равной доле.") }}{% else %}{{ _("Каждому <b>положено ровно столько бафов, сколько нужно до цели</b>.") }}{% endif %} {{ _("Под каждым ником написано, почему он на своём месте.") }}</p>
+  <p class="hint mb0">{{ _("Получил баф — пауза {gap} ч. Очередь пуста — баф идёт по 🎲 рулетке.", gap=gap|int) }} <a href="/help">{{ _("Как всё устроено — подробно →") }}</a></p>
 </section>
 {% endblock %}

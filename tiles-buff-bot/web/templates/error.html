@@ -2,8 +2,8 @@
 {% block content %}
 <div class="card center">
   <p style="font-size:3rem;margin:0">🧊</p>
-  <h1>Что-то пошло не так</h1>
-  <p class="text-2">{{ message or "Страница не найдена." }}</p>
-  <a class="btn btn-primary" href="/">На главную</a>
+  <h1>{{ _("Что-то пошло не так") }}</h1>
+  <p class="text-2">{{ _(message) if message else _("Страница не найдена.") }}</p>
+  <a class="btn btn-primary" href="/">{{ _("На главную") }}</a>
 </div>
 {% endblock %}

@@ -1,24 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Встать в очередь · {{ site_name }}{% endblock %}
+{% block title %}{{ _("Встать в очередь") }} · {{ _(site_name) }}{% endblock %}
 {% block content %}
-<h1>➕ Встать в очередь</h1>
-<p class="text-2">Что у тебя сейчас идёт в игре?</p>
+<h1>➕ {{ _("Встать в очередь") }}</h1>
+<p class="text-2">{{ _("Что у тебя сейчас идёт в игре?") }}</p>
 <div class="grid2">
   {% for kind in ["research", "build"] %}{% set t = timers[kind] %}
   <div class="card">
-    <h2>{{ KIND_EMOJI[kind] }} {{ "Исследование" if kind == "research" else "Стройка" }}</h2>
+    <h2>{{ KIND_EMOJI[kind] }} {{ _("Исследование") if kind == "research" else _("Стройка") }}</h2>
     {% if t and t.remaining > 0 %}
-    <p class="text-2">Ты уже в очереди: осталось <b>{{ dur(t.remaining) }}</b>.</p>
+    <p class="text-2">{{ _("Ты уже в очереди: осталось <b>{left}</b>.", left=dur(t.remaining)) }}</p>
     <div class="stack">
-      <a class="btn btn-block" href="/join/{{ kind }}?fix=1">🔧 Поправить время</a>
-      <a class="btn btn-ghost btn-block" href="/join/{{ kind }}">✏️ Началось новое</a>
-      <form method="post" action="/timer/{{ kind }}/close" data-confirm="Убрать тебя из очереди ({{ KIND_NAME[kind] }})?">
+      <a class="btn btn-block" href="/join/{{ kind }}?fix=1">🔧 {{ _("Поправить время") }}</a>
+      <a class="btn btn-ghost btn-block" href="/join/{{ kind }}">✏️ {{ _("Началось новое") }}</a>
+      <form method="post" action="/timer/{{ kind }}/close" data-confirm="{{ _("Убрать тебя из очереди ({kind})?", kind=_(KIND_NAME[kind])) }}">
         <input type="hidden" name="csrf" value="{{ csrf }}">
-        <button class="btn btn-ghost btn-block" type="submit">🏁 Готово — бафы больше не нужны</button>
+        <button class="btn btn-ghost btn-block" type="submit">🏁 {{ _("Готово — бафы больше не нужны") }}</button>
       </form>
     </div>
     {% else %}
-    <a class="btn btn-primary btn-big btn-block" href="/join/{{ kind }}">➕ Встать: {{ KIND_NAME[kind] }}</a>
+    <a class="btn btn-primary btn-big btn-block" href="/join/{{ kind }}">➕ {{ _("Встать: {kind}", kind=_(KIND_NAME[kind])) }}</a>
     {% endif %}
   </div>
   {% endfor %}

@@ -1,90 +1,90 @@
 {% extends "base.html" %}
-{% block title %}Аналитика · {{ site_name }}{% endblock %}
+{% block title %}{{ _("Аналитика") }} · {{ _(site_name) }}{% endblock %}
 {% block main_class %}wide{% endblock %}
 {% block content %}
-<h1>📈 Аналитика для R4</h1>
-<p class="text-2 mt0">Насколько хорошо союз использует бафы. Больше всего помощи теряется, когда готовый баф лежит без дела, — поэтому главное здесь скорость отдачи и доля использованных бафов.</p>
+<h1>📈 {{ _("Аналитика для R4") }}</h1>
+<p class="text-2 mt0">{{ _("Насколько хорошо союз использует бафы. Больше всего помощи теряется, когда готовый баф лежит без дела, — поэтому главное здесь скорость отдачи и доля использованных бафов.") }}</p>
 
 <nav class="tabs" style="grid-template-columns:repeat(3,1fr)">
-  {% for p in (7, 14, 30) %}<a href="/admin/stats?period={{ p }}" class="{{ 'on' if p == r.period }}">{{ p }} дней</a>{% endfor %}
+  {% for p in (7, 14, 30) %}<a href="/admin/stats?period={{ p }}" class="{{ 'on' if p == r.period }}">{{ _("{n} дней", n=p) }}</a>{% endfor %}
 </nav>
 
 {% set change = ((r.given - r.given_prev) / r.given_prev * 100)|round|int if r.given_prev else none %}
 <div class="kpis">
   <div class="tile">
     <div class="num">{{ r.given }}</div>
-    <div class="lbl">бафов отдано · ~{{ r.per_day|round(1) }} в день</div>
-    {% if change is not none %}<div class="delta {{ 'up' if change >= 0 else 'down' }}">{{ "▲" if change >= 0 else "▼" }} {{ change|abs }}% к прошлым {{ r.period }} дн.</div>{% endif %}
+    <div class="lbl">{{ _("бафов отдано · ~{n} в день", n=r.per_day|round(1)) }}</div>
+    {% if change is not none %}<div class="delta {{ 'up' if change >= 0 else 'down' }}">{{ "▲" if change >= 0 else "▼" }} {{ _("{pct}% к прошлым {period} дн.", pct=change|abs, period=r.period) }}</div>{% endif %}
   </div>
   <div class="tile accent">
     <div class="num">{{ (r.utilization * 100)|round|int if r.utilization is not none else "—" }}%</div>
-    <div class="lbl">бафов союза использовано</div>
-    <div class="hint">{{ r.active }} активных × 2 бафа раз в {{ settings_cd|int }} ч ≈ {{ r.potential|round|int }} возможных</div>
+    <div class="lbl">{{ _("бафов союза использовано") }}</div>
+    <div class="hint">{{ _("{active} активных × 2 бафа раз в {hours} ч ≈ {potential} возможных", active=r.active, hours=settings_cd|int, potential=r.potential|round|int) }}</div>
   </div>
   <div class="tile">
     <div class="num">{{ dur(r.delay_median|int) if r.delay_median is not none else "—" }}</div>
-    <div class="lbl">готовый баф лежит до отдачи (медиана)</div>
-    {% if r.on_time is not none %}<div class="hint">вовремя (до 6 ч): {{ (r.on_time * 100)|round|int }}%</div>{% endif %}
+    <div class="lbl">{{ _("готовый баф лежит до отдачи (медиана)") }}</div>
+    {% if r.on_time is not none %}<div class="hint">{{ _("вовремя (до 6 ч): {pct}%", pct=(r.on_time * 100)|round|int) }}</div>{% endif %}
   </div>
   <div class="tile">
     <div class="num">{{ dur(r.first_wait|int) if r.first_wait is not none else "—" }}</div>
-    <div class="lbl">ждут первого бафа после записи (медиана)</div>
-    <div class="hint">сейчас ждут первого: {{ r.still_waiting }}</div>
+    <div class="lbl">{{ _("ждут первого бафа после записи (медиана)") }}</div>
+    <div class="hint">{{ _("сейчас ждут первого: {n}", n=r.still_waiting) }}</div>
   </div>
   <div class="tile">
-    <div class="num">{{ (r.saved_recipients + r.saved_donors) // 86400 }} д</div>
-    <div class="lbl">срезано времени за {{ r.period }} дн.</div>
-    <div class="hint">получателям {{ r.saved_recipients // 86400 }} д + отдававшим {{ r.saved_donors // 86400 }} д</div>
+    <div class="num">{{ _("{n} д", n=(r.saved_recipients + r.saved_donors) // 86400) }}</div>
+    <div class="lbl">{{ _("срезано времени за {period} дн.", period=r.period) }}</div>
+    <div class="hint">{{ _("получателям {recipients} д + отдававшим {donors} д", recipients=r.saved_recipients // 86400, donors=r.saved_donors // 86400) }}</div>
   </div>
   <div class="tile">
     <div class="num">{{ r.owed_total }}</div>
-    <div class="lbl">бафов ещё положено очереди</div>
-    {% if r.days_to_clear %}<div class="hint">при нынешней скорости ≈ {{ r.days_to_clear|round(1) }} дн.</div>{% endif %}
+    <div class="lbl">{{ _("бафов ещё положено очереди") }}</div>
+    {% if r.days_to_clear %}<div class="hint">{{ _("при нынешней скорости ≈ {n} дн.", n=r.days_to_clear|round(1)) }}</div>{% endif %}
   </div>
   <div class="tile">
     <div class="num">{{ (r.push_share * 100)|round|int if r.push_share is not none else "—" }}%</div>
-    <div class="lbl">из стоящих в очереди включили уведомления</div>
-    <div class="hint">всего с уведомлениями: {{ r.push_players }}</div>
+    <div class="lbl">{{ _("из стоящих в очереди включили уведомления") }}</div>
+    <div class="hint">{{ _("всего с уведомлениями: {n}", n=r.push_players) }}</div>
   </div>
   <div class="tile">
     {% set q = r.queues %}
     <div class="num">{{ q.research.need }} · {{ q.build.need }}</div>
-    <div class="lbl">в очереди: 🔬 исследование · 🏗 стройка</div>
-    <div class="hint">средняя доля полученного: 🔬 {{ (q.research.share * 100)|round|int if q.research.share is not none else "—" }}% · 🏗 {{ (q.build.share * 100)|round|int if q.build.share is not none else "—" }}%</div>
+    <div class="lbl">{{ _("в очереди: 🔬 исследование · 🏗 стройка") }}</div>
+    <div class="hint">{{ _("средняя доля полученного: 🔬 {research}% · 🏗 {build}%", research=(q.research.share * 100)|round|int if q.research.share is not none else "—", build=(q.build.share * 100)|round|int if q.build.share is not none else "—") }}</div>
   </div>
 </div>
 
 <section class="card">
-  <h2>✅ Что сделать сейчас</h2>
+  <h2>✅ {{ _("Что сделать сейчас") }}</h2>
   <ul class="todo">
     {% if r.holders %}
-    <li><b>⏳ Держат готовый баф дольше нормы ({{ r.holders|length }}).</b> Они уже пропускают свой ход; напомни в чате.
-      <span class="muted">{% for nick, kind, held in r.holders[:12] %}{{ nick }} ({{ KIND_EMOJI[kind] }} {{ dur(held) }}){{ ", " if not loop.last }}{% endfor %}{% if r.holders|length > 12 %} и ещё {{ r.holders|length - 12 }}{% endif %}</span></li>
+    <li>{{ _("<b>⏳ Держат готовый баф дольше нормы ({n}).</b> Они уже пропускают свой ход; напомни в чате.", n=r.holders|length) }}
+      <span class="muted">{% for nick, kind, held in r.holders[:12] %}{{ nick }} ({{ KIND_EMOJI[kind] }} {{ dur(held) }}){{ ", " if not loop.last }}{% endfor %}{% if r.holders|length > 12 %} {{ _("и ещё {n}", n=r.holders|length - 12) }}{% endif %}</span></li>
     {% endif %}
     {% if r.silent %}
-    <li><b>💤 В очереди, но не заходят 3+ дня ({{ r.silent|length }}).</b> Проверь, играют ли — или закрой их записи.
+    <li>{{ _("<b>💤 В очереди, но не заходят 3+ дня ({n}).</b> Проверь, играют ли — или закрой их записи.", n=r.silent|length) }}
       <span class="muted">{% for p in r.silent[:12] %}<a href="/admin/p/{{ p.id }}">{{ p.nick }}</a>{{ ", " if not loop.last }}{% endfor %}</span></li>
     {% endif %}
     {% if r.push_share is not none and r.push_share < 0.7 %}
-    <li><b>🔔 Уведомления включили {{ (r.push_share * 100)|round|int }}% очереди.</b> С уведомлениями баф отдают быстрее — попроси включить: «Профиль → Уведомления».</li>
+    <li>{{ _("<b>🔔 Уведомления включили {pct}% очереди.</b> С уведомлениями баф отдают быстрее — попроси включить: «Профиль → Уведомления».", pct=(r.push_share * 100)|round|int) }}</li>
     {% endif %}
     {% if r.on_time is not none and r.on_time < 0.6 %}
-    <li><b>🐢 Вовремя отдают только {{ (r.on_time * 100)|round|int }}% бафов.</b> Каждый день задержки — минус помощь союзу.</li>
+    <li>{{ _("<b>🐢 Вовремя отдают только {pct}% бафов.</b> Каждый день задержки — минус помощь союзу.", pct=(r.on_time * 100)|round|int) }}</li>
     {% endif %}
-    {% if not r.holders and not r.silent and (r.push_share is none or r.push_share >= 0.7) %}<li>Всё в порядке — вмешиваться не нужно 👍</li>{% endif %}
+    {% if not r.holders and not r.silent and (r.push_share is none or r.push_share >= 0.7) %}<li>{{ _("Всё в порядке — вмешиваться не нужно 👍") }}</li>{% endif %}
   </ul>
 </section>
 
 <section class="card">
-  <div class="card-head"><h2>Бафы по дням</h2><span class="muted">{{ r.given }} за {{ r.period }} дн.</span></div>
+  <div class="card-head"><h2>{{ _("Бафы по дням") }}</h2><span class="muted">{{ _("{n} за {period} дн.", n=r.given, period=r.period) }}</span></div>
   {{ chart|safe }}
 </section>
 
 <section class="card">
-  <h2>👥 Игроки за {{ r.period }} дн.</h2>
-  <input id="player-search" type="search" placeholder="🔎 Поиск по нику" aria-label="Поиск по нику" style="margin-bottom:10px">
+  <h2>👥 {{ _("Игроки за {period} дн.", period=r.period) }}</h2>
+  <input id="player-search" type="search" placeholder="🔎 {{ _("Поиск по нику") }}" aria-label="{{ _("Поиск по нику") }}" style="margin-bottom:10px">
   <div class="table-wrap"><table>
-    <tr><th>Игрок</th><th class="num">Отдал</th><th class="num">Получил</th><th class="num">Баф лежит</th><th>Был</th><th>🔔</th><th>Сейчас</th></tr>
+    <tr><th>{{ _("Игрок") }}</th><th class="num">{{ _("Отдал") }}</th><th class="num">{{ _("Получил") }}</th><th class="num">{{ _("Баф лежит") }}</th><th>{{ _("Был") }}</th><th>🔔</th><th>{{ _("Сейчас") }}</th></tr>
     {% for l in r.lines %}
     <tr data-nick="{{ l.nick|lower }}">
       <td><a href="/admin/p/{{ l.id }}">{{ l.nick }}</a></td>
@@ -93,10 +93,10 @@
       <td class="num">{{ dur(l.delay|int) if l.delay is not none else "—" }}</td>
       <td>{{ local(l.last_seen, "%d.%m") if l.last_seen else "—" }}</td>
       <td>{{ "✓" if l.push else "" }}</td>
-      <td>{% if l.holding %}<span class="badge badge-warn">⏳ держит {{ dur(l.holding) }}</span>{% elif l.in_queue %}в очереди{% endif %}</td>
+      <td>{% if l.holding %}<span class="badge badge-warn">⏳ {{ _("держит {time}", time=dur(l.holding)) }}</span>{% elif l.in_queue %}{{ _("в очереди") }}{% endif %}</td>
     </tr>
     {% endfor %}
   </table></div>
-  <p class="hint">«Баф лежит» — сколько обычно проходит от готовности бафа до отдачи (по его отметкам). Меньше — лучше.</p>
+  <p class="hint">{{ _("«Баф лежит» — сколько обычно проходит от готовности бафа до отдачи (по его отметкам). Меньше — лучше.") }}</p>
 </section>
 {% endblock %}

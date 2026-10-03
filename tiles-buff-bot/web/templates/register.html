@@ -1,39 +1,39 @@
 {% extends "base.html" %}
-{% block title %}Регистрация · {{ site_name }}{% endblock %}
+{% block title %}{{ _("Регистрация") }} · {{ _(site_name) }}{% endblock %}
 {% block content %}
 <div class="card" style="max-width:460px;margin:20px auto">
   <img class="mark-sm" src="/static/icon.svg" alt="" width="64" height="64">
-  <h1 class="center">Регистрация</h1>
-  <p class="text-2 center">Займёт полминуты. Нужны только ник и PIN-код.</p>
+  <h1 class="center">{{ _("Регистрация") }}</h1>
+  <p class="text-2 center">{{ _("Займёт полминуты. Нужны только ник и PIN-код.") }}</p>
   {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
   <form method="post" action="/register">
     <div class="field">
-      <label for="nick">Ник в игре</label>
+      <label for="nick">{{ _("Ник в игре") }}</label>
       <input id="nick" name="nick" type="text" value="{{ nick or '' }}" minlength="2" maxlength="32" autocomplete="username" required>
-      <div class="hint">Пиши <b>точно как в игре</b> — по нему тебя найдут, чтобы отдать баф.</div>
+      <div class="hint">{{ _("Пиши <b>точно как в игре</b> — по нему тебя найдут, чтобы отдать баф.") }}</div>
     </div>
     <div class="grid2">
       <div class="field">
-        <label for="pin">Придумай PIN</label>
+        <label for="pin">{{ _("Придумай PIN") }}</label>
         <input id="pin" name="pin" type="password" class="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required>
       </div>
       <div class="field">
-        <label for="pin2">Повтори PIN</label>
+        <label for="pin2">{{ _("Повтори PIN") }}</label>
         <input id="pin2" name="pin2" type="password" class="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" required>
       </div>
     </div>
-    <div class="hint" style="margin:-8px 0 16px">4 цифры. Запомни его — он нужен для входа.</div>
+    <div class="hint" style="margin:-8px 0 16px">{{ _("4 цифры. Запомни его — он нужен для входа.") }}</div>
     {% if need_code %}
     <div class="field">
-      <label for="code">Код союза</label>
+      <label for="code">{{ _("Код союза") }}</label>
       <input id="code" name="code" type="text" autocomplete="off" required>
-      <div class="hint">Спроси у руководства союза в игровом чате.</div>
+      <div class="hint">{{ _("Спроси у руководства союза в игровом чате.") }}</div>
     </div>
     {% endif %}
     <label class="check" style="margin-bottom:16px"><input type="checkbox" name="agree" value="1" required>
-      <span>Согласен с <a href="/rules" target="_blank">условиями очереди</a>: пишу точное время, отдаю баф по очереди и сразу отмечаю, кому отдал.</span></label>
-    <button class="btn btn-primary btn-big btn-block" type="submit">Зарегистрироваться</button>
+      <span>{{ _("Согласен с <a href=\"/rules\" target=\"_blank\">условиями очереди</a>: пишу точное время, отдаю баф по очереди и сразу отмечаю, кому отдал.") }}</span></label>
+    <button class="btn btn-primary btn-big btn-block" type="submit">{{ _("Зарегистрироваться") }}</button>
   </form>
-  <p class="center" style="margin-top:16px">Уже есть аккаунт? <a href="/login"><b>Войти</b></a></p>
+  <p class="center" style="margin-top:16px">{{ _("Уже есть аккаунт?") }} <a href="/login"><b>{{ _("Войти") }}</b></a></p>
 </div>
 {% endblock %}

@@ -2,33 +2,33 @@
 {% block content %}
 <div class="welcome">
   <img class="mark" src="/static/icon.svg" alt="" width="112" height="112">
-  <h1>{{ site_name }}</h1>
-  <p class="tag">Очередь сезонных бафов союза</p>
+  <h1>{{ _(site_name) }}</h1>
+  <p class="tag">{{ _("Очередь сезонных бафов союза") }}</p>
 
   <div class="card">
-    <p>Бафы −15% к стройке и исследованиям — без потерь и по-честному. Сайт подскажет, <b>кому</b> отдать твой баф, а тебе бафы придут по очереди.</p>
+    <p>{{ _("Бафы −15% к стройке и исследованиям — без потерь и по-честному. Сайт подскажет, <b>кому</b> отдать твой баф, а тебе бафы придут по очереди.") }}</p>
     <div class="stack">
-      <a class="btn btn-primary btn-big btn-block" href="/login">Войти</a>
-      <a class="btn btn-big btn-block" href="/register">Я новенький — зарегистрироваться</a>
+      <a class="btn btn-primary btn-big btn-block" href="/login">{{ _("Войти") }}</a>
+      <a class="btn btn-big btn-block" href="/register">{{ _("Я новенький — зарегистрироваться") }}</a>
     </div>
   </div>
 
-  <div class="dots"><span>Очередь по кругу</span><span>Без лишних бафов</span><span>Для всего союза</span></div>
+  <div class="dots"><span>{{ _("Очередь по кругу") }}</span><span>{{ _("Без лишних бафов") }}</span><span>{{ _("Для всего союза") }}</span></div>
 </div>
 
 <div class="grid4" style="margin-top:34px">
-  <div class="tile"><div class="num">{{ totals.buffs }}</div><div class="lbl">бафов отдано</div></div>
-  <div class="tile accent"><div class="num">{{ (totals.saved // 86400) }}</div><div class="lbl">дней сэкономлено</div></div>
-  <div class="tile"><div class="num">{{ queue_counts.build }}</div><div class="lbl">🏗 ждут бафа</div></div>
-  <div class="tile"><div class="num">{{ queue_counts.research }}</div><div class="lbl">🔬 ждут бафа</div></div>
+  <div class="tile"><div class="num">{{ totals.buffs }}</div><div class="lbl">{{ _("бафов отдано") }}</div></div>
+  <div class="tile accent"><div class="num">{{ (totals.saved // 86400) }}</div><div class="lbl">{{ _("дней сэкономлено") }}</div></div>
+  <div class="tile"><div class="num">{{ queue_counts.build }}</div><div class="lbl">🏗 {{ _("ждут бафа") }}</div></div>
+  <div class="tile"><div class="num">{{ queue_counts.research }}</div><div class="lbl">🔬 {{ _("ждут бафа") }}</div></div>
 </div>
 
 <div class="card" style="margin-top:16px">
-  <h2>Как это работает — 3 шага</h2>
+  <h2>{{ _("Как это работает — 3 шага") }}</h2>
   <div class="stack">
-    <div class="tip"><span class="ico">1️⃣</span><div><b>Запустил стройку или исследование</b> — запишись в очередь: выбери здание, уровень и сколько осталось.</div></div>
-    <div class="tip"><span class="ico">2️⃣</span><div><b>Готов твой баф</b> — нажми «Отдать баф». Сайт скажет, кому его отдать в игре.</div></div>
-    <div class="tip"><span class="ico">3️⃣</span><div><b>Отдал</b> — нажми «✅ Я отдал». Очередь пересчитается сама.</div></div>
+    <div class="tip"><span class="ico">1️⃣</span><div>{{ _("<b>Запустил стройку или исследование</b> — запишись в очередь: выбери здание, уровень и сколько осталось.") }}</div></div>
+    <div class="tip"><span class="ico">2️⃣</span><div>{{ _("<b>Готов твой баф</b> — главная страница скажет, кому его отдать в игре.") }}</div></div>
+    <div class="tip"><span class="ico">3️⃣</span><div>{{ _("<b>Отдал</b> — нажми «Отдал ✓». Очередь пересчитается сама.") }}</div></div>
   </div>
 </div>
 {% endblock %}

@@ -1,89 +1,89 @@
 {% extends "base.html" %}
 {% from "_macros.html" import buff_line, journal %}
-{% block title %}{{ p.nick }} · Управление{% endblock %}
+{% block title %}{{ p.nick }} · {{ _("Управление") }}{% endblock %}
 {% block content %}
-<p><a href="/admin">◀️ Все игроки</a></p>
+<p><a href="/admin">◀️ {{ _("Все игроки") }}</a></p>
 <h1>{% if p.is_owner %}👑 {% elif p.is_admin %}⭐ {% endif %}{{ p.nick }}</h1>
 <div class="row" style="margin-bottom:14px">
-  {% if p.pin_hash %}<span class="badge badge-good">вошёл на сайт</span>{% else %}<span class="badge badge-warn">ещё не зарегистрировался — может сделать это под этим ником</span>{% endif %}
-  {% if p.locked_until %}<span class="badge badge-urgent">вход временно заблокирован</span>{% endif %}
-  <span class="badge">отдал {{ given }} · получил {{ received }}</span>
+  {% if p.pin_hash %}<span class="badge badge-good">{{ _("вошёл на сайт") }}</span>{% else %}<span class="badge badge-warn">{{ _("ещё не зарегистрировался — может сделать это под этим ником") }}</span>{% endif %}
+  {% if p.locked_until %}<span class="badge badge-urgent">{{ _("вход временно заблокирован") }}</span>{% endif %}
+  <span class="badge">{{ _("отдал {given} · получил {received}", given=given, received=received) }}</span>
 </div>
 
 <section class="card">
-  <h2>⚡ Электростанция</h2>
+  <h2>⚡ {{ _("Электростанция") }}</h2>
   <form method="post" action="/admin/p/{{ p.id }}/pp" class="row">
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <label for="pp" class="sr-only">Уровень Электростанции</label>
-    <input id="pp" name="level" type="number" inputmode="numeric" min="1" max="99" value="{{ p.pp_level or '' }}" placeholder="уровень не указан" style="flex:1;min-width:160px">
-    <button class="btn" type="submit">Сохранить</button>
+    <label for="pp" class="sr-only">{{ _("Уровень Электростанции") }}</label>
+    <input id="pp" name="level" type="number" inputmode="numeric" min="1" max="99" value="{{ p.pp_level or '' }}" placeholder="{{ _("уровень не указан") }}" style="flex:1;min-width:160px">
+    <button class="btn" type="submit">{{ _("Сохранить") }}</button>
   </form>
-  <p class="hint">Нужен для рулетки: первыми бафы по рулетке получают те, кто ещё не построил цель.</p>
+  <p class="hint">{{ _("Нужен для рулетки: первыми бафы по рулетке получают те, кто ещё не построил цель.") }}</p>
 </section>
 
 <section class="card">
-  <h2>🗂 Заметка R4</h2>
+  <h2>🗂 {{ _("Заметка R4") }}</h2>
   <form method="post" action="/admin/p/{{ p.id }}/crm" class="stack">
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <label for="tags">Метки через запятую</label>
-    <input id="tags" name="tags" type="text" maxlength="200" value="{{ p.crm_tags or '' }}" placeholder="актив, R3, новичок, слабый онлайн">
-    <label for="note">Заметка (видят только R4)</label>
-    <textarea id="note" name="note" rows="3" maxlength="1000" placeholder="Онлайн вечером, строит Электростанцию, просил помощь на Аркадии">{{ p.crm_note or '' }}</textarea>
-    <button class="btn" type="submit">Сохранить</button>
+    <label for="tags">{{ _("Метки через запятую") }}</label>
+    <input id="tags" name="tags" type="text" maxlength="200" value="{{ p.crm_tags or '' }}" placeholder="{{ _("актив, R3, новичок, слабый онлайн") }}">
+    <label for="note">{{ _("Заметка (видят только R4)") }}</label>
+    <textarea id="note" name="note" rows="3" maxlength="1000" placeholder="{{ _("Онлайн вечером, строит Электростанцию, просил помощь на Аркадии") }}">{{ p.crm_note or '' }}</textarea>
+    <button class="btn" type="submit">{{ _("Сохранить") }}</button>
   </form>
 </section>
 
 {% for kind in KINDS %}
 {% set t = timers[kind] %}
 <section class="card">
-  <div class="card-head"><h2>{{ KIND_EMOJI[kind] }} {{ KIND_NAME[kind]|capitalize }}</h2>{% if urgent[kind] %}<span class="badge badge-urgent">🔥 срочно</span>{% endif %}</div>
+  <div class="card-head"><h2>{{ KIND_EMOJI[kind] }} {{ KIND_NAME[kind]|capitalize }}</h2>{% if urgent[kind] %}<span class="badge badge-urgent">🔥 {{ _("срочно") }}</span>{% endif %}</div>
   {% if t %}
-    <p>{% if t.label %}{{ t.label }} · {% endif %}осталось <b>{{ dur(t.c.remaining) }}</b> · получил {{ t.c.received }} · {% if t.status == "need" %}ещё ≈{{ t.needed }}{% else %}🎯 цель достигнута{% endif %}</p>
+    <p>{% if t.label %}{{ t.label }} · {% endif %}{{ _("осталось <b>{left}</b> · получил {received}", left=dur(t.c.remaining), received=t.c.received) }} · {% if t.status == "need" %}{{ _("ещё ≈{n}", n=t.needed) }}{% else %}🎯 {{ _("цель достигнута") }}{% endif %}</p>
     <div class="row">
       <form method="post" action="/admin/p/{{ p.id }}/urgent"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
-        <button class="btn btn-sm" type="submit">{{ "🔥 Выключить срочно" if urgent[kind] else "🔥 Срочно" }}</button></form>
-      <a class="btn btn-sm" href="/join/{{ kind }}?fix=1&player={{ p.id }}">🔧 Поправить время</a>
-      <a class="btn btn-sm" href="/join/{{ kind }}?player={{ p.id }}">✏️ Записать заново</a>
-      <form method="post" action="/admin/p/{{ p.id }}/close" data-confirm="Убрать {{ p.nick }} из очереди ({{ KIND_NAME[kind] }})?"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
-        <button class="btn btn-sm btn-ghost" type="submit">🏁 Убрать из очереди</button></form>
+        <button class="btn btn-sm" type="submit">🔥 {{ _("Выключить срочно") if urgent[kind] else _("Срочно") }}</button></form>
+      <a class="btn btn-sm" href="/join/{{ kind }}?fix=1&player={{ p.id }}">🔧 {{ _("Поправить время") }}</a>
+      <a class="btn btn-sm" href="/join/{{ kind }}?player={{ p.id }}">✏️ {{ _("Записать заново") }}</a>
+      <form method="post" action="/admin/p/{{ p.id }}/close" data-confirm="{{ _("Убрать {nick} из очереди ({kind})?", nick=p.nick, kind=KIND_NAME[kind]) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
+        <button class="btn btn-sm btn-ghost" type="submit">🏁 {{ _("Убрать из очереди") }}</button></form>
     </div>
   {% else %}
-    <p class="text-2">Не в очереди.</p>
-    <a class="btn btn-sm" href="/join/{{ kind }}?player={{ p.id }}">➕ Записать {{ KIND_ACC[kind] }}</a>
+    <p class="text-2">{{ _("Не в очереди.") }}</p>
+    <a class="btn btn-sm" href="/join/{{ kind }}?player={{ p.id }}">➕ {{ _("Записать {kind}", kind=KIND_ACC[kind]) }}</a>
   {% endif %}
   <hr class="sep">
   <div class="row">
-    <span>Его баф: {{ buff_line(kind, buffs[kind]) }}</span><span class="spacer"></span>
-    <a class="btn btn-sm btn-primary" href="/give?kind={{ kind }}&donor={{ p.id }}">🎁 Отметить: он отдал баф</a>
+    <span>{{ _("Его баф: {buff}", buff=buff_line(kind, buffs[kind])) }}</span><span class="spacer"></span>
+    <a class="btn btn-sm btn-primary" href="/give?kind={{ kind }}&donor={{ p.id }}">🎁 {{ _("Отметить: он отдал баф") }}</a>
   </div>
 </section>
 {% endfor %}
 
 <section class="card">
-  <h2>📜 Бафы игрока</h2>
-  <p class="hint mt0">Ошибочную запись можно отменить — таймеры и очередь вернутся как были.</p>
+  <h2>📜 {{ _("Бафы игрока") }}</h2>
+  <p class="hint mt0">{{ _("Ошибочную запись можно отменить — таймеры и очередь вернутся как были.") }}</p>
   {{ journal(log, csrf, "/admin/p/" ~ p.id) }}
 </section>
 
 <section class="card">
-  <h2>🛠 Действия</h2>
+  <h2>🛠 {{ _("Действия") }}</h2>
   <div class="stack">
     {% if p.pin_hash %}
-    <form method="post" action="/admin/p/{{ p.id }}/resetpin" data-confirm="Сбросить PIN игрока {{ p.nick }}? Он заново зарегистрируется под своим ником.">
+    <form method="post" action="/admin/p/{{ p.id }}/resetpin" data-confirm="{{ _("Сбросить PIN игрока {nick}? Он заново зарегистрируется под своим ником.", nick=p.nick) }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button class="btn btn-block" type="submit">🔑 Сбросить PIN (забыл код)</button>
+      <button class="btn btn-block" type="submit">🔑 {{ _("Сбросить PIN (забыл код)") }}</button>
     </form>
     {% endif %}
     {% if is_owner and not p.is_owner %}
     <form method="post" action="/admin/p/{{ p.id }}/{{ 'drop_admin' if p.is_admin else 'make_admin' }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button class="btn btn-block" type="submit">{{ "✖️ Снять админа" if p.is_admin else "⭐ Сделать админом (R4)" }}</button>
+      <button class="btn btn-block" type="submit">{% if p.is_admin %}✖️ {{ _("Снять админа") }}{% else %}⭐ {{ _("Сделать админом (R4)") }}{% endif %}</button>
     </form>
     {% endif %}
     {% if not p.is_owner %}
-    <form method="post" action="/admin/p/{{ p.id }}/delete" data-confirm="Удалить {{ p.nick }} с сайта? Он пропадёт из очередей, история бафов сохранится.">
+    <form method="post" action="/admin/p/{{ p.id }}/delete" data-confirm="{{ _("Удалить {nick} с сайта? Он пропадёт из очередей, история бафов сохранится.", nick=p.nick) }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button class="btn btn-danger btn-block" type="submit">🗑 Удалить с сайта (ушёл из союза)</button>
+      <button class="btn btn-danger btn-block" type="submit">🗑 {{ _("Удалить с сайта (ушёл из союза)") }}</button>
     </form>
     {% endif %}
   </div>

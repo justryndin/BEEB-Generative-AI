@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>{% block title %}{{ site_name }}{% endblock %}</title>
+  <title>{% block title %}{{ _(site_name) }}{% endblock %}</title>
   <meta name="theme-color" content="#0d0a14">
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
@@ -14,26 +14,26 @@
 </head>
 <body{% if me %} data-vapid="{{ vapid_public }}" data-csrf="{{ csrf }}"{% endif %}>
 {% set nav = [
-  ("/", "🏠", "Главная"),
-  ("/join", "➕", "Встать"),
-  ("/give", "🎁", "Я отдал"),
-  ("/board", "📣", "Союз"),
-  ("/me", "👤", "Профиль"),
+  ("/", "🏠", _("Главная")),
+  ("/join", "➕", _("Встать")),
+  ("/give", "🎁", _("Я отдал")),
+  ("/board", "📣", _("Союз")),
+  ("/me", "👤", _("Профиль")),
 ] %}
 <header class="topbar">
   <div class="topbar-in">
-    <a class="logo" href="/"><img src="/static/icon.svg" alt="" width="34" height="34"><span>{{ site_name }}</span></a>
+    <a class="logo" href="/"><img src="/static/icon.svg" alt="" width="34" height="34"><span>{{ _(site_name) }}</span></a>
     {% if me %}
-    <nav class="topnav" aria-label="Разделы">
+    <nav class="topnav" aria-label="{{ _("Разделы") }}">
       {% for href, ico, name in nav %}
       <a href="{{ href }}" class="{{ 'on' if path == href or (href != '/' and path.startswith(href)) or (href == '/board' and (path.startswith('/events') or path.startswith('/guides'))) }}">{{ name }}{% if href == "/board" and unread %} <span class="dotcount">{{ unread }}</span>{% endif %}</a>
       {% endfor %}
-      <a href="/stats" class="{{ 'on' if path.startswith('/stats') }}">Статистика</a>
-      {% if is_admin %}<a href="/admin" class="{{ 'on' if path.startswith('/admin') }}">⚙️ Управление</a>{% endif %}
+      <a href="/stats" class="{{ 'on' if path.startswith('/stats') }}">{{ _("Статистика") }}</a>
+      {% if is_admin %}<a href="/admin" class="{{ 'on' if path.startswith('/admin') }}">⚙️ {{ _("Управление") }}</a>{% endif %}
     </nav>
     <span class="who">{{ me.nick }}</span>
     {% endif %}
-    <a class="help-link" href="/help" aria-label="Справка: как всё устроено" title="Как всё устроено">❓</a>
+    <a class="help-link" href="/help" aria-label="{{ _("Справка: как всё устроено") }}" title="{{ _("Как всё устроено") }}">❓</a>
   </div>
   <div class="clockbar" data-clock data-now="{{ now_epoch }}" data-off="{{ tz_offset_min }}">
     <span>🕒 {{ tz_label }} ({{ offset_text() }}) <b data-clock-local>{{ local(now_epoch, "%H:%M:%S") }}</b></span>
@@ -50,17 +50,17 @@
 </main>
 
 {% if me %}
-<nav class="tabbar" aria-label="Разделы">
+<nav class="tabbar" aria-label="{{ _("Разделы") }}">
   {% for href, ico, name in nav %}
   {% if href == "/me" and is_admin %}
-  <a href="/admin" class="{{ 'on' if path.startswith('/admin') }}"><span class="ico">⚙️</span>Управление</a>
+  <a href="/admin" class="{{ 'on' if path.startswith('/admin') }}"><span class="ico">⚙️</span>{{ _("Управление") }}</a>
   {% else %}
   <a href="{{ href }}" class="{{ 'on' if path == href or (href != '/' and path.startswith(href)) or (href == '/board' and (path.startswith('/events') or path.startswith('/guides'))) }}"><span class="ico">{{ ico }}{% if href == "/board" and unread %}<span class="dotcount">{{ unread }}</span>{% endif %}</span>{{ name }}</a>
   {% endif %}
   {% endfor %}
 </nav>
 {% endif %}
-<p class="footer"><a href="/help">❓ Справка</a> · <a href="/stats">📊 Статистика</a> · <a href="/guides">📚 Гайды</a> · <a href="/rules">📜 Условия</a>{% if me and is_admin %} · <a href="/me">👤 Профиль</a>{% endif %}<br>© {{ site_name }} · Tiles Survive · сезон «Эра метели»</p>
+<p class="footer"><a href="/help">❓ {{ _("Справка") }}</a> · <a href="/stats">📊 {{ _("Статистика") }}</a> · <a href="/guides">📚 {{ _("Гайды") }}</a> · <a href="/rules">📜 {{ _("Условия") }}</a>{% if me and is_admin %} · <a href="/me">👤 {{ _("Профиль") }}</a>{% endif %}<br>© {{ _(site_name) }} · Tiles Survive · {{ _("сезон «Эра метели»") }}</p>
 <script src="/static/app.js?v=8" defer></script>
 </body>
 </html>

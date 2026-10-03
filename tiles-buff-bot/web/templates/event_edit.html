@@ -1,37 +1,37 @@
 {% extends "base.html" %}
-{% block title %}Событие · {{ site_name }}{% endblock %}
+{% block title %}{{ _("Событие") }} · {{ _(site_name) }}{% endblock %}
 {% block content %}
-<h1>📅 {{ "Изменить событие" if e else "Новое событие" }}</h1>
+<h1>📅 {{ _("Изменить событие") if e else _("Новое событие") }}</h1>
 <section class="card">
   <form method="post" action="/events/save" class="stack">
     <input type="hidden" name="csrf" value="{{ csrf }}">
     <input type="hidden" name="id" value="{{ e.id if e else 0 }}">
-    <div class="field"><label for="title">Название</label><input id="title" name="title" type="text" maxlength="80" required value="{{ e.title if e else '' }}"></div>
-    <fieldset class="field cycle"><legend>Дни недели</legend>
+    <div class="field"><label for="title">{{ _("Название") }}</label><input id="title" name="title" type="text" maxlength="80" required value="{{ e.title if e else '' }}"></div>
+    <fieldset class="field cycle"><legend>{{ _("Дни недели") }}</legend>
       <div class="cycle-presets">
         {% for i in range(7) %}<label class="chip"><input type="checkbox" name="days" value="{{ i }}" {{ 'checked' if (i|string) in days }}> {{ WEEKDAYS[i] }}</label>{% endfor %}
       </div>
     </fieldset>
     <div class="grid3">
-      <div class="field"><label for="time">Начало ({{ tz_label }}, {{ offset_text() }})</label><input id="time" name="time" type="time" required value="{{ hhmm }}"></div>
-      <div class="field"><label for="hours">Длится, часов</label><input id="hours" name="hours" type="number" step="0.5" min="0.5" max="168" value="{{ (e.duration / 60)|round(1) if e else 1 }}"></div>
-      <div class="field"><label for="remind">Напомнить</label>
+      <div class="field"><label for="time">{{ _("Начало ({tz}, {offset})", tz=tz_label, offset=offset_text()) }}</label><input id="time" name="time" type="time" required value="{{ hhmm }}"></div>
+      <div class="field"><label for="hours">{{ _("Длится, часов") }}</label><input id="hours" name="hours" type="number" step="0.5" min="0.5" max="168" value="{{ (e.duration / 60)|round(1) if e else 1 }}"></div>
+      <div class="field"><label for="remind">{{ _("Напомнить") }}</label>
         <select id="remind" name="remind">
           {% for v, t in [(-1, "не напоминать"), (0, "в момент начала"), (15, "за 15 мин"), (30, "за 30 мин"), (60, "за 1 ч"), (180, "за 3 ч"), (300, "накануне вечером (за 5 ч)")] %}
-          <option value="{{ v }}" {{ 'selected' if (e.remind_min if e else 60) == v }}>{{ t }}</option>{% endfor %}
+          <option value="{{ v }}" {{ 'selected' if (e.remind_min if e else 60) == v }}>{{ _(t) }}</option>{% endfor %}
         </select></div>
     </div>
-    <p class="hint">Пишите время по {{ tz_label }} — сайт сам покажет игрокам и {{ tz_label }}, и UTC.</p>
-    <div class="field"><label for="prepare">Что делать союзу</label><textarea id="prepare" name="prepare" rows="3" maxlength="400">{{ e.prepare if e else '' }}</textarea></div>
-    <label class="check"><input type="checkbox" name="rsvp" value="1" {{ 'checked' if e and e.rsvp }}> Спрашивать «Буду / Не смогу»</label>
-    <label class="check"><input type="checkbox" name="checked" value="1" {{ 'checked' if e and e.checked }}> ✅ Время сверено с игрой</label>
-    <button class="btn btn-primary btn-block" type="submit">Сохранить</button>
+    <p class="hint">{{ _("Пишите время по {tz} — сайт сам покажет игрокам и {tz}, и UTC.", tz=tz_label) }}</p>
+    <div class="field"><label for="prepare">{{ _("Что делать союзу") }}</label><textarea id="prepare" name="prepare" rows="3" maxlength="400">{{ e.prepare if e else '' }}</textarea></div>
+    <label class="check"><input type="checkbox" name="rsvp" value="1" {{ 'checked' if e and e.rsvp }}> {{ _("Спрашивать «Буду / Не смогу»") }}</label>
+    <label class="check"><input type="checkbox" name="checked" value="1" {{ 'checked' if e and e.checked }}> ✅ {{ _("Время сверено с игрой") }}</label>
+    <button class="btn btn-primary btn-block" type="submit">{{ _("Сохранить") }}</button>
   </form>
   {% if e %}
-  <form method="post" action="/events/{{ e.id }}/delete" data-confirm="Удалить событие «{{ e.title }}»?" style="margin-top:12px">
-    <input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-danger btn-sm" type="submit">🗑 Удалить</button>
+  <form method="post" action="/events/{{ e.id }}/delete" data-confirm="{{ _("Удалить событие «{title}»?", title=e.title) }}" style="margin-top:12px">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-danger btn-sm" type="submit">🗑 {{ _("Удалить") }}</button>
   </form>
   {% endif %}
 </section>
-<p><a href="/events">◀️ К событиям</a></p>
+<p><a href="/events">◀️ {{ _("К событиям") }}</a></p>
 {% endblock %}

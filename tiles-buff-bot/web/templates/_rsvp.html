@@ -4,15 +4,15 @@
   <form method="post" action="/answer">
     <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="ref" value="{{ ref }}"><input type="hidden" name="next" value="{{ next }}">
     <input type="hidden" name="value" value="{{ '' if mine == 'yes' else 'yes' }}">
-    <button class="btn btn-sm {{ 'btn-primary' if mine == 'yes' }}" type="submit" aria-pressed="{{ 'true' if mine == 'yes' else 'false' }}">✅ Буду · {{ a.yes|length }}</button>
+    <button class="btn btn-sm {{ 'btn-primary' if mine == 'yes' }}" type="submit" aria-pressed="{{ 'true' if mine == 'yes' else 'false' }}">✅ {{ _("Буду") }} · {{ a.yes|length }}</button>
   </form>
   <form method="post" action="/answer">
     <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="ref" value="{{ ref }}"><input type="hidden" name="next" value="{{ next }}">
     <input type="hidden" name="value" value="{{ '' if mine == 'no' else 'no' }}">
-    <button class="btn btn-sm {{ 'btn-danger' if mine == 'no' }}" type="submit" aria-pressed="{{ 'true' if mine == 'no' else 'false' }}">✖️ Не смогу · {{ a.no|length }}</button>
+    <button class="btn btn-sm {{ 'btn-danger' if mine == 'no' }}" type="submit" aria-pressed="{{ 'true' if mine == 'no' else 'false' }}">✖️ {{ _("Не смогу") }} · {{ a.no|length }}</button>
   </form>
   {% if is_admin and (a.yes or a.no) %}
-  <details class="more"><summary>Кто ответил</summary>
+  <details class="more"><summary>{{ _("Кто ответил") }}</summary>
     <p class="hint">✅ {{ a.yes|join(", ") or "—" }}<br>✖️ {{ a.no|join(", ") or "—" }}</p>
   </details>
   {% endif %}
