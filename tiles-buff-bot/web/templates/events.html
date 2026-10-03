@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}События · {{ site_name }}{% endblock %}
+{% block content %}
+<h1>📣 Союз</h1>
+<nav class="tabs" style="grid-template-columns:repeat(2,1fr)">
+  <a href="/board">Объявления</a>
+  <a href="/events" class="on">📅 События</a>
+</nav>
+<p class="hint">Время — местное (МСК). Новый игровой день начинается в {{ reset }} (00:00 по серверу).</p>
+
+{% for d in days %}
+<section class="card">
+  <h2>{{ d.title }}</h2>
+  <ul class="events">
+    {% for o in d.list %}{% set e = o.event %}
+    <li class="ev{{ ' now' if o.ongoing(now_ts) }}">
+      <div class="ev-time">{% if o.ongoing(now_ts) %}<b>идёт</b><small>до {{ local(o.end, "%H:%M") }}</small>{% elif e.duration >= 1440 %}<b>весь день</b>{% else %}<b>{{ local(o.start, "%H:%M") }}</b><small>{{ dur(e.duration * 60) }}</small>{% endif %}</div>
+      <div class="ev-body">
+        <b>{{ e.title }}</b>{% if not e.checked %} <span class="badge badge-warn" title="Время взято из гайдов — R4, сверьте с игрой">проверить</span>{% endif %}
+        {% if e.prepare %}<small>{{ e.prepare }}</small>{% endif %}
+        {% if e.rsvp %}{% with ref = o.ref, a = answers[o.ref], next = "/events" %}{% include "_rsvp.html" %}{% endwith %}{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% else %}
+<p class="empty">На неделе событий нет.</p>
+{% endfor %}
+
+{% if is_admin %}
+<section class="card">
+  <div class="card-head"><h2>⚙️ Расписание союза</h2><a class="btn btn-sm btn-primary" href="/events/edit">➕ Событие</a></div>
+  <p class="hint mt0">Стартовый набор взят из открытых гайдов — источники расходятся. Сверьте время с игрой, поправьте и снимите «проверить». Напоминание приходит игрокам на телефон.</p>
+  <ul class="feed">
+    {% for x in all_events %}{% set e = x.e %}
+    <li><span><b>{{ e.title }}</b>{% if not e.checked %} <span class="badge badge-warn">проверить</span>{% endif %}<br>
+      <small class="muted">{% for i in range(7) if (i|string) in x.local[0] %}{{ WEEKDAYS[i] }}{{ ", " if not loop.last }}{% endfor %} · {{ x.local[1] }} · {{ dur(e.duration * 60) }}{% if e.remind_min >= 0 %} · 🔔 за {{ dur(e.remind_min * 60) if e.remind_min else "0м" }}{% endif %}</small></span>
+      <a class="btn btn-sm" href="/events/edit?id={{ e.id }}">Изменить</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

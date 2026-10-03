@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from . import gamedata
+from . import crm, gamedata
 from .service import KIND_ACC, KIND_NAME, KINDS, Service
 from .timeparse import DAY, HOUR, format_duration
 
@@ -22,6 +22,7 @@ NOTICE_KINDS = {
     "next": "Я следующий в очереди",
     "done": "Стройка или исследование закончились — встать со следующей",
     "news": "Важные объявления R4",
+    "events": "События союза: напоминание перед началом",
 }
 GOT_WINDOW = DAY  # о полученном бафе напоминаем, если он был не раньше суток назад
 
@@ -64,6 +65,11 @@ def due_notices(svc: Service, tz: ZoneInfo, now: int) -> list[Notice]:
     holding = svc.holding_map(now)
     hold_limit = svc.setting_float("hold_hours") * HOUR
     out: list[Notice] = []
+    news = svc.db.all("SELECT * FROM posts WHERE important = 1 AND created_at >= ?", now - 3 * DAY)
+    upcoming = [
+        o for o in crm.occurrences(svc, now, 1)
+        if o.event["remind_min"] >= 0 and now >= o.start - o.event["remind_min"] * 60
+    ]
 
     for pid in subscribed:
         player = svc.player(pid)
@@ -124,6 +130,19 @@ def due_notices(svc: Service, tz: ZoneInfo, now: int) -> list[Notice]:
             nxt = f" Следующая: {f['item'].ru} → {f['next_level']}." if f["next_level"] else ""
             mine.append(Notice(pid, f"done:{t['id']}", "done", f"🏁 {what} — закончилось",
                                f"Запустил следующее? Встань в очередь в одно нажатие.{nxt}", "/"))
+
+        # 5. Важные объявления R4.
+        for post in news:
+            if post["author_id"] != pid:
+                first_line = post["text"].strip().splitlines()[0][:120]
+                mine.append(Notice(pid, f"post:{post['id']}", "news", "📣 Объявление союза", first_line, "/board"))
+
+        # 6. События союза — напоминание перед началом.
+        for o in upcoming:
+            when = datetime.fromtimestamp(o.start, tz).strftime("%H:%M")
+            head = "идёт сейчас" if o.ongoing(now) else f"начало в {when}"
+            mine.append(Notice(pid, o.ref, "events", f"📅 {o.event['title']} — {head}",
+                               o.event["prepare"][:160] or "Подробности — в календаре союза.", "/events"))
 
         out += [n for n in mine if n.kind not in p["off"]]
     return out

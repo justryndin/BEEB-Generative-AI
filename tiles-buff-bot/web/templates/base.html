@@ -10,14 +10,14 @@
   <link rel="apple-touch-icon" href="/static/icon-180.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="/static/style.css?v=13">
+  <link rel="stylesheet" href="/static/style.css?v=14">
 </head>
 <body{% if me %} data-vapid="{{ vapid_public }}" data-csrf="{{ csrf }}"{% endif %}>
 {% set nav = [
   ("/", "🏠", "Главная"),
   ("/join", "➕", "Встать"),
   ("/give", "🎁", "Я отдал"),
-  ("/stats", "📊", "Статистика"),
+  ("/board", "📣", "Союз"),
   ("/me", "👤", "Профиль"),
 ] %}
 <header class="topbar">
@@ -26,8 +26,9 @@
     {% if me %}
     <nav class="topnav" aria-label="Разделы">
       {% for href, ico, name in nav %}
-      <a href="{{ href }}" class="{{ 'on' if path == href or (href != '/' and path.startswith(href)) }}">{{ name }}</a>
+      <a href="{{ href }}" class="{{ 'on' if path == href or (href != '/' and path.startswith(href)) or (href == '/board' and path.startswith('/events')) }}">{{ name }}{% if href == "/board" and unread %} <span class="dotcount">{{ unread }}</span>{% endif %}</a>
       {% endfor %}
+      <a href="/stats" class="{{ 'on' if path.startswith('/stats') }}">Статистика</a>
       {% if is_admin %}<a href="/admin" class="{{ 'on' if path.startswith('/admin') }}">⚙️ Управление</a>{% endif %}
     </nav>
     <span class="who">{{ me.nick }}</span>
@@ -48,12 +49,12 @@
   {% if href == "/me" and is_admin %}
   <a href="/admin" class="{{ 'on' if path.startswith('/admin') }}"><span class="ico">⚙️</span>Управление</a>
   {% else %}
-  <a href="{{ href }}" class="{{ 'on' if path == href or (href != '/' and path.startswith(href)) }}"><span class="ico">{{ ico }}</span>{{ name }}</a>
+  <a href="{{ href }}" class="{{ 'on' if path == href or (href != '/' and path.startswith(href)) or (href == '/board' and path.startswith('/events')) }}"><span class="ico">{{ ico }}{% if href == "/board" and unread %}<span class="dotcount">{{ unread }}</span>{% endif %}</span>{{ name }}</a>
   {% endif %}
   {% endfor %}
 </nav>
 {% endif %}
-<p class="footer"><a href="/tips">💡 Советы</a> · <a href="/rules">📜 Условия</a>{% if me and is_admin %} · <a href="/me">👤 Профиль</a>{% endif %}<br>© {{ site_name }} · Tiles Survive · сезон «Эра метели»</p>
+<p class="footer"><a href="/stats">📊 Статистика</a> · <a href="/tips">💡 Советы</a> · <a href="/rules">📜 Условия</a>{% if me and is_admin %} · <a href="/me">👤 Профиль</a>{% endif %}<br>© {{ site_name }} · Tiles Survive · сезон «Эра метели»</p>
 <script src="/static/app.js?v=6" defer></script>
 </body>
 </html>

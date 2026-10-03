@@ -495,6 +495,24 @@ main.wide { max-width: 1180px; }
 .todo .muted { display: block; margin-top: 4px; }
 .gain .grid4 { margin-bottom: 8px; }
 .gain-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.pin-strip { display: block; padding: 12px 14px; margin-bottom: 10px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--accent-ring); color: var(--text); text-decoration: none; line-height: 1.45; }
+.pin-strip.soon { border-color: var(--border-strong); }
+.dotcount { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: #fff; font-size: .7rem; font-weight: 700; vertical-align: top; margin-left: 2px; }
+.post-head, .post-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.post-foot { margin-top: 10px; }
+.post-foot .hint { flex: 1; margin: 0; }
+.post-text { white-space: pre-wrap; margin: 10px 0 0; font-size: 1.02rem; line-height: 1.55; }
+.post.pinned { border-color: var(--accent-ring); }
+.rsvp { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.rsvp details { flex-basis: 100%; }
+.events { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ev { display: grid; grid-template-columns: 76px 1fr; gap: 10px; padding: 10px; border-radius: 14px; background: var(--surface-2); }
+.ev.now { outline: 1px solid var(--accent-ring); }
+.ev-time b, .ev-time small { display: block; }
+.ev-time small, .ev-body small { color: var(--muted); }
+.ev-body small { display: block; margin-top: 2px; }
+.chip input { accent-color: var(--accent); margin-right: 4px; }
+label.chip { display: inline-flex; align-items: center; }
 .life-card { border-color: var(--accent-ring); }
 .inline-time { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; margin-top: 12px; }
 .inline-time button { grid-column: 1 / -1; }

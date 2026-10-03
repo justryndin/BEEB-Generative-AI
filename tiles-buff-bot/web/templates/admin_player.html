@@ -10,6 +10,18 @@
   <span class="badge">отдал {{ given }} · получил {{ received }}</span>
 </div>
 
+<section class="card">
+  <h2>🗂 Заметка R4</h2>
+  <form method="post" action="/admin/p/{{ p.id }}/crm" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label for="tags">Метки через запятую</label>
+    <input id="tags" name="tags" type="text" maxlength="200" value="{{ p.crm_tags or '' }}" placeholder="актив, R3, новичок, слабый онлайн">
+    <label for="note">Заметка (видят только R4)</label>
+    <textarea id="note" name="note" rows="3" maxlength="1000" placeholder="Онлайн вечером, строит Электростанцию, просил помощь на Аркадии">{{ p.crm_note or '' }}</textarea>
+    <button class="btn" type="submit">Сохранить</button>
+  </form>
+</section>
+
 {% for kind in KINDS %}
 {% set t = timers[kind] %}
 <section class="card">

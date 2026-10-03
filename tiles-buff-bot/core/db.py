@@ -82,6 +82,44 @@ CREATE TABLE IF NOT EXISTS push_subs (
     created_at INTEGER NOT NULL
 );
 
+-- Доска объявлений союза.
+CREATE TABLE IF NOT EXISTS posts (
+    id         INTEGER PRIMARY KEY,
+    author_id  INTEGER REFERENCES players(id) ON DELETE SET NULL,
+    text       TEXT NOT NULL,
+    pinned     INTEGER NOT NULL DEFAULT 0,
+    important  INTEGER NOT NULL DEFAULT 0,  -- прислать всем на телефон
+    rsvp       INTEGER NOT NULL DEFAULT 0,  -- спросить «Буду / Не смогу»
+    created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS post_reads (
+    post_id   INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    PRIMARY KEY (post_id, player_id)
+);
+
+-- Ответы «Буду / Не смогу»: ref — «post:12» или «event:3:<начало>».
+CREATE TABLE IF NOT EXISTS answers (
+    ref       TEXT NOT NULL,
+    player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    answer    TEXT NOT NULL,
+    at        INTEGER NOT NULL,
+    PRIMARY KEY (ref, player_id)
+);
+
+-- Недельные события союза. Время — серверное (UTC), как в игре.
+CREATE TABLE IF NOT EXISTS events (
+    id         INTEGER PRIMARY KEY,
+    title      TEXT NOT NULL,
+    days       TEXT NOT NULL,             -- дни недели UTC: 0 — пн … 6 — вс, например «1234»
+    start_min  INTEGER NOT NULL,          -- начало, минут от 00:00 UTC
+    duration   INTEGER NOT NULL,          -- длительность, минут
+    prepare    TEXT NOT NULL DEFAULT '',  -- что делать союзу
+    remind_min INTEGER NOT NULL DEFAULT 60,  -- напомнить за столько минут (-1 — не напоминать)
+    checked    INTEGER NOT NULL DEFAULT 0,   -- R4 сверили время с игрой
+    rsvp       INTEGER NOT NULL DEFAULT 0
+);
+
 -- Что уже отправлено, чтобы не присылать одно и то же дважды.
 CREATE TABLE IF NOT EXISTS notify_log (
     player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
@@ -109,6 +147,8 @@ MIGRATIONS = {
         ("last_seen_at", "INTEGER"),
         ("agreed_at", "INTEGER"),
         ("notify_prefs", "TEXT"),  # JSON: какие уведомления выключены
+        ("crm_note", "TEXT"),  # заметка R4 об игроке
+        ("crm_tags", "TEXT"),  # метки через запятую: «актив, новичок»
     ],
     "donations": [("undo", "TEXT"), ("undone_by", "INTEGER"), ("undone_at", "INTEGER")],
 }

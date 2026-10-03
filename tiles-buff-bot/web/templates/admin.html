@@ -9,6 +9,7 @@
 
 <div class="grid2" style="margin-bottom:16px">
   <a class="btn btn-block btn-primary" href="/admin/stats">📈 Аналитика и эффективность</a>
+  <a class="btn btn-block" href="/board">📣 Объявления и 📅 события союза</a>
   <a class="btn btn-block" href="/admin/log">📜 Журнал бафов — проверить и отменить</a>
 </div>
 
@@ -23,6 +24,7 @@
         <span class="qmeta">
           {% for k in KINDS %}{% set c = r.timers[k] %}{% if c and c.remaining > 0 %}{{ KIND_EMOJI[k] }} {{ dur(c.remaining) }}{% if c.urgent %} 🔥{% endif %} · {% endif %}{% endfor %}
           {% if not p.pin_hash %}<span class="badge badge-warn">не вошёл на сайт</span>{% endif %}
+          {% for t in (p.crm_tags or "").split(",") if t.strip() %}<span class="badge">{{ t.strip() }}</span>{% endfor %}
         </span>
       </a>
       <a class="btn btn-sm" href="/admin/p/{{ p.id }}">Открыть</a>

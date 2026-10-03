@@ -63,7 +63,7 @@ SETTINGS: dict[str, tuple[str, str]] = {
     "confirm_minutes": ("30", "Сколько минут держится бронь на назначенный баф"),
     "alliance_code": ("", "Код союза для регистрации на сайте (пусто — регистрация открыта всем)"),
 }
-_INTERNAL_SETTINGS: set[str] = {"vapid_private", "vapid_public"}
+_INTERNAL_SETTINGS: set[str] = {"vapid_private", "vapid_public", "events_seeded"}
 _TEXT_SETTINGS = {"mode", "pattern", "alliance_code", "queue_order", "priority_item"}
 
 MAX_FAILED_LOGINS = 5

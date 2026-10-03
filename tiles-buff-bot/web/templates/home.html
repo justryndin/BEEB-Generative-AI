@@ -19,6 +19,13 @@
 <div class="alert alert-warn">📜 Прими <a href="/rules"><b>условия очереди</b></a> — без этого нельзя вставать в очередь и отмечать бафы.</div>
 {% endif %}
 
+{% for p in pinned %}
+<a class="pin-strip" href="/board"><span class="badge badge-accent">📌 {{ p.author or "R4" }}</span> {{ p.text|truncate(160) }}</a>
+{% endfor %}
+{% for o in soon %}
+<a class="pin-strip soon" href="/events"><span class="badge">📅 {{ "идёт" if o.ongoing(now_ts) else local(o.start, "%H:%M") }}</span> <b>{{ o.event.title }}</b>{% if o.event.prepare %} — {{ o.event.prepare|truncate(90) }}{% endif %}</a>
+{% endfor %}
+
 <div class="alert alert-info push-banner" data-push data-push-banner hidden>
   <span>🔔 <b>Включи уведомления</b> — сайт сам скажет, когда твой баф готов и кому его отдать.</span>
   <button class="btn btn-sm btn-primary" type="button" data-push-on>Включить</button>

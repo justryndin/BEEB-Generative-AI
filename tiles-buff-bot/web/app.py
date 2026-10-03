@@ -17,6 +17,7 @@ from fastapi.templating import Jinja2Templates
 
 from core import gamedata
 from core.db import Database
+from core import crm
 from core.analytics import benefit, r4_report
 from core.notify import NOTICE_KINDS, Notice, prefs as notify_prefs
 from core.logic import CYCLE_MAX, STATUS_NEED, buffs_needed, make_pattern, parse_pattern, timer_status
@@ -60,6 +61,10 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                     log.exception("Ошибка фоновой задачи")
                 await asyncio.sleep(60)
 
+        try:
+            crm.seed_events(svc)
+        except Exception:
+            log.exception("Не удалось добавить события союза")
         try:
             push.ensure_keys(svc)
         except Exception:
@@ -129,6 +134,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                 "flash": flash,
                 "path": request.url.path,
                 "vapid_public": svc.setting("vapid_public") if me else "",
+                "unread": crm.unread(svc, me["id"]) if me else 0,
                 **ctx,
             },
             status_code=status_code,
@@ -312,6 +318,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             received=received,
             own_gift=svc.last_own_gift(me["id"], t - SELF_UNDO_SECONDS),
             checks=svc.time_checks(me["id"], t),
+            pinned=crm.pinned_posts(svc),
+            soon=[o for o in crm.occurrences(svc, t, 1) if o.start - t < DAY][:2],
             order=svc.setting("queue_order"),
             pattern=svc.setting("pattern"),
             finished=svc.finished_timers(me["id"], t),
@@ -576,6 +584,133 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             devices=len(svc.push_subs(me["id"])),
             quiet=(int(svc.setting_float("quiet_from")), int(svc.setting_float("quiet_to"))),
         )
+
+    # ---------- союз: объявления и события ----------
+
+    def offset_min() -> int:
+        return int(datetime.now(cfg.tz).utcoffset().total_seconds() // 60)
+
+    def to_utc(days_local: list[str], hhmm: str) -> tuple[str, int] | None:
+        """Местные дни недели и время → дни и минуты по UTC (как в игре)."""
+        try:
+            hh, mm = (int(x) for x in hhmm.split(":"))
+        except ValueError:
+            return None
+        if not (0 <= hh < 24 and 0 <= mm < 60):
+            return None
+        minute = hh * 60 + mm - offset_min()
+        shift = -1 if minute < 0 else (1 if minute >= 1440 else 0)
+        days = "".join(sorted({str((int(d) + shift) % 7) for d in days_local if d in "0123456"}))
+        return days, minute % 1440
+
+    def to_local(days_utc: str, start_min: int) -> tuple[set[str], str]:
+        minute = start_min + offset_min()
+        shift = -1 if minute < 0 else (1 if minute >= 1440 else 0)
+        minute %= 1440
+        return {str((int(d) + shift) % 7) for d in days_utc}, f"{minute // 60:02d}:{minute % 60:02d}"
+
+    @app.get("/board", response_class=HTMLResponse)
+    def board(request: Request):
+        me = need_login(request)
+        items = crm.posts(svc, me["id"])
+        crm.mark_read(svc, me["id"])
+        refs = [f"post:{p['id']}" for p in items if p["rsvp"]]
+        return render(request, "board.html", me, items=items, answers=crm.answers(svc, refs),
+                      players=len(svc.players()), unread=0)
+
+    @app.post("/board")
+    def board_add(request: Request, csrf: str = Form(""), text: str = Form(""), pinned: str = Form(""),
+                  important: str = Form(""), rsvp: str = Form("")):
+        me = need_admin(request)
+        check_csrf(me, csrf)
+        if crm.add_post(svc, me["id"], text, pinned == "1", important == "1", rsvp == "1", now()) is None:
+            return go("/board", "⚠️ Напиши текст объявления.")
+        tail = " Важное — придёт всем на телефон в течение минуты." if important == "1" else ""
+        return go("/board", "✅ Опубликовано." + tail)
+
+    @app.post("/board/{post_id}/{action}")
+    def board_action(request: Request, post_id: int, action: str, csrf: str = Form("")):
+        me = need_admin(request)
+        check_csrf(me, csrf)
+        if action == "pin":
+            crm.set_pin(svc, post_id, True)
+        elif action == "unpin":
+            crm.set_pin(svc, post_id, False)
+        elif action == "delete":
+            crm.delete_post(svc, post_id)
+        else:
+            raise HTTPException(status_code=404)
+        return go("/board", "✅ Готово.")
+
+    @app.post("/answer")
+    def answer(request: Request, csrf: str = Form(""), ref: str = Form(""), value: str = Form(""), next: str = Form("/")):
+        me = need_login(request)
+        check_csrf(me, csrf)
+        if not (ref.startswith("post:") or ref.startswith("event:")):
+            raise HTTPException(status_code=400)
+        crm.answer(svc, ref, me["id"], value, now())
+        return go(next if next.startswith("/") else "/", "✅ Ответ записан." if value in ("yes", "no") else "Ответ убран.")
+
+    @app.get("/events", response_class=HTMLResponse)
+    def events_page(request: Request):
+        me = need_login(request)
+        t = now()
+        occ = crm.occurrences(svc, t, 7)
+        days: list[dict] = []
+        for o in occ:
+            key = local(max(o.start, t) if o.ongoing(t) else o.start, "%Y-%m-%d")
+            if not days or days[-1]["key"] != key:
+                ts = max(o.start, t) if o.ongoing(t) else o.start
+                wd = datetime.fromtimestamp(ts, cfg.tz).weekday()
+                days.append({"key": key, "title": f"{crm.WEEKDAYS_FULL[wd]}, {local(ts, '%d.%m')}", "list": []})
+            days[-1]["list"].append(o)
+        refs = [o.ref for o in occ if o.event["rsvp"]]
+        all_events = [
+            {"e": e, "local": to_local(e["days"], e["start_min"])} for e in crm.events(svc)
+        ]
+        return render(request, "events.html", me, days=days, answers=crm.answers(svc, refs), now_ts=t,
+                      all_events=all_events, WEEKDAYS=crm.WEEKDAYS, reset=to_local("0", 0)[1])
+
+    @app.get("/events/edit", response_class=HTMLResponse)
+    def event_edit(request: Request, id: int = 0):
+        me = need_admin(request)
+        e = crm.event(svc, id) if id else None
+        days, hhmm = to_local(e["days"], e["start_min"]) if e else (set(), "18:00")
+        return render(request, "event_edit.html", me, e=e, days=days, hhmm=hhmm, WEEKDAYS=crm.WEEKDAYS)
+
+    @app.post("/events/save")
+    async def event_save(request: Request):
+        me = need_admin(request)
+        form = await request.form()
+        check_csrf(me, str(form.get("csrf", "")))
+        conv = to_utc(form.getlist("days"), str(form.get("time", "")))
+        if conv is None:
+            return go("/events", "⚠️ Время в формате ЧЧ:ММ, например 18:00.")
+        try:
+            hours = float(str(form.get("hours", "1")).replace(",", "."))
+            remind = int(str(form.get("remind", "60")))
+            event_id = int(str(form.get("id", "0")) or 0)
+        except ValueError:
+            return go("/events", "⚠️ Проверь длительность и напоминание.")
+        error = crm.save_event(svc, event_id or None, str(form.get("title", "")), conv[0], conv[1], int(hours * 60),
+                               str(form.get("prepare", "")), remind, form.get("checked") == "1", form.get("rsvp") == "1")
+        return go("/events", "⚠️ " + error if error else "✅ Событие сохранено.")
+
+    @app.post("/events/{event_id}/delete")
+    def event_delete(request: Request, event_id: int, csrf: str = Form("")):
+        me = need_admin(request)
+        check_csrf(me, csrf)
+        crm.delete_event(svc, event_id)
+        return go("/events", "🗑 Событие удалено.")
+
+    @app.post("/admin/p/{pid}/crm")
+    def player_note(request: Request, pid: int, csrf: str = Form(""), note: str = Form(""), tags: str = Form("")):
+        me = need_admin(request)
+        check_csrf(me, csrf)
+        if svc.player(pid) is None:
+            raise HTTPException(status_code=404)
+        crm.save_note(svc, pid, note, tags)
+        return go(f"/admin/p/{pid}", "✅ Заметка сохранена.")
 
     # ---------- уведомления на телефон ----------
 

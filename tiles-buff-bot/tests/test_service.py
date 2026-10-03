@@ -313,3 +313,24 @@ def test_due_notices_ready_got_next_and_quiet():
     svc.set_notify_prefs(b["id"], {"off": ["ready"], "quiet": False})
     keys = {n.key.split(":")[0] for n in due_notices(svc, utc, night)}
     assert "ready" not in keys and "got" in keys
+
+
+def test_notices_for_important_posts_and_events():
+    from zoneinfo import ZoneInfo
+    from core import crm
+    from core.notify import due_notices
+    utc = ZoneInfo("UTC")
+    svc = make()
+    a = reg(svc, 1, "Аня")
+    b = reg(svc, 2, "Борис")
+    svc.add_push(b["id"], "https://push.example/b", "k", "a", T0)
+    monday = (T0 // DAY - (T0 // DAY + 3) % 7) * DAY + 7 * DAY  # ближайший понедельник 00:00 UTC
+    crm.save_event(svc, None, "Сбор", "0", 12 * 60, 60, "Щиты!", 60, True, True)
+    crm.add_post(svc, a["id"], "Важно: сбор\nподробности", False, True, False, monday + 10 * HOUR)
+    keys = {n.key: n for n in due_notices(svc, utc, monday + 11 * HOUR + 10 * 60)}
+    post = next(n for k, n in keys.items() if k.startswith("post:"))
+    assert post.body == "Важно: сбор" and post.url == "/board"
+    ev = next(n for k, n in keys.items() if k.startswith("event:"))
+    assert "Сбор" in ev.title and "12:00" in ev.title and ev.body == "Щиты!"
+    # Раньше чем за час до начала — ещё не напоминаем
+    assert not any(k.startswith("event:") for k in (n.key for n in due_notices(svc, utc, monday + 10 * HOUR + 30 * 60)))

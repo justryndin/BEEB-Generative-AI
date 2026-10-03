@@ -253,7 +253,7 @@ def test_push_subscribe_and_settings(site):
     assert owner.post("/push/subscribe", json={**sub, "csrf": "bad"}).status_code == 400
     owner.post("/me/notify", data={"csrf": token, "on_got": "1", "quiet": "1"})
     from core.notify import prefs
-    assert set(prefs(svc.player(ivan["id"]))["off"]) == {"ready", "next", "done", "news"}
+    assert set(prefs(svc.player(ivan["id"]))["off"]) == {"ready", "next", "done", "news", "events"}
     owner.post("/push/unsubscribe", json={"csrf": token, "endpoint": "https://push.example/1"})
     assert svc.push_subs(ivan["id"]) == []
 
@@ -272,3 +272,39 @@ def test_admin_analytics_and_benefit(site):
     assert player.get("/admin/stats").status_code == 403
     me = owner.get("/me").text
     assert "Моя выгода" in me and "получил <b>1 из" in me
+
+
+def test_board_events_and_crm(site):
+    svc, owner, player = site
+    register(owner, "Иван")
+    register(player, "Мура")
+    svc.set_owner(svc.player_by_nick("Иван")["id"])
+    mura = svc.player_by_nick("Мура")
+    token = csrf(owner.get("/me").text)
+    ptoken = csrf(player.get("/me").text)
+
+    # Объявление: закреплённое видно на главной, у игрока — «новое» и счётчик в меню
+    r = owner.post("/board", data={"csrf": token, "text": "Сбор на Аркадию в субботу", "pinned": "1", "rsvp": "1"})
+    assert "Опубликовано" in r.text
+    assert 'class="dotcount">1<' in player.get("/").text and "Сбор на Аркадию" in player.get("/").text
+    board = player.get("/board").text
+    assert "новое" in board and "прочитали 1 из 2" in board
+    assert 'class="dotcount"' not in player.get("/").text  # прочитал
+    post_id = svc.db.one("SELECT id FROM posts")["id"]
+    player.post("/answer", data={"csrf": ptoken, "ref": f"post:{post_id}", "value": "yes", "next": "/board"})
+    assert "Буду · 1" in owner.get("/board").text and "Мура" in owner.get("/board").text
+    assert player.post("/board", data={"csrf": ptoken, "text": "x"}).status_code == 403
+
+    # События: стартовый набор есть, R4 добавляет своё по МСК — хранится по UTC
+    page = player.get("/events").text
+    assert "Завоевание Аркадии" in page and "проверить" in page
+    r = owner.post("/events/save", data={"csrf": token, "title": "Сбор на медведя", "days": ["0", "3"], "time": "01:30",
+                                         "hours": "1", "remind": "30", "checked": "1"})
+    assert "Событие сохранено" in r.text
+    e = svc.db.one("SELECT * FROM events WHERE title = 'Сбор на медведя'")
+    assert e["days"] == "26" and e["start_min"] == 22 * 60 + 30  # 01:30 МСК пн/чт = 22:30 UTC вс/ср
+    assert 'value="01:30"' in owner.get(f"/events/edit?id={e['id']}").text
+
+    # Заметка R4 об игроке
+    owner.post(f"/admin/p/{mura['id']}/crm", data={"csrf": token, "note": "онлайн вечером", "tags": "актив, R3"})
+    assert "R3" in owner.get("/admin").text and "онлайн вечером" in owner.get(f"/admin/p/{mura['id']}").text
