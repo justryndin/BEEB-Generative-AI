@@ -475,6 +475,15 @@ details.more { margin-top: 8px; }
 .steps-list { margin: 0 0 10px; padding-left: 22px; color: var(--text-2); }
 .steps-list li { margin-bottom: 6px; }
 
+/* ---------- журнал бафов ---------- */
+
+.journal { list-style: none; margin: 0; padding: 0; }
+.journal li { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.journal li:last-child { border-bottom: 0; }
+.journal .j-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.journal li.undone .j-main > span { text-decoration: line-through; opacity: .6; }
+.j-undone { color: var(--warn); }
+
 /* ---------- я отдал баф ---------- */
 
 .give-list { list-style: none; margin: 0 0 12px; padding: 0; }

@@ -26,6 +26,7 @@ from .config import Config, load_config
 
 log = logging.getLogger(__name__)
 BASE = Path(__file__).parent
+SELF_UNDO_SECONDS = 15 * 60  # сколько игрок может сам отменить свою запись
 
 SLOT_REASON = {
     "B": "у него самый большой остаток",
@@ -287,6 +288,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             request, "home.html", me,
             boards=boards(me, t),
             received=received,
+            own_gift=svc.last_own_gift(me["id"], t - SELF_UNDO_SECONDS),
             updated=local(t, "%H:%M:%S"),
             now_ts=t,
             gap=svc.setting_float("min_gap_hours"),
@@ -478,6 +480,35 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         done = f"✅ Записано: {who_text} → {result.recipient_nick}, баф на {KIND_ACC[kind]} (−{format_duration(result.reduction)}). Спасибо! 🙌"
         return go(f"/admin/p/{who['id']}" if who["id"] != me["id"] else "/", done)
 
+    # ---------- отмена записанного бафа ----------
+
+    @app.post("/undo/{donation_id}")
+    def undo(request: Request, donation_id: int, csrf: str = Form(""), next: str = Form("/")):
+        me = need_login(request)
+        check_csrf(me, csrf)
+        d = svc.donation(donation_id)
+        if d is None:
+            return go("/", "⚠️ Запись не найдена.")
+        own = me["id"] in (d["requested_by"], d["donor_id"]) and (d["resolved_at"] or 0) >= now() - SELF_UNDO_SECONDS
+        if not (svc.is_admin_player(me) or own):
+            raise HTTPException(status_code=403, detail="Отменить эту запись может только руководство союза (R4)")
+        result, error, exact = svc.undo_donation(donation_id, me["id"], now())
+        back = next if next.startswith("/") and not next.startswith("//") else "/"
+        if error == "not_done":
+            return go(back, "⚠️ Эта запись уже отменена.")
+        donor = svc.player(d["donor_id"])
+        recipient = svc.player(d["recipient_id"])
+        text = (f"↩️ Отменено: {donor['nick'] if donor else '?'} → {recipient['nick'] if recipient else '?'} "
+                f"({KIND_NAME[d['kind']]}). Таймеры и очередь вернулись как были.")
+        if not exact:
+            text += " ⚠️ Запись старая — таймер того, кто отдавал, поправьте вручную, если нужно."
+        return go(back, text)
+
+    @app.get("/admin/log", response_class=HTMLResponse)
+    def admin_log(request: Request):
+        me = need_admin(request)
+        return render(request, "admin_log.html", me, rows=svc.journal(200))
+
     # ---------- профиль ----------
 
     @app.get("/me", response_class=HTMLResponse)
@@ -623,6 +654,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         given, received = svc.stats(pid)
         return render(
             request, "admin_player.html", me,
+            log=svc.journal(30, pid),
             p=p,
             timers=my_timers(pid, t),
             urgent={k: bool((svc.active_timer(pid, k) or {"urgent": 0})["urgent"]) for k in KINDS},

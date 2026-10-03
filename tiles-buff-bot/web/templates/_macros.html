@@ -30,3 +30,28 @@
 {% elif s == "wait" %}<span class="badge">⏳ через {{ dur(left) }}</span>
 {% else %}<span class="badge">❔ сайт узнает после первого бафа</span>{% endif %}
 {%- endmacro %}
+
+{% macro journal(rows, csrf, next) -%}
+{% if rows %}
+<ul class="journal">
+  {% for d in rows %}
+  <li class="{{ 'undone' if d.status == 'undone' }}">
+    <div class="j-main">
+      <span>{{ KIND_EMOJI[d.kind] }} <b>{{ d.donor_nick or "—" }}</b> → <b>{{ d.recipient_nick or "—" }}</b> <span class="muted">−{{ dur(d.reduction or 0) }}</span></span>
+      <small class="muted">{{ local(d.resolved_at) }}{% if d.by_nick and d.requested_by != d.donor_id %} · отметил {{ d.by_nick }}{% endif %}</small>
+      {% if d.status == 'undone' %}<small class="j-undone">↩️ отменено{% if d.undone_nick %} · {{ d.undone_nick }}{% endif %} · {{ local(d.undone_at) }}</small>{% endif %}
+    </div>
+    {% if d.status == 'done' %}
+    <form method="post" action="/undo/{{ d.id }}" data-confirm="Отменить запись: {{ d.donor_nick }} → {{ d.recipient_nick }}? Таймеры и очередь вернутся как были.">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn btn-sm btn-danger" type="submit">↩️ Отменить</button>
+    </form>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="muted">Пока ни одной записи.</p>
+{% endif %}
+{%- endmacro %}

@@ -84,6 +84,7 @@ MIGRATIONS = {
         ("last_seen_at", "INTEGER"),
         ("agreed_at", "INTEGER"),
     ],
+    "donations": [("undo", "TEXT"), ("undone_by", "INTEGER"), ("undone_at", "INTEGER")],
 }
 
 

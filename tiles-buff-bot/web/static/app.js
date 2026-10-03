@@ -35,8 +35,9 @@
     if (search) {
       search.addEventListener("input", function () {
         var q = search.value.trim().toLowerCase();
-        document.querySelectorAll("[data-nick]").forEach(function (row) {
-          row.hidden = q && row.dataset.nick.indexOf(q) === -1;
+        document.querySelectorAll("[data-nick], .journal li").forEach(function (row) {
+          var text = (row.dataset.nick || row.textContent).toLowerCase();
+          row.hidden = q && text.indexOf(q) === -1;
         });
       });
     }

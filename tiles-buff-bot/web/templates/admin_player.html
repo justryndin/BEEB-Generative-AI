@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import buff_line %}
+{% from "_macros.html" import buff_line, journal %}
 {% block title %}{{ p.nick }} · Управление{% endblock %}
 {% block content %}
 <p><a href="/admin">◀️ Все игроки</a></p>
@@ -35,6 +35,12 @@
   </div>
 </section>
 {% endfor %}
+
+<section class="card">
+  <h2>📜 Бафы игрока</h2>
+  <p class="hint mt0">Ошибочную запись можно отменить — таймеры и очередь вернутся как были.</p>
+  {{ journal(log, csrf, "/admin/p/" ~ p.id) }}
+</section>
 
 <section class="card">
   <h2>🛠 Действия</h2>

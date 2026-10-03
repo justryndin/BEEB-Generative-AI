@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "_macros.html" import journal %}
+{% block title %}Журнал бафов · Управление{% endblock %}
+{% block content %}
+<p><a href="/admin">◀️ Управление</a></p>
+<h1>📜 Журнал бафов</h1>
+<div class="alert alert-info">Кто-то нажал «Я отдал», а в игре не отдал, или выбрал не того игрока — нажми <b>↩️ Отменить</b>. У получателя вернётся время и «получил» −1, у отдававшего — время и готовность бафа. Очередь пересчитается у всех.<br>Если баф отдали, а отметить забыли — открой игрока в «Управлении» → «🎁 Отметить: он отдал баф».</div>
+<section class="card">
+  <input id="player-search" type="search" placeholder="🔎 Поиск по нику" aria-label="Поиск по нику" style="margin-bottom:10px">
+  {{ journal(rows, csrf, "/admin/log") }}
+</section>
+{% endblock %}

@@ -6,6 +6,15 @@
 {% for d in received %}
 <div class="alert alert-good">🎁 <b>{{ d.donor_nick or "Кто-то" }}</b> отдал тебе баф на {{ KIND_ACC[d.kind] }} (−{{ dur(d.reduction or 0) }}) · {{ local(d.resolved_at) }}</div>
 {% endfor %}
+{% if own_gift %}
+<div class="alert alert-good row">
+  <span>✅ Ты отметил: баф на {{ KIND_ACC[own_gift.kind] }} → <b>{{ own_gift.recipient_nick }}</b>. Ошибся?</span>
+  <form method="post" action="/undo/{{ own_gift.id }}" data-confirm="Отменить запись: баф → {{ own_gift.recipient_nick }}?">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="/">
+    <button class="btn btn-sm btn-danger" type="submit">↩️ Отменить</button>
+  </form>
+</div>
+{% endif %}
 {% if not me.agreed_at %}
 <div class="alert alert-warn">📜 Прими <a href="/rules"><b>условия очереди</b></a> — без этого нельзя вставать в очередь и отмечать бафы.</div>
 {% endif %}

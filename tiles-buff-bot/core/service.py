@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import re
 import secrets
 from dataclasses import dataclass
@@ -578,15 +579,23 @@ class Service:
         return self.assign(d["kind"], d["donor_id"], requested_by, now, excluded)
 
     def _apply_reduction(self, player_id: int, kind: str, now: int, as_recipient: bool):
-        """Срезает таймер игрока. Возвращает (срезано, остаток, цель достигнута впервые)."""
+        """Срезает таймер игрока. Возвращает (срезано, остаток, цель достигнута впервые, сведения для отмены)."""
         rules = self.rules(kind)
         timer = self.active_timer(player_id, kind)
         if timer is None or timer["end_at"] <= now:
-            return 0, None, False
+            return 0, None, False, None
         remaining = timer["end_at"] - now
         reduction = min(remaining, buff_reduction(timer["base_seconds"], remaining, rules))
         left = remaining - reduction
         reached = False
+        undo = {
+            "timer_id": timer["id"],
+            "reduction": reduction,
+            "last_buff_at": timer["last_buff_at"],
+            "urgent": timer["urgent"],
+            "target_notified": timer["target_notified"],
+            "deactivated": left <= 0,
+        }
         if as_recipient:
             c = Candidate(player_id, "", left, timer["base_seconds"],
                           buff_reduction(timer["base_seconds"], left, rules),
@@ -606,16 +615,22 @@ class Service:
             self.db.run("UPDATE timers SET end_at = end_at - ? WHERE id = ?", reduction, timer["id"])
         if left <= 0:
             self.db.run("UPDATE timers SET active = 0 WHERE id = ?", timer["id"])
-        return reduction, left, reached
+        return reduction, left, reached, undo
 
     def _complete(self, donation, now: int) -> BuffResult:
         kind = donation["kind"]
-        reduction, recipient_left, reached = self._apply_reduction(
+        reduction, recipient_left, reached, recipient_undo = self._apply_reduction(
             donation["recipient_id"], kind, now, as_recipient=True
         )
         # В игре баф действует и на того, кто его отдал.
-        _, donor_left, _ = self._apply_reduction(donation["donor_id"], kind, now, as_recipient=False)
+        _, donor_left, _, donor_undo = self._apply_reduction(donation["donor_id"], kind, now, as_recipient=False)
         cooldown_hours = self.setting_float("cooldown_hours")
+        prev_cd = self.cooldown(donation["donor_id"], kind)
+        undo = {
+            "recipient": recipient_undo,
+            "donor": donor_undo,
+            "cooldown": {"ready_at": prev_cd["ready_at"], "reminded": prev_cd["reminded"]} if prev_cd else None,
+        }
         self.db.run(
             "INSERT INTO cooldowns(player_id, kind, ready_at, reminded) VALUES(?, ?, ?, 0) "
             "ON CONFLICT(player_id, kind) DO UPDATE SET ready_at = excluded.ready_at, reminded = 0",
@@ -624,9 +639,10 @@ class Service:
             now + int(cooldown_hours * HOUR),
         )
         self.db.run(
-            "UPDATE donations SET status = 'done', resolved_at = ?, reduction = ? WHERE id = ?",
+            "UPDATE donations SET status = 'done', resolved_at = ?, reduction = ?, undo = ? WHERE id = ?",
             now,
             reduction,
+            json.dumps(undo),
             donation["id"],
         )
         donor = self.player(donation["donor_id"])
@@ -962,3 +978,90 @@ class Service:
         if recent is not None:
             return None, "duplicate"
         return self.record_manual(donor_id, recipient_id, kind, by_id, now), None
+
+    # ---------- отмена записанного бафа ----------
+
+    def _restore_timer(self, info: dict | None, player_id: int, kind: str, recipient: bool, donation) -> bool:
+        """Возвращает срезанное время таймеру. False — если точных сведений нет."""
+        if info:
+            timer = self.db.one("SELECT * FROM timers WHERE id = ?", info["timer_id"])
+            if timer is None:
+                return True  # таймер уже удалён вместе с игроком — возвращать некому
+            if recipient:
+                self.db.run(
+                    "UPDATE timers SET end_at = end_at + ?, buffs_received = MAX(buffs_received - 1, 0), "
+                    "last_buff_at = ?, urgent = ?, target_notified = ? WHERE id = ?",
+                    info["reduction"], info["last_buff_at"], info["urgent"], info["target_notified"], timer["id"],
+                )
+            else:
+                self.db.run("UPDATE timers SET end_at = end_at + ? WHERE id = ?", info["reduction"], timer["id"])
+            if info["deactivated"] and not timer["active"] and self.active_timer(player_id, kind) is None:
+                self.db.run("UPDATE timers SET active = 1 WHERE id = ?", timer["id"])
+            return True
+        if not recipient:
+            return False
+        # Старая запись (до появления отмены): возвращаем по сумме из журнала.
+        timer = self.active_timer(player_id, kind)
+        if timer is not None and donation["reduction"]:
+            prev = self.db.one(
+                "SELECT MAX(resolved_at) AS t FROM donations WHERE recipient_id = ? AND kind = ? "
+                "AND status = 'done' AND id != ?",
+                player_id, kind, donation["id"],
+            )["t"]
+            self.db.run(
+                "UPDATE timers SET end_at = end_at + ?, buffs_received = MAX(buffs_received - 1, 0), "
+                "last_buff_at = ? WHERE id = ?",
+                donation["reduction"], prev, timer["id"],
+            )
+        return True
+
+    def undo_donation(self, donation_id: int, by_id: int, now: int):
+        """Отменяет записанный баф. Возвращает (запись, ошибка, полностью ли откатили таймер донора)."""
+        with self.db.tx():
+            d = self.donation(donation_id)
+            if d is None:
+                return None, "not_found", True
+            if d["status"] != "done":
+                return d, "not_done", True
+            info = json.loads(d["undo"]) if d["undo"] else {}
+            self._restore_timer(info.get("recipient"), d["recipient_id"], d["kind"], True, d)
+            self._restore_timer(info.get("donor"), d["donor_id"], d["kind"], False, d)
+            if "cooldown" in info:
+                prev = info["cooldown"]
+                if prev is None:
+                    self.db.run("DELETE FROM cooldowns WHERE player_id = ? AND kind = ?", d["donor_id"], d["kind"])
+                else:
+                    self.db.run(
+                        "UPDATE cooldowns SET ready_at = ?, reminded = ? WHERE player_id = ? AND kind = ?",
+                        prev["ready_at"], prev["reminded"], d["donor_id"], d["kind"],
+                    )
+            self.db.run(
+                "UPDATE donations SET status = 'undone', undone_by = ?, undone_at = ? WHERE id = ?",
+                by_id, now, d["id"],
+            )
+            # Для старых записей (без сведений для отмены) таймер донора не откатить точно.
+            return self.donation(d["id"]), None, bool(info)
+
+    def journal(self, limit: int = 100, player_id: int | None = None):
+        """Журнал бафов (записанные и отменённые), новые сверху."""
+        sql = (
+            "SELECT d.*, a.nick AS donor_nick, b.nick AS recipient_nick, r.nick AS by_nick, u.nick AS undone_nick "
+            "FROM donations d LEFT JOIN players a ON a.id = d.donor_id LEFT JOIN players b ON b.id = d.recipient_id "
+            "LEFT JOIN players r ON r.id = d.requested_by LEFT JOIN players u ON u.id = d.undone_by "
+            "WHERE d.status IN ('done', 'undone')"
+        )
+        args: list = []
+        if player_id is not None:
+            sql += " AND (d.donor_id = ? OR d.recipient_id = ?)"
+            args += [player_id, player_id]
+        sql += " ORDER BY d.resolved_at DESC, d.id DESC LIMIT ?"
+        args.append(limit)
+        return self.db.all(sql, *args)
+
+    def last_own_gift(self, player_id: int, since: int):
+        """Последний баф, который игрок сам отметил недавно (его можно отменить самому)."""
+        return self.db.one(
+            "SELECT d.*, b.nick AS recipient_nick FROM donations d LEFT JOIN players b ON b.id = d.recipient_id "
+            "WHERE d.requested_by = ? AND d.status = 'done' AND d.resolved_at >= ? ORDER BY d.resolved_at DESC LIMIT 1",
+            player_id, since,
+        )

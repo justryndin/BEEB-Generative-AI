@@ -175,3 +175,32 @@ def test_admin_marks_gift_for_offline_player(site):
     # обычный игрок не может отмечать за других
     ptoken = csrf(player.get("/me").text)
     assert player.post("/gave", data={"csrf": ptoken, "kind": "research", "recipient": mura["id"], "donor": offline["id"]}).status_code == 403
+
+
+def test_undo_permissions(site):
+    svc, owner, player = site
+    register(owner, "Иван")
+    register(player, "Мура")
+    svc.set_owner(svc.player_by_nick("Иван")["id"])
+    ivan, mura = svc.player_by_nick("Иван"), svc.player_by_nick("Мура")
+    svc.set_timer(ivan["id"], "build", 30 * 86400, int(__import__("time").time()))
+    ptoken = csrf(player.get("/me").text)
+
+    # Мура отметила баф Ивану и видит «Ошибся? Отменить»
+    player.post("/gave", data={"csrf": ptoken, "kind": "build", "recipient": ivan["id"]})
+    home = player.get("/")
+    assert "Ошибся?" in home.text
+    d = svc.journal(1)[0]
+    r = player.post(f"/undo/{d['id']}", data={"csrf": ptoken, "next": "/"})
+    assert "Отменено" in r.text and svc.donation(d["id"])["status"] == "undone"
+
+    # старую запись (больше 15 минут) игрок сам отменить не может, а владелец/R4 — может
+    player.post("/gave", data={"csrf": ptoken, "kind": "build", "recipient": ivan["id"]})
+    d = svc.journal(1)[0]
+    svc.db.run("UPDATE donations SET resolved_at = resolved_at - 3600 WHERE id = ?", d["id"])
+    assert player.post(f"/undo/{d['id']}", data={"csrf": ptoken}).status_code == 403
+    otoken = csrf(owner.get("/admin/log").text)
+    assert "Мура" in owner.get("/admin/log").text
+    r = owner.post(f"/undo/{d['id']}", data={"csrf": otoken, "next": "/admin/log"})
+    assert r.url.path == "/admin/log" and "Отменено" in r.text
+    assert player.get("/admin/log").status_code == 403

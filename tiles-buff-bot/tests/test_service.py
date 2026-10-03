@@ -163,3 +163,59 @@ def test_record_gift_guards():
     assert svc.record_gift("research", a["id"], b["id"], a["id"], T0)[1] is None
     assert svc.record_gift("research", a["id"], b["id"], a["id"], T0 + 60)[1] == "duplicate"
     assert svc.record_gift("research", a["id"], b["id"], a["id"], T0 + 11 * 60)[1] is None
+
+
+def test_undo_restores_everything_exactly():
+    svc = make()
+    donor = reg(svc, 1, "Донор")
+    rec = reg(svc, 2, "Получатель")
+    svc.set_timer(donor["id"], "research", 40 * DAY, T0)
+    svc.set_timer(rec["id"], "research", 30 * DAY, T0)
+    before_rec = dict(svc.active_timer(rec["id"], "research"))
+    before_donor = dict(svc.active_timer(donor["id"], "research"))
+    assert svc.cooldown(donor["id"], "research") is None
+
+    result, error = svc.record_gift("research", donor["id"], rec["id"], donor["id"], T0 + HOUR)
+    assert error is None
+    after = svc.active_timer(rec["id"], "research")
+    assert after["buffs_received"] == 1 and after["end_at"] < before_rec["end_at"]
+    assert svc.active_timer(donor["id"], "research")["end_at"] < before_donor["end_at"]
+
+    d, err, exact = svc.undo_donation(result.donation_id, donor["id"], T0 + 2 * HOUR)
+    assert err is None and exact and d["status"] == "undone" and d["undone_by"] == donor["id"]
+    restored = svc.active_timer(rec["id"], "research")
+    for key in ("end_at", "buffs_received", "last_buff_at", "urgent", "target_notified"):
+        assert restored[key] == before_rec[key], key
+    assert svc.active_timer(donor["id"], "research")["end_at"] == before_donor["end_at"]
+    assert svc.cooldown(donor["id"], "research") is None
+    # отменённый баф не считается в статистике и очереди
+    assert svc.totals()["buffs"] == 0
+    assert svc.undo_donation(result.donation_id, donor["id"], T0 + 3 * HOUR)[1] == "not_done"
+    # после отмены можно сразу записать правильный баф (защита от дубля не мешает)
+    assert svc.record_gift("research", donor["id"], rec["id"], donor["id"], T0 + 3 * HOUR)[1] is None
+
+
+def test_undo_reactivates_timer_closed_by_the_buff():
+    svc = make()
+    donor = reg(svc, 1, "Донор")
+    rec = reg(svc, 2, "Получатель")
+    svc.set_timer(rec["id"], "build", 10 * DAY, T0)
+    svc.set_timer(rec["id"], "build", 2 * HOUR, T0 + 10, keep_base=True)  # почти закончилась
+    result, _ = svc.record_gift("build", donor["id"], rec["id"], donor["id"], T0 + 20)
+    assert svc.active_timer(rec["id"], "build") is None  # баф закрыл таймер
+    svc.undo_donation(result.donation_id, donor["id"], T0 + 30)
+    t = svc.active_timer(rec["id"], "build")
+    assert t is not None and t["end_at"] == T0 + 10 + 2 * HOUR
+
+
+def test_undo_legacy_record_without_undo_info():
+    svc = make()
+    donor = reg(svc, 1, "Донор")
+    rec = reg(svc, 2, "Получатель")
+    svc.set_timer(rec["id"], "build", 30 * DAY, T0)
+    result, _ = svc.record_gift("build", donor["id"], rec["id"], donor["id"], T0 + HOUR)
+    svc.db.run("UPDATE donations SET undo = NULL WHERE id = ?", result.donation_id)
+    end_after = svc.active_timer(rec["id"], "build")["end_at"]
+    _, err, exact = svc.undo_donation(result.donation_id, donor["id"], T0 + 2 * HOUR)
+    assert err is None and not exact
+    assert svc.active_timer(rec["id"], "build")["end_at"] == end_after + result.reduction
