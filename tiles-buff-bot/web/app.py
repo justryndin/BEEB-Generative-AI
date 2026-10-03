@@ -75,6 +75,12 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         lo, hi = svc.setting_float(f"{kind}_min"), svc.setting_float(f"{kind}_max")
         return f"{hi:g} дн." if lo == hi else f"{lo:g}–{hi:g} дн."
 
+    def priority_text() -> str:
+        it = gamedata.item(svc.setting("priority_item"))
+        if it is None:
+            return ""
+        return f"{it.ru} до {int(svc.setting_float('priority_below')) - 1} ур."
+
     def pattern_text(pattern: str) -> str:
         big, wait, wait_first = parse_pattern(pattern)
         if not wait:
@@ -295,6 +301,10 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             boards=boards(me, t),
             received=received,
             own_gift=svc.last_own_gift(me["id"], t - SELF_UNDO_SECONDS),
+            checks=svc.time_checks(me["id"], t),
+            order=svc.setting("queue_order"),
+            pattern=svc.setting("pattern"),
+            finished=svc.finished_timers(me["id"], t),
             updated=local(t, "%H:%M:%S"),
             now_ts=t,
             gap=svc.setting_float("min_gap_hours"),
@@ -308,7 +318,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             return HTMLResponse("", status_code=401)
         t = now()
         return templates.TemplateResponse(
-            request, "_boards.html", {"me": me, "boards": boards(me, t), "updated": local(t, "%H:%M:%S"), "now_ts": t},
+            request, "_boards.html", {"me": me, "boards": boards(me, t), "updated": local(t, "%H:%M:%S"), "now_ts": t,
+                                      "order": svc.setting("queue_order"), "pattern": svc.setting("pattern")},
         )
 
     # ---------- условия и калькулятор ----------
@@ -325,6 +336,11 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             cooldown=svc.setting_float("cooldown_hours"),
             gap=svc.setting_float("min_gap_hours"),
             fair=svc.setting_float("fair_round") > 0,
+            order=svc.setting("queue_order"),
+            fire_hours=svc.setting_float("fire_hours"),
+            hold_hours=svc.setting_float("hold_hours"),
+            prio=priority_text(),
+            prio_weight=svc.setting_float("priority_weight"),
         )
 
     @app.post("/rules/agree")
@@ -431,8 +447,23 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     def timer_close(request: Request, kind: str, csrf: str = Form("")):
         me = need_login(request)
         check_csrf(me, csrf)
-        svc.close_timer(me["id"], kind)
+        svc.close_timer(me["id"], kind, now())
         return go("/", f"🏁 Готово — ты убран из очереди ({KIND_NAME.get(kind, '')}).")
+
+    @app.post("/timer/{kind}/ok")
+    def timer_ok(request: Request, kind: str, csrf: str = Form("")):
+        """«Время совпадает с игрой» — сверка пройдена, напомним снова через check_hours."""
+        me = need_login(request)
+        check_csrf(me, csrf)
+        svc.confirm_time(me["id"], kind, now())
+        return go("/", "✅ Спасибо! Время сверено — очередь считает точно.")
+
+    @app.post("/timer/{kind}/skip-next")
+    def timer_skip_next(request: Request, kind: str, csrf: str = Form("")):
+        me = need_login(request)
+        check_csrf(me, csrf)
+        svc.dismiss_next(me["id"], kind)
+        return go("/", "Хорошо. Запустишь следующее — «➕ Встать в очередь».")
 
     # ---------- я отдал баф ----------
 
@@ -691,7 +722,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             flag = svc.toggle_urgent(pid, kind)
             return go(back, "🔥 Срочно включено" if flag else "Срочно выключено")
         if action == "close" and kind in KINDS:
-            svc.close_timer(pid, kind)
+            svc.close_timer(pid, kind, now(), suggest_next=False)
             return go(back, f"🏁 Убран из очереди: {KIND_NAME[kind]}")
         if action == "resetpin":
             svc.set_pin(pid, None)

@@ -211,3 +211,30 @@ def test_undo_permissions(site):
     r = owner.post(f"/undo/{d['id']}", data={"csrf": otoken, "next": "/admin/log"})
     assert r.url.path == "/admin/log" and "Отменено" in r.text
     assert player.get("/admin/log").status_code == 403
+
+
+def test_time_check_and_next_cards(site):
+    svc, owner, player = site
+    register(owner, "Иван")
+    register(player, "Мура")
+    ivan, mura = svc.player_by_nick("Иван"), svc.player_by_nick("Мура")
+    t = int(__import__("time").time())
+    svc.set_timer(ivan["id"], "build", 30 * 86400, t - 60)
+    ptoken = csrf(player.get("/me").text)
+    player.post("/gave", data={"csrf": ptoken, "kind": "build", "recipient": ivan["id"]})
+
+    home = owner.get("/")
+    assert "Сверь время" in home.text and "Да, совпадает" in home.text
+    assert "Чья полоска короче" in home.text and "получил 1 из" in home.text
+    token = csrf(home.text)
+    # «Нет, в игре другое» — поправка прямо с главной
+    r = owner.post("/join/build", data={"csrf": token, "fix": "1", "days": "20", "hours": "0", "minutes": "0"})
+    assert "Остаток обновлён" in r.text and "Сверь время" not in r.text
+
+    # Стройка закончилась → «Встать со следующим»
+    svc.set_timer(mura["id"], "build", 86400, t - 2 * 86400, item="pp", level=24)
+    svc.deactivate_finished(t)
+    home = player.get("/")
+    assert "Встать со следующим" in home.text and "item=pp&amp;level=25" in home.text
+    r = player.post("/timer/build/skip-next", data={"csrf": ptoken})
+    assert "Встать со следующим" not in r.text

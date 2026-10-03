@@ -48,6 +48,47 @@
       <div class="hint">Без кода зарегистрироваться нельзя. Пусто — регистрация открыта всем.</div>
     </div>
     <div class="grid2">
+      <div class="field span2">
+        <label for="queue_order">🧭 Порядок очереди</label>
+        <select id="queue_order" name="queue_order">
+          <option value="share" {{ 'selected' if settings.queue_order == 'share' }}>по доле от положенного (рекомендуем)</option>
+          <option value="cycle" {{ 'selected' if settings.queue_order == 'cycle' }}>справедливый круг + цикл</option>
+        </select>
+        <div class="hint">«По доле»: следующий тот, кто получил меньшую часть своих положенных бафов, — все доходят до цели примерно одновременно. Цикл ниже работает только в режиме «круг + цикл».</div>
+      </div>
+      <div class="field">
+        <label for="fire_hours">⏰ «Горит», часов</label>
+        <input id="fire_hours" name="fire_hours" type="number" step="1" min="0" max="96" value="{{ settings.fire_hours }}">
+        <div class="hint">Если остаток сам дойдёт до цели быстрее — игрок идёт первым, чтобы положенный баф не пропал. 0 — выключить.</div>
+      </div>
+      <div class="field">
+        <label for="hold_hours">⏳ Держит готовый баф, часов</label>
+        <input id="hold_hours" name="hold_hours" type="number" step="1" min="0" max="168" value="{{ settings.hold_hours }}">
+        <div class="hint">Кто держит готовый баф дольше — пропускает ход, пока не отдаст. 0 — выключить.</div>
+      </div>
+      <div class="field">
+        <label for="priority_item">⚡ Приоритетная стройка</label>
+        <select id="priority_item" name="priority_item">
+          <option value="" {{ 'selected' if not settings.priority_item }}>без приоритета</option>
+          {% for it in gamedata.items_for("build") if it.max_level %}<option value="{{ it.code }}" {{ 'selected' if settings.priority_item == it.code }}>{{ it.ru }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="priority_below">⚡ Приоритет для уровней ниже</label>
+        <input id="priority_below" name="priority_below" type="number" step="1" min="1" max="99" value="{{ settings.priority_below }}">
+      </div>
+      <div class="field">
+        <label for="priority_weight">⚡ Насколько быстрее помогаем</label>
+        <select id="priority_weight" name="priority_weight">
+          {% for w in ["1.5", "2", "3"] %}<option value="{{ w }}" {{ 'selected' if settings.priority_weight == w }}>в {{ w|replace(".", ",") }} раза</option>{% endfor %}
+        </select>
+        <div class="hint">Доля помощи приоритетной стройке растёт во столько раз медленнее — бафы ей идут чаще, но остальных не забываем.</div>
+      </div>
+      <div class="field">
+        <label for="check_hours">🔁 Просить сверить время, часов</label>
+        <input id="check_hours" name="check_hours" type="number" step="1" min="0" max="168" value="{{ settings.check_hours }}">
+        <div class="hint">После каждого полученного бафа и если игрок давно не сверялся (ускорения сайт не видит). 0 — не просить.</div>
+      </div>
       <fieldset class="field cycle span2" data-cycle>
         <legend>🔄 Цикл раздачи</legend>
         <div class="hint" style="margin:0 0 10px">Первое число — бафы большим таймерам, второе — тем, кому досталось меньше.</div>

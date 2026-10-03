@@ -19,6 +19,55 @@
 <div class="alert alert-warn">📜 Прими <a href="/rules"><b>условия очереди</b></a> — без этого нельзя вставать в очередь и отмечать бафы.</div>
 {% endif %}
 
+{% for f in finished %}{% set t = f.timer %}{% set what = gamedata.label(t.item, t.level, t.note) %}
+<section class="card life-card">
+  <h2>🏁 {{ KIND_EMOJI[f.kind] }} {{ what or ("Стройка" if f.kind == "build" else "Исследование") }} — закончилось</h2>
+  {% if f.next_level %}
+  <p class="mt0">Следующая: <b>{{ f.item.ru }} → {{ f.next_level }}</b>{% if f.next_reference %} · по справочнику {{ dur(f.next_reference) }} без бонусов{% endif %}. Запустил? Встань в очередь — здание и уровень уже выбраны, останется время.</p>
+  {% set href = "/join/build?item=" ~ f.item.code ~ "&level=" ~ f.next_level %}
+  {% elif f.item %}
+  <p class="mt0">Запустил следующее? Встань в очередь — {{ "здание" if f.kind == "build" else "ветка" }} уже выбрано, останется время.</p>
+  {% set href = "/join/" ~ f.kind ~ "?item=" ~ f.item.code %}
+  {% else %}
+  <p class="mt0">Запустил следующее? Встань в очередь.</p>
+  {% set href = "/join/" ~ f.kind %}
+  {% endif %}
+  <div class="row">
+    <a class="btn btn-primary" href="{{ href }}">➕ Встать со следующим</a>
+    <form method="post" action="/timer/{{ f.kind }}/skip-next">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="btn btn-ghost" type="submit">Не сейчас</button>
+    </form>
+  </div>
+</section>
+{% endfor %}
+
+{% for ch in checks %}
+<section class="card life-card">
+  <h2>{{ KIND_EMOJI[ch.kind] }} Сверь время: {{ KIND_NAME[ch.kind] }}</h2>
+  <p class="mt0">{% if ch.why == "buff" %}Тебе отдали баф — сайт срезал время по расчёту.{% else %}Давно не сверяли — вдруг ты ускорялся.{% endif %}
+    На сайте осталось <b>{{ dur(ch.remaining) }}</b>. В игре так же?</p>
+  <div class="row">
+    <form method="post" action="/timer/{{ ch.kind }}/ok">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="btn btn-primary" type="submit">✅ Да, совпадает</button>
+    </form>
+  </div>
+  <details class="more" data-key="check-{{ ch.kind }}">
+    <summary>Нет, в игре другое время</summary>
+    <form method="post" action="/join/{{ ch.kind }}" class="inline-time">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="fix" value="1">
+      {% for name, label, max in [("days", "Дней", 400), ("hours", "Часов", 23), ("minutes", "Минут", 59)] %}
+      <div><label for="{{ ch.kind }}-{{ name }}">{{ label }}</label>
+        <input id="{{ ch.kind }}-{{ name }}" name="{{ name }}" type="number" inputmode="numeric" min="0" max="{{ max }}" value="0"></div>
+      {% endfor %}
+      <button class="btn btn-primary" type="submit">Сохранить</button>
+    </form>
+  </details>
+</section>
+{% endfor %}
+
 {% include "_boards.html" %}
 
 <div class="actions">

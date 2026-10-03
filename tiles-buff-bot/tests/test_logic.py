@@ -130,3 +130,62 @@ def test_cycle_patterns_both_ways():
         assert parse_pattern(make_pattern(big, wait, first)) == (big, wait, first)
     # Цикл «1 : 2, сначала меньше получившим» повторяется: W W B W W B …
     assert "".join(slot_for(i, make_pattern(1, 2, True)) for i in range(6)) == "WWBWWB"
+
+
+# ---------- очередь «по доле от положенного» ----------
+
+SHARE = Rules(min_left=5 * DAY, max_left=7 * DAY, order="share", min_gap=12 * HOUR,
+              fire_window=24 * HOUR, priority_weight=2)
+
+
+def sc(pid, remaining, base=None, received=0, since=0, **kw):
+    base = base or remaining
+    from core.logic import buff_reduction as red
+    return Candidate(pid, f"p{pid}", remaining, base, red(base, remaining, SHARE), False, since, received, **kw)
+
+
+def test_share_lowest_fraction_goes_first():
+    from core.logic import share
+    a = sc(1, 30 * DAY, received=1, since=10)  # 1 из 6 ≈ 17%
+    b = sc(2, 12 * DAY, received=0, since=20)  # 0 из 3 — ещё не получал
+    c = sc(3, 20 * DAY, received=2, since=0)   # больше доля
+    assert share(b, SHARE) == 0
+    pick, slot = choose_recipient([a, b, c], SHARE, 0, [], now=10**6)
+    assert pick.player_id == 2 and slot == "S"
+    pick, _ = choose_recipient([a, c], SHARE, 0, [], now=10**6)
+    assert pick.player_id == 1
+
+
+def test_share_ties_go_to_longest_waiting():
+    a = sc(1, 20 * DAY, since=500)
+    b = sc(2, 20 * DAY, since=100)
+    assert choose_recipient([a, b], SHARE, 0, [], now=10**6)[0].player_id == 2
+
+
+def test_priority_weight_moves_power_plant_ahead():
+    plain = sc(1, 20 * DAY, received=1, since=0)  # доля 1/(1+…) больше, чем у приоритетного /2
+    prio = sc(2, 20 * DAY, received=2, since=0, priority=True)
+    from core.logic import share_key
+    assert share_key(prio, SHARE)[0] < share_key(plain, SHARE)[0]
+    assert choose_recipient([plain, prio], SHARE, 0, [], now=10**6)[0].player_id == 2
+
+
+def test_fire_goes_first():
+    calm = sc(1, 30 * DAY, since=0)
+    burning = sc(2, 7 * DAY + 10 * HOUR, base=10 * DAY, received=2, since=999)
+    pick, slot = choose_recipient([calm, burning], SHARE, 0, [], now=10**6)
+    assert pick.player_id == 2 and slot == "F"
+
+
+def test_holder_skips_turn_but_still_gets_if_alone():
+    holder = sc(1, 30 * DAY, since=0, holding=5 * HOUR)
+    other = sc(2, 30 * DAY, received=3, since=0)
+    assert choose_recipient([holder, other], SHARE, 0, [], now=10**6)[0].player_id == 2
+    assert choose_recipient([holder], SHARE, 0, [], now=10**6)[0].player_id == 1
+
+
+def test_share_respects_pause():
+    now = 10**6
+    fresh = sc(1, 30 * DAY, since=0, last_got=now - HOUR)
+    waiting = sc(2, 30 * DAY, received=4, since=0)
+    assert choose_recipient([fresh, waiting], SHARE, 0, [], now=now)[0].player_id == 2

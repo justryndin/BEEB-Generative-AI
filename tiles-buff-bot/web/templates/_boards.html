@@ -1,17 +1,22 @@
 {% macro brow(r, me, now_ts) -%}
 {% set c = r.candidate %}
-<li class="brow{{ ' me' if me and c.player_id == me.id }}{{ ' next' if r.position == 1 }}{{ ' urgent' if c.urgent }}{{ ' paused' if r.paused_for }}">
+<li class="brow{{ ' me' if me and c.player_id == me.id }}{{ ' next' if r.position == 1 }}{{ ' urgent' if c.urgent }}{{ ' paused' if r.paused_for }}{{ ' hold' if c.holding }}">
   <span class="pos">{{ r.position }}</span>
   <div class="who">
     <b>{{ c.nick }}</b>
     {% if r.position == 1 %}<span class="badge badge-accent">👉 следующий</span>{% endif %}
     {% if me and c.player_id == me.id %}<span class="badge badge-accent">это ты</span>{% endif %}
     {% if c.urgent %}<span class="badge badge-urgent">🔥 срочно</span>{% endif %}
+    {% if r.fire_in is not none %}<span class="badge badge-urgent">⏰ горит</span>{% endif %}
+    {% if c.priority %}<span class="badge">⚡ приоритет</span>{% endif %}
+    {% if c.holding %}<span class="badge">⏳ держит баф</span>{% endif %}
     {% if r.paused_for %}<span class="badge">⏸ пауза {{ dur(r.paused_for) }}</span>{% endif %}
-    <small>{{ r.label ~ " · " if r.label }}положено ещё {{ r.needed }} баф.</small>
+    <small class="why">{{ r.why }}</small>
+    {% if r.label %}<small>{{ r.label }}</small>{% endif %}
+    <span class="sharebar" title="получил {{ c.received }} из {{ r.total }}"><span style="width:{{ (r.share * 100)|round|int }}%"></span></span>
   </div>
   <div class="nums">
-    <div><b>{{ c.received }}</b><small>получил</small></div>
+    <div><b>{{ c.received }} из {{ r.total }}</b><small>получил</small></div>
     <div><b>{{ dur(c.remaining) }}</b><small>осталось</small></div>
     <div><b>{{ dur(now_ts - r.joined_at) }}</b><small>в очереди</small></div>
   </div>
@@ -48,11 +53,13 @@
       </div>
     </div>
 
+    <p class="board-rule">{% if order == "share" %}Чья полоска короче — тот следующий: каждому помогаем в равной доле от положенного.{% else %}Порядок: справедливый круг и цикл {{ pattern_text(pattern) }}.{% endif %} <a href="/rules">Как это работает →</a></p>
+
     {% if b.mine %}{% set m = b.mine %}
     <div class="mine">
-      {% if m.need %}Ты <b>№{{ m.position }}</b> в очереди · положено ещё <b>{{ m.needed }}</b> баф.{% else %}🎯 Ты дошёл до цели{% endif %}
-      · получил <b>{{ m.candidate.received }}</b> · осталось <b>{{ dur(m.candidate.remaining) }}</b>
-      {% if m.paused_for %}· ⏸ пауза ещё {{ dur(m.paused_for) }}{% endif %}
+      {% if m.need %}Ты <b>№{{ m.position }}</b> в очереди · положено ещё <b>{{ m.needed }}</b> баф.{% else %}🎯 Ты дошёл до цели — запись живёт, пока идёт таймер{% endif %}
+      · получил <b>{{ m.candidate.received }}{% if m.need %} из {{ m.total }}{% endif %}</b> · осталось <b>{{ dur(m.candidate.remaining) }}</b>
+      {% if m.need %}<br><small>{{ m.why }}</small>{% endif %}
     </div>
     {% endif %}
 

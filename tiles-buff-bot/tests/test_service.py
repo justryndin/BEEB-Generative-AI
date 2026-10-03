@@ -27,6 +27,8 @@ def test_register_links_offline_player_and_rejects_taken_nick():
 
 def test_full_flow_with_rotation_and_donor_self_buff():
     svc = make()
+    svc.set_setting("queue_order", "cycle")
+    svc.set_setting("hold_hours", "0")
     svc.set_setting("pattern", "BBW")
     svc.set_setting("min_gap_hours", "0")
     svc.set_setting("fair_round", "0")
@@ -219,3 +221,67 @@ def test_undo_legacy_record_without_undo_info():
     _, err, exact = svc.undo_donation(result.donation_id, donor["id"], T0 + 2 * HOUR)
     assert err is None and not exact
     assert svc.active_timer(rec["id"], "build")["end_at"] == end_after + result.reduction
+
+
+# ---------- очередь «по доле», взаимность, приоритет, жизнь записи ----------
+
+def test_share_order_reasons_priority_and_holding():
+    svc = make()
+    svc.set_setting("min_gap_hours", "0")
+    a = reg(svc, 1, "Аня")
+    b = reg(svc, 2, "Борис")
+    pp = reg(svc, 3, "Электрик")
+    svc.set_timer(a["id"], "build", 30 * DAY, T0)
+    svc.set_timer(b["id"], "build", 30 * DAY, T0 + 1)
+    svc.set_timer(pp["id"], "build", 30 * DAY, T0 + 2, item="pp", level=27)
+    rows = svc.queue_order("build", T0 + 10)
+    assert [r.candidate.nick for r in rows][:1] == ["Аня"]  # все по нулям — дольше всех ждёт Аня
+    assert rows[0].why.startswith("ещё не получал")
+    assert next(r for r in rows if r.candidate.nick == "Электрик").candidate.priority
+
+    # Аня и Электрик получили по бафу. Доля Электрика считается вдвое меньше — он раньше Бориса? Нет:
+    # Борис ещё не получал (0%), он первый; Электрик (1 из N, /2) раньше Ани (1 из N).
+    svc.record_gift("build", b["id"], a["id"], b["id"], T0 + 100)
+    svc.record_gift("build", a["id"], pp["id"], a["id"], T0 + 200)
+    order = [r.candidate.nick for r in svc.queue_order("build", T0 + 300)]
+    assert order == ["Борис", "Электрик", "Аня"]
+
+    # Взаимность: прошло 3 суток. Электрик ни разу не отдал баф — пропускает ход.
+    # Аня и Борис отдавали, их баф готов только сутки — это в пределах нормы.
+    later = T0 + 3 * DAY
+    hold = svc.holding_map(later)
+    assert pp["id"] in hold and a["id"] not in hold and b["id"] not in hold
+    rows = svc.queue_order("build", later)
+    assert rows[-1].candidate.nick == "Электрик" and "держит готовый баф" in rows[-1].why
+
+
+def test_time_check_after_buff_and_ok():
+    svc = make()
+    a = reg(svc, 1, "Аня")
+    b = reg(svc, 2, "Борис")
+    svc.set_timer(a["id"], "build", 30 * DAY, T0)
+    assert svc.time_checks(a["id"], T0 + 10) == []
+    svc.record_gift("build", b["id"], a["id"], b["id"], T0 + 100)
+    checks = svc.time_checks(a["id"], T0 + 200)
+    assert [c["why"] for c in checks] == ["buff"]
+    svc.confirm_time(a["id"], "build", T0 + 300)
+    assert svc.time_checks(a["id"], T0 + 400) == []
+    assert [c["why"] for c in svc.time_checks(a["id"], T0 + 300 + 49 * 3600)] == ["stale"]
+
+
+def test_finished_timer_suggests_next_level():
+    svc = make()
+    a = reg(svc, 1, "Аня")
+    svc.set_timer(a["id"], "build", 2 * DAY, T0, item="pp", level=25)
+    svc.deactivate_finished(T0 + 3 * DAY)
+    [f] = svc.finished_timers(a["id"], T0 + 3 * DAY)
+    assert f["next_level"] == 26 and f["next_reference"] > 0
+    svc.dismiss_next(a["id"], "build")
+    assert svc.finished_timers(a["id"], T0 + 3 * DAY) == []
+    # Новая запись тоже снимает подсказку, а «Готово» её показывает.
+    svc.set_timer(a["id"], "build", 5 * DAY, T0 + 4 * DAY, item="pp", level=26)
+    svc.close_timer(a["id"], "build", T0 + 5 * DAY)
+    [f] = svc.finished_timers(a["id"], T0 + 5 * DAY)
+    assert f["next_level"] == 27
+    # Через 3 дня подсказка исчезает сама.
+    assert svc.finished_timers(a["id"], T0 + 9 * DAY) == []

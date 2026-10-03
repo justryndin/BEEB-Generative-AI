@@ -75,7 +75,14 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 # Колонки, добавленные после первой версии: таблица → [(колонка, тип)].
 MIGRATIONS = {
-    "timers": [("item", "TEXT"), ("level", "INTEGER"), ("note", "TEXT")],
+    "timers": [
+        ("item", "TEXT"),
+        ("level", "INTEGER"),
+        ("note", "TEXT"),
+        ("checked_at", "INTEGER"),  # когда игрок последний раз сверил время с игрой
+        ("closed_at", "INTEGER"),  # когда таймер закрылся (закончился, «Готово», заменён)
+        ("next_dismissed", "INTEGER NOT NULL DEFAULT 0"),  # «Не сейчас» на «Встать со следующей»
+    ],
     "players": [
         ("pin_hash", "TEXT"),
         ("failed_logins", "INTEGER NOT NULL DEFAULT 0"),

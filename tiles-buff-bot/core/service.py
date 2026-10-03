@@ -7,11 +7,14 @@ import hmac
 import json
 import re
 import secrets
+import time
 from dataclasses import dataclass
 
 from . import gamedata
 from .db import Database
 from .logic import (
+    ORDER_CYCLE,
+    ORDER_SHARE,
     SLOT_URGENT,
     STATUS_NEED,
     Candidate,
@@ -19,9 +22,11 @@ from .logic import (
     buff_reduction,
     buffs_needed,
     choose_recipient,
+    fire_left,
+    share,
     timer_status,
 )
-from .timeparse import DAY, HOUR, MINUTE
+from .timeparse import DAY, HOUR, MINUTE, format_duration
 
 KINDS = ("build", "research")
 KIND_NAME = {"build": "стройка", "research": "исследование"}
@@ -41,16 +46,23 @@ SETTINGS: dict[str, tuple[str, str]] = {
     "build_max": ("7", "Стройка: при остатке не больше этого (дней) бафы уже не нужны"),
     "research_min": ("7", "Исследование: ниже этого остатка (дней) бафом не опускаем"),
     "research_max": ("8", "Исследование: при остатке не больше этого (дней) бафы уже не нужны"),
+    "queue_order": (ORDER_SHARE, "Порядок очереди: share — по доле от положенного; cycle — круг и цикл"),
+    "fire_hours": ("24", "«Горит»: если остаток сам дойдёт до цели быстрее, чем за столько часов, — первым"),
+    "hold_hours": ("24", "Держит готовый баф дольше стольких часов — пропускает ход (0 — выключить)"),
+    "priority_item": ("pp", "Приоритетная стройка (код из справочника, пусто — без приоритета)"),
+    "priority_below": ("30", "Приоритет — для уровней ниже этого"),
+    "priority_weight": ("2", "Во сколько раз быстрее растёт помощь приоритетной стройке"),
     "pattern": ("BBBWWW", "Цикл ротации: B — самому большому остатку, W — кому досталось меньше всех и кто дольше ждёт"),
     "max_streak": ("2", "Не больше стольких бафов подряд одному игроку"),
     "min_gap_hours": ("12", "Пауза после полученного бафа, часов: пока она идёт, бафы получают другие"),
     "fair_round": ("1", "Справедливый круг: 1 — сначала все по одному бафу, потом по второму…; 0 — выключить"),
+    "check_hours": ("48", "Через сколько часов просить игрока сверить время с игрой (0 — не просить)"),
     "cooldown_hours": ("48", "Через сколько часов у игрока снова готов баф"),
     "confirm_minutes": ("30", "Сколько минут держится бронь на назначенный баф"),
     "alliance_code": ("", "Код союза для регистрации на сайте (пусто — регистрация открыта всем)"),
 }
 _INTERNAL_SETTINGS: set[str] = set()
-_TEXT_SETTINGS = {"mode", "pattern", "alliance_code"}
+_TEXT_SETTINGS = {"mode", "pattern", "alliance_code", "queue_order", "priority_item"}
 
 MAX_FAILED_LOGINS = 5
 LOCK_SECONDS = 15 * 60
@@ -154,6 +166,10 @@ class OrderRow:
     joined_at: int
     slot: str
     need: bool
+    share: float = 0.0  # доля полученного от положенного, 0…1
+    total: int = 0  # всего положено на эту стройку (получил + ещё положено)
+    fire_in: int | None = None  # «горит»: через сколько секунд сам дойдёт до цели
+    why: str = ""  # почему он на этом месте — простыми словами
 
 
 @dataclass
@@ -192,6 +208,12 @@ class Service:
             value = value.upper()
             if not re.fullmatch(r"[BW]{1,12}", value):
                 return "pattern: только буквы B и W, например BBW"
+        elif key == "queue_order":
+            if value not in (ORDER_SHARE, ORDER_CYCLE):
+                return "queue_order: только share или cycle"
+        elif key == "priority_item":
+            if value and gamedata.item(value) is None:
+                return "priority_item: нет такого здания в справочнике"
         elif key == "alliance_code":
             if len(value) > 32:
                 return "Код союза — не длиннее 32 символов"
@@ -203,7 +225,7 @@ class Service:
             value = f"{number:g}"
             if key == "pct" and not 0 < number < 100:
                 return "pct: от 0 до 100"
-            if key in ("cooldown_hours", "confirm_minutes") and number <= 0:
+            if key in ("cooldown_hours", "confirm_minutes", "priority_weight") and number <= 0:
                 return f"{key}: должно быть больше 0"
             if number < 0:
                 return f"{key}: не может быть отрицательным"
@@ -232,7 +254,16 @@ class Service:
             max_streak=int(self.setting_float("max_streak")),
             min_gap=int(self.setting_float("min_gap_hours") * HOUR),
             max_ahead=1 if self.setting_float("fair_round") > 0 else 0,
+            order=self.setting("queue_order"),
+            fire_window=int(self.setting_float("fire_hours") * HOUR),
+            priority_weight=self.setting_float("priority_weight"),
         )
+
+    def is_priority(self, item: str | None, level: int | None) -> bool:
+        code = self.setting("priority_item")
+        if not code or item != code:
+            return False
+        return not level or level < self.setting_float("priority_below")
 
     # ---------- игроки ----------
 
@@ -361,16 +392,23 @@ class Service:
         with self.db.tx():
             if current is not None and keep_base:
                 self.db.run(
-                    "UPDATE timers SET end_at = ?, target_notified = 0 WHERE id = ?",
+                    "UPDATE timers SET end_at = ?, target_notified = 0, checked_at = ? WHERE id = ?",
                     now + seconds,
+                    now,
                     current["id"],
                 )
                 return self.db.one("SELECT * FROM timers WHERE id = ?", current["id"])
             if current is not None:
-                self.db.run("UPDATE timers SET active = 0 WHERE id = ?", current["id"])
+                self.db.run(
+                    "UPDATE timers SET active = 0, closed_at = ?, next_dismissed = 1 WHERE id = ?", now, current["id"]
+                )
+            # Новая запись снимает подсказку «Встать со следующей» у прошлых таймеров этого типа.
+            self.db.run(
+                "UPDATE timers SET next_dismissed = 1 WHERE player_id = ? AND kind = ? AND active = 0", player_id, kind
+            )
             cur = self.db.run(
-                "INSERT INTO timers(player_id, kind, base_seconds, end_at, created_at, item, level, note) "
-                "VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO timers(player_id, kind, base_seconds, end_at, created_at, item, level, note, checked_at) "
+                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 player_id,
                 kind,
                 seconds,
@@ -379,12 +417,17 @@ class Service:
                 item,
                 level,
                 note,
+                now,
             )
         return self.db.one("SELECT * FROM timers WHERE id = ?", cur.lastrowid)
 
-    def close_timer(self, player_id: int, kind: str) -> bool:
+    def close_timer(self, player_id: int, kind: str, now: int | None = None, suggest_next: bool = True) -> bool:
+        """suggest_next=False — закрыл админ: игроку не предлагаем «встать со следующей»."""
         cur = self.db.run(
-            "UPDATE timers SET active = 0 WHERE player_id = ? AND kind = ? AND active = 1",
+            "UPDATE timers SET active = 0, closed_at = ?, next_dismissed = ? "
+            "WHERE player_id = ? AND kind = ? AND active = 1",
+            now or int(time.time()),
+            int(not suggest_next),
             player_id,
             kind,
         )
@@ -400,10 +443,72 @@ class Service:
 
     def deactivate_finished(self, now: int) -> int:
         return self.db.run(
-            "UPDATE timers SET active = 0 WHERE active = 1 AND end_at <= ?", now
+            "UPDATE timers SET active = 0, closed_at = end_at WHERE active = 1 AND end_at <= ?", now
         ).rowcount
 
-    def candidate_from_row(self, row, rules: Rules, now: int) -> Candidate:
+    # ---------- жизнь записи: сверка времени и «встать со следующей» ----------
+
+    NEXT_PROMPT_SECONDS = 3 * DAY  # сколько дней после окончания предлагать «встать со следующей»
+
+    def time_checks(self, player_id: int, now: int) -> list:
+        """Активные таймеры, время которых стоит сверить с игрой.
+
+        Просим, если после последней сверки игрок получил баф (сайт срезал время по расчёту)
+        или если сверки не было дольше `check_hours` (вдруг игрок ускорился сам).
+        """
+        hours = self.setting_float("check_hours")
+        if hours <= 0:
+            return []
+        rows = self.db.all(
+            "SELECT * FROM timers WHERE player_id = ? AND active = 1 AND end_at > ? ORDER BY kind", player_id, now
+        )
+        out = []
+        for row in rows:
+            checked = row["checked_at"] or row["created_at"]
+            if row["last_buff_at"] and row["last_buff_at"] > checked:
+                out.append({"timer": row, "kind": row["kind"], "remaining": row["end_at"] - now, "why": "buff"})
+            elif now - checked >= hours * HOUR:
+                out.append({"timer": row, "kind": row["kind"], "remaining": row["end_at"] - now, "why": "stale"})
+        return out
+
+    def confirm_time(self, player_id: int, kind: str, now: int) -> bool:
+        cur = self.db.run(
+            "UPDATE timers SET checked_at = ? WHERE player_id = ? AND kind = ? AND active = 1", now, player_id, kind
+        )
+        return cur.rowcount > 0
+
+    def finished_timers(self, player_id: int, now: int) -> list:
+        """Недавно закончившиеся стройки/исследования, после которых игрок ещё не встал снова."""
+        out = []
+        for kind in KINDS:
+            if self.active_timer(player_id, kind) is not None:
+                continue
+            row = self.db.one(
+                "SELECT * FROM timers WHERE player_id = ? AND kind = ? AND active = 0 AND next_dismissed = 0 "
+                "AND closed_at IS NOT NULL AND closed_at <= ? AND closed_at > ? ORDER BY closed_at DESC, id DESC LIMIT 1",
+                player_id, kind, now, now - self.NEXT_PROMPT_SECONDS,
+            )
+            if row is None:
+                continue
+            it = gamedata.item(row["item"])
+            next_level = None
+            if it is not None and it.kind == "build" and row["level"] and (not it.max_level or row["level"] < it.max_level):
+                next_level = row["level"] + 1
+            out.append({
+                "timer": row,
+                "kind": kind,
+                "item": it,
+                "next_level": next_level,
+                "next_reference": it.time_for(next_level) if it is not None and next_level else None,
+            })
+        return out
+
+    def dismiss_next(self, player_id: int, kind: str) -> None:
+        self.db.run(
+            "UPDATE timers SET next_dismissed = 1 WHERE player_id = ? AND kind = ? AND active = 0", player_id, kind
+        )
+
+    def candidate_from_row(self, row, rules: Rules, now: int, holding: int = 0) -> Candidate:
         remaining = max(0, row["end_at"] - now)
         return Candidate(
             player_id=row["player_id"],
@@ -416,7 +521,41 @@ class Service:
             received=row["buffs_received"],
             has_tg=row["tg_id"] is not None,
             last_got=row["last_buff_at"],
+            priority=self.is_priority(row["item"], row["level"]),
+            holding=holding,
         )
+
+    def holding_map(self, now: int) -> dict[int, tuple[str, int]]:
+        """Кто держит готовый баф дольше нормы: {игрок: (тип бафа, сколько держит всего, сек)}.
+
+        Баф считается готовым с момента окончания перезарядки. Кто ещё ни разу не отмечал
+        баф этого типа — с момента, как встал в очередь (значит, играет и баф у него есть).
+        Не считаем, если отдать было некому: в очереди этого типа нет никого, кроме него самого.
+        """
+        limit = self.setting_float("hold_hours") * HOUR
+        if limit <= 0:
+            return {}
+        rules = {k: self.rules(k) for k in KINDS}
+        needers = {
+            k: {r["player_id"] for r in self._timer_rows(k)
+                if timer_status(self.candidate_from_row(r, rules[k], now), rules[k]) == STATUS_NEED}
+            for k in KINDS
+        }
+        joined = {
+            r["player_id"]: r["t"]
+            for r in self.db.all("SELECT player_id, MIN(created_at) AS t FROM timers WHERE active = 1 GROUP BY player_id")
+        }
+        cds = {(r["player_id"], r["kind"]): r["ready_at"] for r in self.db.all("SELECT * FROM cooldowns")}
+        out: dict[int, tuple[str, int]] = {}
+        for pid, since in joined.items():
+            for kind in KINDS:
+                if not (needers[kind] - {pid}):
+                    continue
+                ready = max(cds.get((pid, kind), since), since)
+                held = now - ready
+                if held > limit and held > out.get(pid, ("", 0))[1]:
+                    out[pid] = (kind, held)
+        return out
 
     def _timer_rows(self, kind: str):
         return self.db.all(
@@ -459,8 +598,9 @@ class Service:
 
     def _choose(self, kind: str, now: int, exclude: set[int]):
         rules = self.rules(kind)
+        holding = self.holding_map(now)
         candidates = [
-            self.candidate_from_row(row, rules, now)
+            self.candidate_from_row(row, rules, now, holding.get(row["player_id"], ("", 0))[1])
             for row in self._timer_rows(kind)
             if row["player_id"] not in exclude
         ]
@@ -614,7 +754,7 @@ class Service:
         else:
             self.db.run("UPDATE timers SET end_at = end_at - ? WHERE id = ?", reduction, timer["id"])
         if left <= 0:
-            self.db.run("UPDATE timers SET active = 0 WHERE id = ?", timer["id"])
+            self.db.run("UPDATE timers SET active = 0, closed_at = ? WHERE id = ?", now, timer["id"])
         return reduction, left, reached, undo
 
     def _complete(self, donation, now: int) -> BuffResult:
@@ -912,13 +1052,14 @@ class Service:
     # ---------- очередь по порядку и «я отдал баф» ----------
 
     def queue_order(self, kind: str, now: int) -> list[OrderRow]:
-        """Очередь в том порядке, в каком бафы положено отдавать по правилам
-        (пауза после бафа, справедливый круг, цикл ротации, «срочно»).
-        Первый в списке — «следующий». В конце — те, кто уже дошёл до цели."""
+        """Очередь в том порядке, в каком бафы положено отдавать по правилам.
+        Первый в списке — «следующий». В конце — те, кто уже дошёл до цели.
+        У каждого — понятная причина, почему он на этом месте."""
         rules = self.rules(kind)
+        holding = self.holding_map(now)
         rows = {}
         for row in self._timer_rows(kind):
-            c = self.candidate_from_row(row, rules, now)
+            c = self.candidate_from_row(row, rules, now, holding.get(row["player_id"], ("", 0))[1])
             if c.remaining > 0:
                 rows[c.player_id] = (c, row)
         pool = [c for c, _ in rows.values() if timer_status(c, rules) == STATUS_NEED]
@@ -941,20 +1082,52 @@ class Service:
 
         def make(c: Candidate, slot: str, pos: int | None, need: bool) -> OrderRow:
             row = rows[c.player_id][1]
-            return OrderRow(
+            needed = buffs_needed(c.remaining, c.base, rules) if need else 0
+            paused = max(0, c.paused_until(rules) - now)
+            fire = fire_left(c, rules) if need else None
+            r = OrderRow(
                 position=pos,
                 candidate=c,
                 label=gamedata.label(row["item"], row["level"], row["note"]),
-                needed=buffs_needed(c.remaining, c.base, rules) if need else 0,
-                paused_for=max(0, c.paused_until(rules) - now),
+                needed=needed,
+                paused_for=paused,
                 joined_at=row["created_at"],
                 slot=slot,
                 need=need,
+                share=share(c, rules) if need else 1.0,
+                total=c.received + needed,
+                fire_in=fire,
             )
+            r.why = self._why(r, rules, holding.get(c.player_id), now)
+            return r
 
         return [make(c, slot, i, True) for i, (c, slot) in enumerate(ordered, 1)] + [
             make(c, "", None, False) for c in reached
         ]
+
+    @staticmethod
+    def _why(r: OrderRow, rules: Rules, held: tuple[str, int] | None, now: int) -> str:
+        """Почему игрок на этом месте — одной строкой, без математики."""
+        c = r.candidate
+        if not r.need:
+            return "дошёл до цели — бафы больше не нужны"
+        got = f"получил {c.received} из {r.total}"
+        if c.urgent:
+            return f"🔥 срочно (отметил R4) · {got}"
+        if held:
+            return f"⏳ держит готовый баф на {KIND_ACC[held[0]]} {format_duration(held[1])} — пропускает ход, пока не отдаст"
+        if r.paused_for:
+            return f"⏸ пауза после бафа ещё {format_duration(r.paused_for)} · {got}"
+        if r.fire_in is not None:
+            return f"⏰ горит: через {format_duration(r.fire_in)} сам дойдёт до цели — баф нужен раньше · {got}"
+        prio = "⚡ приоритет ×{:g} · ".format(rules.priority_weight) if c.priority and rules.order == ORDER_SHARE else ""
+        if rules.order == ORDER_SHARE:
+            if c.received == 0:
+                return f"{prio}ещё не получал · ждёт {format_duration(max(0, now - c.waiting_since))}"
+            return f"{prio}{got} — это {round(r.share * 100)}% от положенного"
+        if r.slot == "B":
+            return f"самый большой остаток · {got}"
+        return f"меньше всех получил и дольше ждёт · {got}"
 
     def given_since(self, kind: str, since: int) -> int:
         return self.db.one(
@@ -996,7 +1169,7 @@ class Service:
             else:
                 self.db.run("UPDATE timers SET end_at = end_at + ? WHERE id = ?", info["reduction"], timer["id"])
             if info["deactivated"] and not timer["active"] and self.active_timer(player_id, kind) is None:
-                self.db.run("UPDATE timers SET active = 1 WHERE id = ?", timer["id"])
+                self.db.run("UPDATE timers SET active = 1, closed_at = NULL WHERE id = ?", timer["id"])
             return True
         if not recipient:
             return False

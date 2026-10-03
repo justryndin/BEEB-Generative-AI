@@ -478,6 +478,14 @@ main.wide { max-width: 1180px; }
 .brow.paused { opacity: .75; }
 .brow .who { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
 .brow .who b { word-break: break-word; }
+.brow .who .why { flex-basis: 100%; color: var(--text-2); }
+.brow.hold { opacity: .8; }
+.sharebar { flex-basis: 100%; height: 6px; border-radius: 3px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; margin-top: 2px; }
+.sharebar > span { display: block; height: 100%; background: var(--grad); border-radius: 3px; min-width: 2px; }
+.life-card { border-color: var(--accent-ring); }
+.inline-time { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; margin-top: 12px; }
+.inline-time button { grid-column: 1 / -1; }
+.board-rule { margin: 0 0 10px; font-size: .9rem; color: var(--muted); }
 .brow .who small { flex-basis: 100%; color: var(--muted); }
 .nums { grid-column: 2; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .nums div { background: var(--surface-2); border-radius: 10px; padding: 5px 6px; text-align: center; }
