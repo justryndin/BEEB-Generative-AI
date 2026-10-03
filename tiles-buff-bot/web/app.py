@@ -17,6 +17,7 @@ from fastapi.templating import Jinja2Templates
 
 from core import gamedata
 from core.db import Database
+from core.analytics import benefit, r4_report
 from core.notify import NOTICE_KINDS, Notice, prefs as notify_prefs
 from core.logic import CYCLE_MAX, STATUS_NEED, buffs_needed, make_pattern, parse_pattern, timer_status
 from core.service import KIND_ACC, KIND_EMOJI, KIND_NAME, KINDS, SETTINGS, Service, clean_nick, valid_pin
@@ -571,6 +572,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             buffs={k: buff_state(me["id"], k, t) for k in KINDS},
             given=given, received=received, saved=saved,
             notify=notify_prefs(me),
+            gain=benefit(svc, me["id"], t),
             devices=len(svc.push_subs(me["id"])),
             quiet=(int(svc.setting_float("quiet_from")), int(svc.setting_float("quiet_to"))),
         )
@@ -719,6 +721,22 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             cycle=parse_pattern(svc.setting("pattern")),
             cycle_max=CYCLE_MAX,
         )
+
+    @app.get("/admin/stats", response_class=HTMLResponse)
+    def admin_stats(request: Request, period: int = 7):
+        me = need_admin(request)
+        period = period if period in (7, 14, 30) else 7
+        t = now()
+        r = r4_report(svc, t, period)
+        offset = int(datetime.now(cfg.tz).utcoffset().total_seconds())
+        days = svc.daily_counts(t, period, offset)
+        step = 1 if period <= 14 else 5
+        points = [
+            (local(day, "%d.%m") if i % step == 0 or i == len(days) - 1 else "", n, f"{local(day, '%d.%m')}: {n} бафов")
+            for i, (day, n) in enumerate(days)
+        ]
+        return render(request, "admin_stats.html", me, r=r, settings_cd=svc.setting_float("cooldown_hours"),
+                      chart=charts.column_chart(points, f"Бафы по дням за {period} дней"))
 
     @app.post("/admin/add")
     def admin_add(request: Request, csrf: str = Form(""), nick: str = Form("")):

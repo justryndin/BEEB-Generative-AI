@@ -256,3 +256,19 @@ def test_push_subscribe_and_settings(site):
     assert set(prefs(svc.player(ivan["id"]))["off"]) == {"ready", "next", "done", "news"}
     owner.post("/push/unsubscribe", json={"csrf": token, "endpoint": "https://push.example/1"})
     assert svc.push_subs(ivan["id"]) == []
+
+
+def test_admin_analytics_and_benefit(site):
+    svc, owner, player = site
+    register(owner, "Иван")
+    register(player, "Мура")
+    svc.set_owner(svc.player_by_nick("Иван")["id"])
+    ivan = svc.player_by_nick("Иван")
+    svc.set_timer(ivan["id"], "build", 30 * 86400, int(__import__("time").time()) - 60)
+    ptoken = csrf(player.get("/me").text)
+    player.post("/gave", data={"csrf": ptoken, "kind": "build", "recipient": ivan["id"]})
+    page = owner.get("/admin/stats?period=14")
+    assert page.status_code == 200 and "бафов союза использовано" in page.text and "Мура" in page.text
+    assert player.get("/admin/stats").status_code == 403
+    me = owner.get("/me").text
+    assert "Моя выгода" in me and "получил <b>1 из" in me

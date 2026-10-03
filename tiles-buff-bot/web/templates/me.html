@@ -7,12 +7,22 @@
   {% if me.is_owner %}<span class="badge badge-accent">👑 владелец</span>{% elif me.is_admin %}<span class="badge badge-accent">⭐ админ</span>{% endif %}
 </div>
 
-<div class="grid4" style="margin-bottom:16px">
-  <div class="tile"><div class="num">{{ given }}</div><div class="lbl">бафов отдал</div></div>
-  <div class="tile"><div class="num">{{ received }}</div><div class="lbl">бафов получил</div></div>
-  <div class="tile accent"><div class="num">{{ saved // 86400 }}</div><div class="lbl">дней подарил союзу</div></div>
-  <div class="tile"><div class="num">{{ (timers.build is not none) + (timers.research is not none) }}</div><div class="lbl">таймеров в очереди</div></div>
-</div>
+<section class="card gain">
+  <h2>💎 Моя выгода</h2>
+  <div class="grid4">
+    <div class="tile accent"><div class="num">−{{ dur(gain.total_s) if gain.total_s else "0" }}</div><div class="lbl">срезано с моих стройки и исследований</div></div>
+    <div class="tile"><div class="num">{{ gain.got_n }}</div><div class="lbl">бафов получил{% if gain.got_s %} · −{{ dur(gain.got_s) }}{% endif %}</div></div>
+    <div class="tile"><div class="num">{{ gain.gave_n }}</div><div class="lbl">бафов отдал{% if gain.gave_s %} · себе −{{ dur(gain.gave_s) }}{% endif %}</div></div>
+    <div class="tile"><div class="num">{{ saved // 86400 }} д</div><div class="lbl">подарил союзу</div></div>
+  </div>
+  <p class="hint">Отдавать выгодно: баф срезает время и тебе. За неделю союз раздал {{ gain.alliance_n }} баф. и сэкономил {{ gain.alliance_s // 86400 }} дн.</p>
+  {% for kind, row in gain.shares.items() %}
+  <div class="gain-row">
+    <span>{{ KIND_EMOJI[kind] }} {{ KIND_NAME[kind]|capitalize }}: {% if row.need %}получил <b>{{ row.candidate.received }} из {{ row.total }}</b>, №{{ row.position }} в очереди{% else %}🎯 у цели{% endif %}</span>
+    <span class="sharebar"><span style="width:{{ (row.share * 100)|round|int }}%"></span></span>
+  </div>
+  {% endfor %}
+</section>
 
 <section class="card">
   <h2>🎁 Мои бафы</h2>

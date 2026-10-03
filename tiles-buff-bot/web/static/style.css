@@ -485,6 +485,16 @@ main.wide { max-width: 1180px; }
 .push-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .push-banner > span { flex: 1 1 220px; }
 [hidden] { display: none !important; }
+.kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); margin-bottom: 16px; }
+.kpis .hint { font-size: .82rem; }
+.delta { font-size: .85rem; font-weight: 700; margin-top: 4px; }
+.delta.up { color: var(--good); }
+.delta.down { color: var(--danger); }
+.todo { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 10px; }
+.todo li { padding: 10px 12px; border-radius: 14px; background: var(--surface-2); }
+.todo .muted { display: block; margin-top: 4px; }
+.gain .grid4 { margin-bottom: 8px; }
+.gain-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .life-card { border-color: var(--accent-ring); }
 .inline-time { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; margin-top: 12px; }
 .inline-time button { grid-column: 1 / -1; }

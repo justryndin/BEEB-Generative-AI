@@ -7,7 +7,10 @@
 <div class="alert alert-warn">⚠️ Код союза не задан — зарегистрироваться может любой, у кого есть ссылка. Задай код в <a href="#settings">настройках</a> и сообщи его союзу в игровом чате.</div>
 {% endif %}
 
-<a class="btn btn-block" href="/admin/log" style="margin-bottom:16px">📜 Журнал бафов — проверить и отменить ошибочные записи</a>
+<div class="grid2" style="margin-bottom:16px">
+  <a class="btn btn-block btn-primary" href="/admin/stats">📈 Аналитика и эффективность</a>
+  <a class="btn btn-block" href="/admin/log">📜 Журнал бафов — проверить и отменить</a>
+</div>
 
 <section class="card">
   <div class="card-head"><h2>👥 Игроки — {{ rows|length }}</h2></div>
