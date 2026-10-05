@@ -16,6 +16,34 @@
   </ul>
 </section>
 
+<section class="card" id="classes">
+  <h2>🏭 Classe da temporada: Coal League (Liga do Carvão) ou Frost Court (Corte do Gelo)</h2>
+  <p>Na temporada, cada um escolhe uma classe — cada uma tem 5 habilidades ativas. A escolha custa um item especial (1 un.).</p>
+  <div class="grid2">
+    <div>
+      <h3>🔵 Coal League — desenvolvimento</h3>
+      <ul class="checks">
+        <li><b>Construtiva</b> — +15% de velocidade de construção para você e um aliado escolhido por 60 min.</li>
+        <li><b>Conjunta</b> — +15% de velocidade de pesquisa para você e um aliado escolhido por 60 min.</li>
+        <li><b>Rápida</b> — na hora, −4 h na construção de todos os edifícios.</li>
+        <li><b>Faíscas e prata</b> — na hora, 4 000 de carvão e de folha metálica.</li>
+        <li><b>Cruel</b> — −5% de dano recebido por 60 min.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>🟠 Frost Court — guerra</h3>
+      <ul class="checks">
+        <li><b>Ataque feroz</b> — +5% de dano das suas tropas por 1 h.</li>
+        <li><b>Unida</b> — +5% de dano para todos os participantes do ataque por 1 h (se houver várias dessas habilidades, só a mais alta funciona).</li>
+        <li><b>Contra-ataque</b> — +5% de dano na defesa do assentamento por 1 h.</li>
+        <li><b>Pronto-socorro</b> — cura na hora 20 000 feridos no hospital (não os que já estão em tratamento).</li>
+        <li><b>Golpe poderoso</b> — recebe na hora 10 000 tropas de nível alto.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="example"><b>Os buffs que este site distribui são as habilidades «Construtiva» e «Conjunta» da Coal League.</b> Só quem escolheu a Coal League pode dá-los. Para quem constrói e pesquisa muito — Coal League; para a força de ataque da aliança — Frost Court.</div>
+</section>
+
 <section class="card">
   <h2>📈 Pontos de progresso da temporada</h2>
   <p>Desde a versão 2.6.0 foram adicionadas três novas fontes de pontos:</p>
@@ -40,6 +68,6 @@
 
 <section class="card">
   <h2>🧊 Buffs da aliança na temporada</h2>
-  <p>O buff da aliança da temporada corta <b>{{ pct }}%</b> do tempo informado de construção ou pesquisa — na hora, para quem recebe e para quem deu. Recarrega em {{ cooldown }} h, separado para construção e pesquisa. Para quem dar, a página inicial do site mostra. Detalhes — guia <a href="/guides/boosts">«Buffs e aceleradores»</a> e <a href="/help#queue">ajuda</a>.</p>
+  <p>São as habilidades «Construtiva» e «Conjunta» da Coal League: no jogo está escrito «+15% de velocidade por 60 min para você e um aliado escolhido». O site considera que o buff corta <b>{{ pct }}%</b> do tempo informado — e depois de cada buff pede para você conferir o cronômetro, então o efeito real é levado em conta de qualquer jeito. Recarrega em {{ cooldown }} h, separado para construção e pesquisa. Para quem dar, a página inicial do site mostra. Detalhes — guia <a href="/guides/boosts">«Buffs e aceleradores»</a> e <a href="/help#queue">ajuda</a>.</p>
 </section>
 {% endblock %}

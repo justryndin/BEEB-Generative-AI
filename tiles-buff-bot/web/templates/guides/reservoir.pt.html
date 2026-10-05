@@ -1,0 +1,101 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<nav class="toc">
+  <a href="#what">O que é</a>
+  <a href="#who">Quem participa</a>
+  <a href="#before">Antes da batalha</a>
+  <a href="#stages">Etapas</a>
+  <a href="#buildings">Edifícios</a>
+  <a href="#water">Como juntar água</a>
+  <a href="#rank">Ranks</a>
+  <a href="#plan">Plano da aliança</a>
+</nav>
+
+<section class="card" id="what">
+  <h2>💧 O que é</h2>
+  <p>No Reservoir Raid (Ataque ao Reservatório), duas alianças lutam num campo à parte — o Cânion. Vocês capturam e seguram edifícios e ganham <b>água purificada</b>: para o cofre da aliança e para você. <b>Vence a aliança que tiver mais água no fim da contagem.</b> As recompensas são pelo resultado da aliança e pela contribuição pessoal.</p>
+  <ul class="checks">
+    <li><b>As tropas não morrem.</b> Os feridos vão para o hospital de campanha: vagas ilimitadas, cura grátis, todos se curam quando vocês saem do ataque.</li>
+    <li>As tropas da guarnição não participam: no campo de batalha entram automaticamente as tropas de <b>nível máximo</b>.</li>
+    <li>Valem os bônus de pesquisas, tecnologias da aliança, talentos do chefe, VIP, itens de bônus e visuais.</li>
+  </ul>
+  <p class="hint">Segundo as regras do evento no jogo, outubro de 2026.</p>
+</section>
+
+<section class="card" id="who">
+  <h2>🧾 Quem participa</h2>
+  <ul class="rules-list">
+    <li><span class="ico">🏆</span><div><b>Aliança</b> — no top 15 do estado em poder no início das inscrições.</div></li>
+    <li><span class="ico">⚡</span><div><b>Jogador</b> — Power Plant (Usina) <b>nv. 12</b> ou mais e na aliança <b>antes</b> das inscrições. Entrou depois — não participa nem ganha recompensas.</div></li>
+    <li><span class="ico">📝</span><div>Quem <b>inscreve</b> é o líder ou um R4. Eles escolhem até <b>30 participantes e 10 reservas</b>. Depois do fim das inscrições, não dá para mudar a escalação.</div></li>
+    <li><span class="ico">⚖️</span><div>O adversário é escolhido pela classificação de pareamento dos participantes: quanto mais fortes os chefes, maior a classificação.</div></li>
+  </ul>
+</section>
+
+<section class="card" id="before">
+  <h2>✅ Antes de entrar no Cânion</h2>
+  <ul class="checks">
+    <li>Nenhum reconhecimento em andamento.</li>
+    <li>As tropas não estão em marcha nem paradas no assentamento de outro jogador.</li>
+    <li>Não há reforços na estação de comunicações.</li>
+  </ul>
+  <p>Sua aliança no campo é sempre <b>azul</b>.</p>
+  <p class="hint">Saiu do ataque enquanto ele está rolando — por <b>10 minutos</b> não dá para voltar. Em compensação, ao voltar, os feridos no hospital de campanha são curados.</p>
+</section>
+
+<section class="card" id="stages">
+  <h2>⏱ Etapas da batalha</h2>
+  <ol class="steps-list">
+    <li><b>Etapa 1:</b> centros de purificação de água, estações de tratamento de água, usinas solares, helipontos.</li>
+    <li><b>Etapa 2:</b> abrem o reservatório central, as fábricas militares e os campos de testes experimentais.</li>
+    <li><b>Etapa 3:</b> caminhões-pipa com água aparecem em pontos aleatórios.</li>
+  </ol>
+</section>
+
+<section class="card" id="buildings">
+  <h2>🏭 Edifícios: quanta água e o que dão</h2>
+  <p class="hint mt0">«Primeira captura» — recompensa única quando o edifício ganha a sua cor pela primeira vez. «Ocupação» — quanto pinga a cada minuto enquanto vocês seguram.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Edifício</th><th class="num">Água da aliança</th><th class="num">Água pessoal</th><th>Bônus</th></tr>
+    <tr><td><b>Reservatório central</b> ×1</td><td class="num">9 000 · +1 800/min</td><td class="num">4 500 · +900/min</td><td>—</td></tr>
+    <tr><td><b>Centro de purificação de água</b> ×2 (SO e NE)</td><td class="num">6 000 · +1 200/min</td><td class="num">3 000 · +600/min</td><td>—</td></tr>
+    <tr><td><b>Estação de tratamento de água</b> ×4 (nos lados do Cânion)</td><td class="num">3 000 · +600/min</td><td class="num">1 500 · +300/min</td><td>—</td></tr>
+    <tr><td><b>Fábrica militar</b></td><td class="num">1 200 · +240/min</td><td class="num">600 · +120/min</td><td>+20% e +20% em dois atributos de combate (pelos ícones — ataque e, ao que parece, defesa)</td></tr>
+    <tr><td><b>Usina solar</b></td><td class="num">1 200 · +240/min</td><td class="num">600 · +120/min</td><td>−50% no ícone do relógio — na descrição: purificação de água mais eficiente</td></tr>
+    <tr><td><b>Complexo de desenvolvimento</b></td><td class="num">1 200 · +240/min</td><td class="num">600 · +120/min</td><td>Lança uma horda de infectados sobre um edifício inimigo: dano à guarnição, −ataque e −defesa do inimigo. A cada ataque a horda fica mais forte, até 4 vezes.</td></tr>
+    <tr><td><b>Heliponto abandonado</b></td><td class="num">1 200 · +240/min</td><td class="num">600 · +120/min</td><td>Teleportes avançados grátis com mais frequência, −50% na recarga deles</td></tr>
+  </table></div>
+  <p class="hint">Recapturar um edifício dá bem pouca água — o que importa é a primeira captura e segurar por muito tempo.</p>
+</section>
+
+<section class="card" id="water">
+  <h2>💧 Como juntar água</h2>
+  <ul class="checks">
+    <li><b>Segurar edifícios</b> — a fonte principal. O reservatório central dá o triplo de uma estação de tratamento: 1 800 por minuto no cofre da aliança.</li>
+    <li><b>Derrotar o inimigo:</b> a cada 10 000 de poder de tropas derrotadas — água pessoal: <b>40</b> defendendo um edifício, <b>80</b> atacando. Isso não vai para o cofre da aliança.</li>
+    <li>O <b>teleporte avançado</b> é grátis durante o evento (com recarga). Também dá para usar teleportadores avançados.</li>
+    <li>O <b>assentamento pega fogo</b> numa defesa malsucedida muito mais rápido que o normal. Não apagou a tempo — ele é levado para a zona segura e você está fora da briga pelo ponto.</li>
+  </ul>
+</section>
+
+<section class="card" id="rank">
+  <h2>⭐ Ranks da aliança</h2>
+  <ul class="checks">
+    <li>Uma aliança nova só entra no ranking depois de se inscrever; o rank é definido depois do pareamento e recalculado a cada rodada.</li>
+    <li><b>5 ranks.</b> Em todos, exceto o mais alto, de 0 a 5 estrelas. <b>100 pontos = uma estrela</b>; depois de 5 estrelas, os próximos 100 pontos sobem o rank.</li>
+  </ul>
+</section>
+
+<section class="card" id="plan">
+  <h2>🗺 Plano para a aliança</h2>
+  <ul class="rules-list">
+    <li><span class="ico">1</span><div><b>Primeiro — um jogador em cada estação próxima.</b> A primeira captura dá 3 000 de água para a aliança em cada uma das quatro estações — são 12 000 rapidinho.</div></li>
+    <li><span class="ico">2</span><div><b>Os mais fortes — nos centros e no reservatório.</b> O reservatório (etapa 2) e os dois centros dão mais por minuto: quem segura são as melhores tropas.</div></li>
+    <li><span class="ico">3</span><div><b>Fábrica militar — antes do ataque ao reservatório:</b> +20% de ataque vão fazer diferença no assalto.</div></li>
+    <li><span class="ico">4</span><div>O <b>heliponto</b> acelera os teleportes — fica mais fácil levar forças até o ponto que está sendo atacado.</div></li>
+    <li><span class="ico">5</span><div><b>Apaguem os assentamentos na hora</b>, senão vocês são jogados para a zona segura.</div></li>
+    <li><span class="ico">6</span><div>Participantes mais fracos — ataquem as tropas inimigas nos edifícios que o inimigo segura: atacando, a água pessoal é o dobro da defesa.</div></li>
+  </ul>
+  <p class="hint">Já que as tropas não morrem e a cura é grátis — lutem sem medo. Não vai ter perdas, e quem decide é a água.</p>
+</section>
+{% endblock %}
