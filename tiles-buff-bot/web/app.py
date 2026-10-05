@@ -178,6 +178,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     templates.env.globals.update(
         js_strings=js_strings,
         powerplay=powerplay,
+        ico=lambda name, cls="i": Markup(f'<svg class="{cls}" aria-hidden="true"><use href="#i-{name}"/></svg>'),
         enabled_langs=lambda: i18n.ENABLED,
         WEEKDAYS=crm.WEEKDAYS,
         amount=lambda text: text if text in ("—", "") else planner.fmt_amount(planner.parse_amount(text)),

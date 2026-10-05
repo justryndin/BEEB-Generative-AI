@@ -1,5 +1,5 @@
 <section class="card tip-card" id="tip" data-tip>
-  <div class="tip-head"><b>💡 {{ _("Совет дня") if not tip_step else _("Совет") }}</b><span class="badge">{{ _(tip.topic) }}</span></div>
+  <div class="tip-head"><h2 class="mb0">{{ ico("bulb") }}{{ _("Совет дня") if not tip_step else _("Совет") }}</h2><span class="badge">{{ _(tip.topic) }}</span></div>
   <p class="tip-text">{{ _(tip.text) }}</p>
   <div class="row">
     {% if tip.link %}<a class="btn btn-sm" href="{{ tip.link }}">{{ _("Подробнее →") }}</a>{% endif %}

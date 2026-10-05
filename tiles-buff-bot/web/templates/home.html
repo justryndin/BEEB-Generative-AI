@@ -57,7 +57,7 @@
   <div class="col">
 {% for f in finished %}{% set t = f.timer %}{% set what = gamedata.label(t.item, t.level, t.note) %}
 <section class="card life-card">
-  <h2>🏁 {{ KIND_EMOJI[f.kind] }} {{ _("{what} — закончилось", what=what or (_("Стройка") if f.kind == "build" else _("Исследование"))) }}</h2>
+  <h2>{{ ico("check") }}{{ _("{what} — закончилось", what=what or (_("Стройка") if f.kind == "build" else _("Исследование"))) }}</h2>
   {% if f.next_level %}
   <p class="mt0">{{ _("Следующая: <b>{item} → {level}</b>", item=f.item.name, level=f.next_level) }}{% if f.next_reference %} · {{ _("по справочнику {time} без бонусов", time=dur(f.next_reference)) }}{% endif %}. {{ _("Запустил? Встань в очередь — здание и уровень уже выбраны, останется время.") }}</p>
   {% set href = "/join/build?item=" ~ f.item.code ~ "&level=" ~ f.next_level %}
@@ -81,7 +81,7 @@
 <div id="checks"></div>
 {% for ch in checks %}
 <section class="card life-card">
-  <h2>{{ KIND_EMOJI[ch.kind] }} {{ _("Сверь время: {kind}", kind=_(KIND_NAME[ch.kind])) }}</h2>
+  <h2>{{ ico("clock") }}{{ _("Сверь время: {kind}", kind=_(KIND_NAME[ch.kind])) }}</h2>
   <p class="mt0">{% if ch.why == "buff" %}{{ _("Тебе отдали баф — сайт срезал время по расчёту.") }}{% else %}{{ _("Давно не сверяли — вдруг ты ускорялся.") }}{% endif %}
     {{ _("На сайте осталось <b>{left}</b>. В игре так же?", left=dur(ch.remaining)) }}</p>
   <div class="row">

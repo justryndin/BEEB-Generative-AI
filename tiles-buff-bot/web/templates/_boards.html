@@ -25,7 +25,7 @@
 
 <div class="boards" id="boards" data-live="/live">
   <section class="now-card">
-    <h2>🎁 {{ _("Баф готов? Отдай сейчас:") }}</h2>
+    <h2>{{ ico("gift") }}{{ _("Баф готов? Отдай сейчас:") }}</h2>
     <div class="now-grid">
       {% for kind in ["research", "build"] %}{% set first = boards[kind].need[0] if boards[kind].need else none %}
       <div class="now-item">
@@ -50,7 +50,7 @@
   {% for kind in ["research", "build"] %}{% set b = boards[kind] %}
   <section class="board">
     <div class="board-head">
-      <h2>{{ KIND_EMOJI[kind] }} {{ _("Исследование") if kind == "research" else _("Стройка") }}</h2>
+      <h2>{{ ico("layers") }}{{ _("Очередь: исследование") if kind == "research" else _("Очередь: стройка") }}</h2>
       <div class="board-stats">
         <div><b>{{ b.need|length }}</b><span>{{ _("в очереди") }}</span></div>
         <div><b>{{ b.today }}</b><span>{{ _("бафов сегодня") }}</span></div>

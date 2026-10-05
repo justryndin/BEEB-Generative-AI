@@ -2,7 +2,7 @@
 {% set pp = gamedata.ITEMS["pp"] %}
 <section class="card pp-path" id="pp-path">
   <div class="card-head">
-    <h2>⚡ {{ _("Мой путь к Электростанции 30") }}</h2>
+    <h2>{{ ico("zap") }}{{ _("Мой путь к Электростанции 30") }}</h2>
     {% if way %}<span class="badge{% if way.current < pp_goal %} badge-accent{% endif %}">{{ _("сейчас {n} ур.", n=way.current) }}</span>{% endif %}
   </div>
   {% if not way %}

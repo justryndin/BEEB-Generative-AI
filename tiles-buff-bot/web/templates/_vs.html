@@ -2,7 +2,7 @@
 <section class="card vs-card" id="vs">
   {% if vs.day %}{% set d = vs.day %}
   <div class="card-head">
-    <h2>⚔️ {{ _("VS сегодня") }} · {{ d.emoji }} {{ _(d.theme) }}</h2>
+    <h2>{{ ico("swords") }}{{ _("VS сегодня") }} · {{ _(d.theme) }}</h2>
     <span class="badge badge-accent">{{ _("день {n} из 6", n=d.num) }}</span>
   </div>
   <ul class="checks">
@@ -13,7 +13,7 @@
   {% endfor %}
   {% if d.tip %}<p class="text-2">💡 {{ _(d.tip) }}</p>{% endif %}
   {% else %}
-  <h2>⚔️ {{ _("VS сегодня") }} · 😴</h2>
+  <h2>{{ ico("swords") }}{{ _("VS сегодня") }} · {{ _("Дуэли нет") }}</h2>
   <p class="mt0">{{ _(vs_sunday) }}</p>
   {% endif %}
   {% set pp_now, pp_next = vs.power_play() %}
