@@ -212,8 +212,9 @@ main.narrow { max-width: 760px; }
 @media (max-width: 479px) { .who-nick { display: none; } }
 @media (min-width: 1024px) {
   .side { transform: none; }
-  .scrim, .menu-btn, .top-brand { display: none !important; }
-  .content { margin-left: var(--side-w); }
+  .scrim, .menu-btn { display: none !important; }
+  .side ~ .content { margin-left: var(--side-w); }
+  .side ~ .content .top-brand { display: none; }
   .clocks { display: flex; }
   .clockbar { display: none; }
   .tabbar { display: none; }
@@ -648,8 +649,8 @@ details.full th, details.full td { padding: 8px 5px; }
 .list-rows li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); min-width: 0; }
 .list-rows li:last-child { border-bottom: 0; }
 .list-rows .grow { flex: 1; min-width: 0; }
-.list-rows .grow b, .list-rows .grow span { display: block; overflow: hidden; text-overflow: ellipsis; }
-.list-rows .grow span { font-size: .82rem; color: var(--muted); }
+.list-rows .grow > b, .list-rows .grow > span { display: block; overflow: hidden; text-overflow: ellipsis; }
+.list-rows .grow > span { font-size: .82rem; color: var(--muted); }
 .char-row .avatar { width: 34px; height: 34px; }
 
 /* ---------- опросы ---------- */
@@ -718,3 +719,5 @@ hr.sep { border: 0; border-top: 1px solid var(--border); margin: 14px 0; }
 .meter > span { display: block; height: 100%; background: var(--good); }
 .names { color: var(--muted); font-size: .82rem; margin-top: 6px; line-height: 1.6; }
 .names b { color: var(--text-2); font-weight: 600; }
+.col .boards { grid-template-columns: 1fr; }
+.now-strip .lbl .i { color: var(--accent-text); width: 16px; height: 16px; }

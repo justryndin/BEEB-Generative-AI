@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 {% block main_class %}wide{% endblock %}
+{% macro buffline(st) %}{% if st[0] == "ready" %}<span class="badge badge-good">{{ _("готов") }}</span>{% elif st[0] == "wait" %}{{ _("через {t}", t=dur(st[1])) }}{% else %}<span class="muted">{{ _("нет данных") }}</span>{% endif %}{% endmacro %}
 {% block content %}
-<h1>{{ _("Привет, {nick}!", nick=me.nick) }} 👋</h1>
+<div class="page-head">
+  <div><h1>{{ _("Привет, {nick}!", nick=me.nick) }}</h1>
+    <p>{{ local(now_ts, "%d.%m.%Y") }} · {{ _("всё важное для союза на одном экране") }}</p></div>
+  <div class="row"><a class="btn btn-primary" href="/give">{{ _("Я отдал баф") }}</a><a class="btn" href="/join">{{ _("Встать в очередь") }}</a></div>
+</div>
 
 {% for d in received %}
 <div class="alert alert-good">🎁 {{ _("<b>{donor}</b> отдал тебе баф на {kind}", donor=d.donor_nick or _("Кто-то"), kind=_(KIND_ACC[d.kind])) }}{% if d.reduction %} (−{{ dur(d.reduction) }}){% else %} (🎲 {{ _("по рулетке") }}){% endif %} · {{ local(d.resolved_at) }}</div>
@@ -19,22 +24,35 @@
 <div class="alert alert-warn">📜 {{ _("Прими <a href=\"/rules\"><b>условия очереди</b></a> — без этого нельзя вставать в очередь и отмечать бафы.") }}</div>
 {% endif %}
 
-{% for p in pinned %}
-<a class="pin-strip" href="/board"><span class="badge badge-accent">📌 {{ p.author or "R4" }}</span> {{ p.text|truncate(160) }}</a>
-{% endfor %}
-{% for o in soon %}
-<a class="pin-strip soon" href="/events"><span class="badge">📅 {{ _("идёт") if o.ongoing(now_ts) else both(o.start) }}</span> <b>{{ _(o.event.title) }}</b>{% if o.event.prepare %} — {{ (_(o.event.prepare)|string)|truncate(90) }}{% endif %}</a>
-{% endfor %}
 
-{% include "_tip.html" %}
-{% include "_vs.html" %}
-
-<div class="alert alert-info push-banner" data-push data-push-banner hidden>
-  <span>🔔 {{ _("<b>Включи уведомления</b> — сайт сам скажет, когда твой баф готов и кому его отдать.") }}</span>
-  <button class="btn btn-sm btn-primary" type="button" data-push-on>{{ _("Включить") }}</button>
-  <a class="btn btn-sm btn-ghost" href="/me#notify">{{ _("Подробнее") }}</a>
+{% set pp_now, pp_next = vs.power_play() %}
+<div class="now-strip">
+  <a class="tile" href="/guides/week">
+    <span class="lbl"><svg class="i" aria-hidden="true"><use href="#i-swords"/></svg>{{ _("VS сегодня") }}</span>
+    <span class="val">{% if vs.day %}{{ vs.day.emoji }} {{ _(vs.day.theme) }}{% else %}😴 {{ _("Дуэли нет") }}{% endif %}</span>
+    <span class="sub">{{ _("смена дня через {t}", t=dur(vs.ends_at - now_ts)) }}</span>
+  </a>
+  <a class="tile" href="/guides/week#pp">
+    <span class="lbl"><svg class="i" aria-hidden="true"><use href="#i-dice"/></svg>{{ _("Игра по-крупному") }}</span>
+    <span class="val">{{ pp_now.theme.emoji }} {{ _(pp_now.theme.name) }}</span>
+    <span class="sub">{{ _("до {end} {tz} · {end_utc} UTC → {next}", end=pp_now.msk[-5:], tz=tz_label, end_utc=pp_now.utc[-5:], next=_(pp_next.theme.name)) }}</span>
+  </a>
+  <a class="tile" href="/events">
+    <span class="lbl"><svg class="i" aria-hidden="true"><use href="#i-cal"/></svg>{{ _("Ближайшее событие") }}</span>
+    {% if soon %}{% set o = soon[0] %}
+    <span class="val">{{ _(o.event.title) }}</span>
+    <span class="sub">{% if o.ongoing(now_ts) %}{{ _("идёт сейчас") }}{% else %}{{ both(o.start) }} · {{ _("через {t}", t=dur(o.start - now_ts)) }}{% endif %}</span>
+    {% else %}<span class="val">—</span><span class="sub">{{ _("в календаре союза пусто") }}</span>{% endif %}
+  </a>
+  <a class="tile" href="/me">
+    <span class="lbl"><svg class="i" aria-hidden="true"><use href="#i-gift"/></svg>{{ _("Мои бафы") }}</span>
+    <span class="val" style="font-size:.95rem">🏗 {{ buffline(buffs.build) }}</span>
+    <span class="sub">🔬 {{ buffline(buffs.research) }}</span>
+  </a>
 </div>
 
+<div class="bento">
+  <div class="col">
 {% for f in finished %}{% set t = f.timer %}{% set what = gamedata.label(t.item, t.level, t.note) %}
 <section class="card life-card">
   <h2>🏁 {{ KIND_EMOJI[f.kind] }} {{ _("{what} — закончилось", what=what or (_("Стройка") if f.kind == "build" else _("Исследование"))) }}</h2>
@@ -84,23 +102,54 @@
 </section>
 {% endfor %}
 
-{% include "_boards.html" %}
+    {% include "_boards.html" %}
+    {% include "_vs.html" %}
+  </div>
 
-<div class="actions">
-  <a class="btn btn-big btn-block" href="/join">➕ {{ _("Встать в очередь") }}</a>
-  <a class="btn btn-primary btn-big btn-block" href="/give">🎁 {{ _("Я отдал баф") }}</a>
+  <div class="col">
+    {% if polls_waiting %}
+    <section class="card">
+      <div class="card-head"><h2><svg class="i" aria-hidden="true"><use href="#i-poll"/></svg>{{ _("Ждут твоего ответа") }}</h2><a class="card-link" href="/polls">{{ _("Все опросы →") }}</a></div>
+      <ul class="list-rows">{% for p in polls_waiting[:4] %}
+        <li><span class="grow"><b>{% if p.kind == "reservoir" %}💧 {% endif %}{{ _(p.title) }}</b><span>{% if p.closes_at %}{{ _("до {when}", when=both(p.closes_at, "%d.%m %H:%M")) }}{% else %}{{ _("ответ в один клик") }}{% endif %}</span></span>
+          <a class="btn btn-sm btn-primary" href="/polls#p{{ p.id }}">{{ _("Ответить") }}</a></li>{% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    {% if pinned or soon %}
+    <section class="card">
+      <div class="card-head"><h2><svg class="i" aria-hidden="true"><use href="#i-msg"/></svg>{{ _("Союз") }}</h2><a class="card-link" href="/board">{{ _("Объявления →") }}</a></div>
+      {% for p in pinned %}<a class="pin-strip" href="/board#post{{ p.id }}"><span class="muted">{{ p.author or "R4" }} · {{ local(p.created_at) }}</span><br>{{ p.text|truncate(160) }}</a>{% endfor %}
+      {% if soon %}<ul class="list-rows">{% for o in soon %}
+        <li><span class="grow"><b>{{ _(o.event.title) }}</b><span>{% if o.ongoing(now_ts) %}{{ _("идёт сейчас") }}{% else %}{{ both(o.start, "%d.%m %H:%M") }}{% endif %}</span></span></li>{% endfor %}
+      </ul>{% endif %}
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <div class="card-head"><h2><svg class="i" aria-hidden="true"><use href="#i-users"/></svg>{{ _("Мои персонажи") }}</h2><a class="card-link" href="/me#chars">{{ _("Добавить твинка →") }}</a></div>
+      <ul class="list-rows">{% for cc in char_cards %}{% set c = cc.c %}
+        <li class="char-row"><span class="avatar">{{ c.nick[:1] }}</span>
+          <span class="grow"><b>{{ c.nick }}{% if c.pp_level %} <small class="muted">⚡{{ c.pp_level }}</small>{% endif %}</b>
+            <span>🏗 {{ buffline(cc.buffs.build) }} · 🔬 {{ buffline(cc.buffs.research) }}{% for k in KINDS %}{% if cc.timers[k] %} · {{ KIND_EMOJI[k] }} {{ _("в очереди") }}{% endif %}{% endfor %}</span></span>
+          {% if c.id != me.id %}<form method="post" action="/char/{{ c.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="/"><button class="btn btn-sm" type="submit">{{ _("Выбрать") }}</button></form>{% else %}<span class="badge badge-accent">{{ _("выбран") }}</span>{% endif %}</li>
+      {% endfor %}</ul>
+    </section>
+
+    {% include "_tip.html" %}
+    {% if show_path %}{% include "_pp_path.html" %}{% endif %}
+
+    <section class="card">
+      <div class="card-head"><h2><svg class="i" aria-hidden="true"><use href="#i-help"/></svg>{{ _("Частые вопросы") }}</h2><a class="card-link" href="/faq">{{ _("Все ответы →") }}</a></div>
+      <ul class="list-rows">{% for x in faq_top %}<li><a class="grow" href="/faq#{{ x.slug }}" style="text-decoration:none"><b style="font-weight:500">{{ _(x.q) }}</b></a></li>{% endfor %}</ul>
+    </section>
+
+    <div class="alert alert-info push-banner" data-push data-push-banner hidden>
+  <span>🔔 {{ _("<b>Включи уведомления</b> — сайт сам скажет, когда твой баф готов и кому его отдать.") }}</span>
+  <button class="btn btn-sm btn-primary" type="button" data-push-on>{{ _("Включить") }}</button>
+  <a class="btn btn-sm btn-ghost" href="/me#notify">{{ _("Подробнее") }}</a>
 </div>
-
-{% if show_path %}{% include "_pp_path.html" %}{% endif %}
-
-<section class="card explain">
-  <h2>{{ _("Как это работает") }}</h2>
-  <ol class="steps-list">
-    <li>{{ _("<b>Строишь или исследуешь что-то долгое</b> → «➕ Встать», впиши время с таймера в игре. Встаёшь один раз на всю стройку.") }}</li>
-    <li>{{ _("<b>Твой баф готов</b> → наверху написано, <b>кому</b> его отдать. Отдай в игре.") }}</li>
-    <li>{{ _("<b>Отдал</b> → «Отдал ✓» и нажми на этого игрока. Очередь сразу пересчитается у всех.") }}</li>
-  </ol>
-  <p class="text-2">{% if order == "share" %}{{ _("<b>Чья полоска «получил X из Y» короче — тот следующий.</b> Каждому положено столько бафов, сколько нужно до цели, и помогаем всем в равной доле.") }}{% else %}{{ _("Каждому <b>положено ровно столько бафов, сколько нужно до цели</b>.") }}{% endif %} {{ _("Под каждым ником написано, почему он на своём месте.") }}</p>
-  <p class="hint mb0">{{ _("Получил баф — пауза {gap} ч. Очередь пуста — баф идёт по 🎲 рулетке.", gap=gap|int) }} <a href="/help">{{ _("Как всё устроено — подробно →") }}</a></p>
-</section>
+  </div>
+</div>
 {% endblock %}

@@ -215,6 +215,14 @@
     box.querySelectorAll(sel).forEach(function (el) { el.hidden = q && el.textContent.toLowerCase().indexOf(q) < 0; });
   });
 
+  // Ссылка на ответ (/faq#slug) сразу раскрывает его.
+  function openHash() {
+    var el = location.hash && document.getElementById(location.hash.slice(1));
+    if (el && el.tagName === "DETAILS") { el.open = true; el.scrollIntoView({ block: "start" }); }
+  }
+  window.addEventListener("hashchange", openHash);
+  document.addEventListener("DOMContentLoaded", openHash);
+
   function initTheme() {
     document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) { btn.addEventListener("click", function () {
       var root = document.documentElement;

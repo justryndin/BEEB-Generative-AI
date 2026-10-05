@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Вопросы и ответы") }} · {{ _(site_name) }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ _("Вопросы и ответы") }}</h1><p>{{ _("То, что чаще всего спрашивают в чате. Нажми на вопрос — ответ и ссылка «подробнее». Скопируй ссылку на ответ и кинь в чат.") }}</p></div>
+  <form action="/search" class="row" role="search" style="flex:0 1 420px"><input type="search" name="q" placeholder="{{ _("Найти ответ…") }}" aria-label="{{ _("Поиск") }}" style="flex:1;width:auto;min-width:180px"><button class="btn btn-primary" type="submit">{{ _("Найти") }}</button></form>
+</div>
+<nav class="toc">{% for t in topics %}<a href="#t{{ loop.index }}">{{ _(t) }}</a>{% endfor %}</nav>
+<div class="grid2">
+{% for t in topics %}
+<section class="card faq" id="t{{ loop.index }}">
+  <h2>{{ _(t) }}</h2>
+  {% for x in faq if x.topic == t %}
+  <details id="{{ x.slug }}">
+    <summary>{{ _(x.q) }}</summary>
+    <div class="answer">{{ _(x.a) }}
+      <div class="row">{% for href, label in x.links %}<a class="btn btn-sm" href="{{ href }}">{{ _(label) }} →</a>{% endfor %}
+        <button class="btn btn-sm btn-ghost" type="button" data-copy="{{ request.base_url }}faq#{{ x.slug }}">{{ _("Ссылка для чата") }}</button></div>
+    </div>
+  </details>
+  {% endfor %}
+</section>
+{% endfor %}
+</div>
+<p class="hint center">{{ _("Не нашёл ответ? Спроси в чате союза — R4 добавят его сюда.") }}</p>
+{% endblock %}

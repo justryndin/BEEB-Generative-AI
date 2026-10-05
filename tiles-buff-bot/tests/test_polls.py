@@ -52,3 +52,18 @@ def test_audience_limits_posts_and_polls(site):  # noqa: F811
     assert "Секрет R4" not in player.get("/polls").text and "Секрет R4" in owner.get("/polls").text
     pid = svc.db.one("SELECT id FROM polls")["id"]
     assert player.post(f"/polls/{pid}/vote", data={"csrf": csrf(board), "c": ["0"]}).status_code == 404
+
+
+def test_faq_search_and_dashboard(site):  # noqa: F811
+    svc, owner, _ = site
+    register(owner, "Ana")
+    home = owner.get("/").text
+    for part in ("VS сегодня", "Игра по-крупному", "Ближайшее событие", "Мои персонажи", "Частые вопросы"):
+        assert part in home
+    faq = owner.get("/faq").text
+    assert 'id="water"' in faq and "Когда вода и как туда попасть?" in faq
+    found = owner.get("/search?q=вода").text
+    assert "/faq#water" in found and "/guides/reservoir" in found
+    assert "Ничего не нашлось" in owner.get("/search?q=zzzqqq").text
+    from core import faq as faq_mod
+    assert all(x.slug in faq_mod.BY_SLUG for x in faq_mod.top(6))

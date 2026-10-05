@@ -18,10 +18,10 @@ from markupsafe import Markup
 
 from core import gamedata
 from core.db import Database
-from core import audience, crm, i18n, planner, polls, powerplay, vs
+from core import audience, crm, faq, i18n, planner, polls, powerplay, vs
 from core.i18n import LANGS, SHORT, t as tr
 from core.analytics import benefit, r4_report
-from core.tips import player_tip
+from core.tips import TIPS, player_tip
 from core.notify import NOTICE_KINDS, Notice, prefs as notify_prefs
 from core.logic import CYCLE_MAX, STATUS_NEED, buffs_needed, make_pattern, parse_pattern, timer_status
 from core.service import KIND_ACC, KIND_EMOJI, KIND_NAME, KINDS, SETTINGS, Service, clean_nick, valid_pin
@@ -452,7 +452,12 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             pinned=crm.pinned_posts(svc, me),
             tip=tip_for(me, t, tip),
             tip_step=tip,
-            soon=[o for o in crm.occurrences(svc, t, 1) if o.start - t < DAY][:2],
+            soon=[o for o in crm.occurrences(svc, t, 3) if o.event["duration"] < 1440][:4],
+            char_cards=[{"c": c, "timers": {k: svc.active_timer(c["id"], k) for k in KINDS},
+                         "buffs": {k: buff_state(c["id"], k, t) for k in KINDS}} for c in svc.characters(acc_id(me))],
+            buffs={k: buff_state(me["id"], k, t) for k in KINDS},
+            polls_waiting=polls.unanswered(svc, me, t),
+            faq_top=faq.top(6),
             order=svc.setting("queue_order"),
             pattern=svc.setting("pattern"),
             finished=svc.finished_timers(me["id"], t),
@@ -818,6 +823,20 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         else:
             raise HTTPException(status_code=404)
         return go("/board", "✅ Готово.")
+
+    # ---------- вопросы и ответы, поиск ----------
+
+    @app.get("/faq", response_class=HTMLResponse)
+    def faq_page(request: Request):
+        me = need_login(request)
+        return render(request, "faq.html", me, faq=faq.FAQ, topics=faq.TOPICS)
+
+    @app.get("/search", response_class=HTMLResponse)
+    def search_page(request: Request, q: str = ""):
+        me = need_login(request)
+        q = q.strip()[:80]
+        hits = faq.search(q, i18n.translate, GUIDES, TIPS) if q else []
+        return render(request, "search.html", me, q=q, hits=hits)
 
     # ---------- опросы ----------
 
@@ -1301,7 +1320,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     def manifest():
         body = (
             '{"name": "%s", "short_name": "Бафы", "start_url": "/", "display": "standalone", '
-            '"background_color": "#0d0a14", "theme_color": "#0d0a14", '
+            '"background_color": "#0b0d12", "theme_color": "#0b0d12", '
             '"icons": [{"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png"}, '
             '{"src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png"}, '
             '{"src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml"}]}' % cfg.site_name

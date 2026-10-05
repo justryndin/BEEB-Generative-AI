@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Поиск") }} · {{ _(site_name) }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ _("Поиск") }}</h1><p>{{ _("По вопросам, гайдам и советам.") }}</p></div></div>
+<form action="/search" class="row card" role="search" style="padding:12px">
+  <input type="search" name="q" value="{{ q }}" placeholder="{{ _("Поиск: вода, питомцы, Электростанция…") }}" aria-label="{{ _("Поиск") }}" style="flex:1;min-width:200px" autofocus>
+  <button class="btn btn-primary" type="submit">{{ _("Найти") }}</button>
+</form>
+{% if q %}
+<section class="card">
+  {% if hits %}
+  <ul class="results">
+    {% for h in hits %}
+    <li><span class="badge">{{ {"faq": _("ответ"), "guide": _("гайд"), "tip": _("совет")}[h.kind] }}</span> <a href="{{ h.url }}">{{ h.title }}</a><p>{{ h.snippet|truncate(200) }}</p></li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="empty">{{ _("Ничего не нашлось. Попробуй другое слово или загляни в «Вопросы и ответы».") }} <a href="/faq">{{ _("Вопросы и ответы →") }}</a></p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}
