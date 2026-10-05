@@ -19,7 +19,7 @@ from markupsafe import Markup
 from core import gamedata
 from core.db import Database
 from core import crm, i18n, planner, vs
-from core.i18n import LANGS, SHORT, t
+from core.i18n import LANGS, SHORT, t as tr
 from core.analytics import benefit, r4_report
 from core.tips import player_tip
 from core.notify import NOTICE_KINDS, Notice, prefs as notify_prefs
@@ -140,13 +140,13 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
 
     def target_text(kind: str) -> str:
         lo, hi = svc.setting_float(f"{kind}_min"), svc.setting_float(f"{kind}_max")
-        return f"{hi:g} дн." if lo == hi else f"{lo:g}–{hi:g} дн."
+        return tr("{n} дн.", n=f"{hi:g}") if lo == hi else tr("{n} дн.", n=f"{lo:g}–{hi:g}")
 
     def priority_text() -> str:
         it = gamedata.item(svc.setting("priority_item"))
         if it is None:
             return ""
-        return f"{it.ru} до {int(svc.setting_float('priority_below')) - 1} ур."
+        return tr("{item} до {level} ур.", item=it.name, level=int(svc.setting_float('priority_below')) - 1)
 
     def tip_for(me, t: int, step: int = 0):
         return player_tip(svc, me, t, cfg.tz, step)
@@ -154,12 +154,12 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     def pattern_text(pattern: str) -> str:
         big, wait, wait_first = parse_pattern(pattern)
         if not wait:
-            return "только большим таймерам"
+            return tr("только большим таймерам")
         if not big:
-            return "только тем, кому досталось меньше всех"
+            return tr("только тем, кому досталось меньше всех")
         if wait_first:
-            return f"{big} : {wait} — сначала {wait} меньше получившим, потом {big} большим"
-        return f"{big} : {wait} — сначала {big} большим, потом {wait} меньше получившим"
+            return tr("{big} : {wait} — сначала {wait} меньше получившим, потом {big} большим", big=big, wait=wait)
+        return tr("{big} : {wait} — сначала {big} большим, потом {wait} меньше получившим", big=big, wait=wait)
 
     templates.env.globals.update(
         dur=format_duration,
@@ -226,6 +226,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     def go(url: str, flash: str | None = None) -> RedirectResponse:
         resp = RedirectResponse(url, status_code=303)
         if flash:
+            flash = i18n.translate(flash)
             resp.set_cookie("flash", quote(flash), max_age=60, httponly=True, samesite="lax", secure=cfg.secure_cookies)
         return resp
 
@@ -367,7 +368,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             return render(request, "register.html", error=error, nick=nick, need_code=need_code, status_code=400)
         svc.agree(player["id"], now())
         token, _ = svc.create_session(player["id"], now())
-        resp = go("/", f"Добро пожаловать, {player['nick']}! ✅")
+        resp = go("/", tr("Добро пожаловать, {nick}! ✅", nick=player["nick"]))
         resp.set_cookie("sid", token, max_age=max_age, httponly=True, samesite="lax", secure=cfg.secure_cookies)
         remember_lang(resp, svc.player(player["id"]))
         return resp
@@ -581,13 +582,13 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             level=None if fix else (level or None),
         )
         ref = it.time_for(level) if it and level else None
-        warn = f" ⚠️ Это намного больше справочного времени ({format_duration(ref)}) — проверь таймер." if ref and seconds > ref * 1.5 else ""
+        warn = tr(" ⚠️ Это намного больше справочного времени ({time}) — проверь таймер.", time=format_duration(ref)) if ref and seconds > ref * 1.5 else ""
         if target["id"] != me["id"]:
-            return go(f"/admin/p/{target['id']}", f"✅ Записал игрока {target['nick']}: осталось {format_duration(seconds)}.{warn}")
+            return go(f"/admin/p/{target['id']}", tr("✅ Записал игрока {nick}: осталось {time}.", nick=target["nick"], time=format_duration(seconds)) + warn)
         c = svc.timer_candidate(target["id"], kind, now())
         owed = buffs_needed(c.remaining, c.base, svc.rules(kind)) if c else 0
-        tail = f" Тебе положено {owed} баф. до цели." if owed else " Бафы не нужны — ты уже около цели."
-        text = ("✅ Остаток обновлён." if fix else "✅ Ты в очереди!") + tail
+        tail = tr(" Тебе положено {n} баф. до цели.", n=owed) if owed else tr(" Бафы не нужны — ты уже около цели.")
+        text = (tr("✅ Остаток обновлён.") if fix else tr("✅ Ты в очереди!")) + tail
         return go("/", text + warn)
 
     @app.post("/timer/{kind}/close")
@@ -595,7 +596,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         me = need_login(request)
         check_csrf(me, csrf)
         svc.close_timer(me["id"], kind, now())
-        return go("/", f"🏁 Готово — ты убран из очереди ({KIND_NAME.get(kind, '')}).")
+        return go("/", tr("🏁 Готово — ты убран из очереди ({kind}).", kind=tr(KIND_NAME.get(kind, ""))))
 
     @app.post("/timer/{kind}/ok")
     def timer_ok(request: Request, kind: str, csrf: str = Form("")):
@@ -660,12 +661,13 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             messages = {
                 "self": "⚠️ Себе баф отдать нельзя.",
                 "not_in_queue": "⚠️ Этого игрока уже нет в очереди — обнови страницу.",
-                "duplicate": f"⚠️ Баф на {KIND_ACC[kind]} уже записан несколько минут назад. Если отдал ещё один — подожди 10 минут.",
+                "duplicate": tr("⚠️ Баф на {kind} уже записан несколько минут назад. Если отдал ещё один — подожди 10 минут.", kind=tr(KIND_ACC[kind])),
             }
             return go(back, messages[error])
-        who_text = "Ты" if who["id"] == me["id"] else who["nick"]
-        cut = f" (−{format_duration(result.reduction)})" if result.reduction else " (🎲 по рулетке)"
-        done = f"✅ Записано: {who_text} → {result.recipient_nick}, баф на {KIND_ACC[kind]}{cut}. Спасибо! 🙌"
+        who_text = tr("Ты") if who["id"] == me["id"] else who["nick"]
+        cut = f" (−{format_duration(result.reduction)})" if result.reduction else tr(" (🎲 по рулетке)")
+        done = tr("✅ Записано: {who} → {nick}, баф на {kind}{cut}. Спасибо! 🙌", who=who_text, nick=result.recipient_nick,
+                  kind=tr(KIND_ACC[kind]), cut=cut)
         return go(f"/admin/p/{who['id']}" if who["id"] != me["id"] else "/", done)
 
     # ---------- отмена записанного бафа ----------
@@ -686,10 +688,10 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             return go(back, "⚠️ Эта запись уже отменена.")
         donor = svc.player(d["donor_id"])
         recipient = svc.player(d["recipient_id"])
-        text = (f"↩️ Отменено: {donor['nick'] if donor else '?'} → {recipient['nick'] if recipient else '?'} "
-                f"({KIND_NAME[d['kind']]}). Таймеры и очередь вернулись как были.")
+        text = tr("↩️ Отменено: {donor} → {recipient} ({kind}). Таймеры и очередь вернулись как были.",
+                  donor=donor["nick"] if donor else "?", recipient=recipient["nick"] if recipient else "?", kind=tr(KIND_NAME[d["kind"]]))
         if not exact:
-            text += " ⚠️ Запись старая — таймер того, кто отдавал, поправьте вручную, если нужно."
+            text += tr(" ⚠️ Запись старая — таймер того, кто отдавал, поправьте вручную, если нужно.")
         return go(back, text)
 
     @app.get("/admin/log", response_class=HTMLResponse)
@@ -758,8 +760,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         check_csrf(me, csrf)
         if crm.add_post(svc, me["id"], text, pinned == "1", important == "1", rsvp == "1", now()) is None:
             return go("/board", "⚠️ Напиши текст объявления.")
-        tail = " Важное — придёт всем на телефон в течение минуты." if important == "1" else ""
-        return go("/board", "✅ Опубликовано." + tail)
+        tail = tr(" Важное — придёт всем на телефон в течение минуты.") if important == "1" else ""
+        return go("/board", tr("✅ Опубликовано.") + tail)
 
     @app.post("/board/{post_id}/{action}")
     def board_action(request: Request, post_id: int, action: str, csrf: str = Form("")):
@@ -795,7 +797,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             if not days or days[-1]["key"] != key:
                 ts = max(o.start, t) if o.ongoing(t) else o.start
                 wd = datetime.fromtimestamp(ts, cfg.tz).weekday()
-                days.append({"key": key, "title": f"{crm.WEEKDAYS_FULL[wd]}, {local(ts, '%d.%m')}", "list": []})
+                days.append({"key": key, "title": f"{tr(crm.WEEKDAYS_FULL[wd])}, {local(ts, '%d.%m')}", "list": []})
             days[-1]["list"].append(o)
         refs = [o.ref for o in occ if o.event["rsvp"]]
         all_events = [
@@ -827,7 +829,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             return go("/events", "⚠️ Проверь длительность и напоминание.")
         error = crm.save_event(svc, event_id or None, str(form.get("title", "")), conv[0], conv[1], int(hours * 60),
                                str(form.get("prepare", "")), remind, form.get("checked") == "1", form.get("rsvp") == "1")
-        return go("/events", "⚠️ " + error if error else "✅ Событие сохранено.")
+        return go("/events", "⚠️ " + tr(error) if error else "✅ Событие сохранено.")
 
     @app.post("/events/{event_id}/delete")
     def event_delete(request: Request, event_id: int, csrf: str = Form("")):
@@ -908,7 +910,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         check_csrf(me, csrf)
         svc.set_pp_level(me["id"], int(level) if level.strip().isdigit() else None)
         return go(next if next.startswith("/") and not next.startswith("//") else "/me",
-                  t("✅ Уровень Электростанции сохранён."))
+                  "✅ Уровень Электростанции сохранён.")
 
     @app.post("/me/nick")
     def change_nick(request: Request, csrf: str = Form(""), nick: str = Form("")):
@@ -919,7 +921,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             return go("/me", "⚠️ Ник должен быть от 2 до 32 символов.")
         if svc.rename(me["id"], nick) == "taken":
             return go("/me", "⚠️ Этот ник уже занят другим игроком.")
-        return go("/me", f"✅ Ник изменён на {nick}.")
+        return go("/me", tr("✅ Ник изменён на {nick}.", nick=nick))
 
     @app.post("/me/pin")
     def change_pin(request: Request, csrf: str = Form(""), old: str = Form(""), pin: str = Form(""),
@@ -956,7 +958,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         step = 1 if period <= 7 else (5 if period <= 30 else 15)
         points = [
             (local(day, "%d.%m") if i % step == 0 or i == len(days) - 1 else "", n,
-             f"{local(day, '%d.%m')}: {n} бафов")
+             tr("{day}: {n} бафов", day=local(day, '%d.%m'), n=n))
             for i, (day, n) in enumerate(days)
         ]
         donors = svc.top_players("donor", since)
@@ -966,7 +968,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             period=period,
             all_time=svc.totals(),
             totals=svc.totals(since),
-            chart=charts.column_chart(points, f"Бафы по дням за {period} дней"),
+            chart=charts.column_chart(points, tr("Бафы по дням за {n} дней", n=period)),
             days=days,
             donors=charts.bar_list([(r["nick"], r["n"], f"{r['n']} · −{format_duration(r['saved'])}") for r in donors], me["nick"]),
             recipients=charts.bar_list([(r["nick"], r["n"], f"{r['n']} · −{format_duration(r['saved'])}") for r in recipients], me["nick"]),
@@ -1051,11 +1053,11 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         days = svc.daily_counts(t, period, offset)
         step = 1 if period <= 14 else 5
         points = [
-            (local(day, "%d.%m") if i % step == 0 or i == len(days) - 1 else "", n, f"{local(day, '%d.%m')}: {n} бафов")
+            (local(day, "%d.%m") if i % step == 0 or i == len(days) - 1 else "", n, tr("{day}: {n} бафов", day=local(day, '%d.%m'), n=n))
             for i, (day, n) in enumerate(days)
         ]
         return render(request, "admin_stats.html", me, r=r, settings_cd=svc.setting_float("cooldown_hours"),
-                      chart=charts.column_chart(points, f"Бафы по дням за {period} дней"))
+                      chart=charts.column_chart(points, tr("Бафы по дням за {n} дней", n=period)))
 
     @app.post("/admin/add")
     def admin_add(request: Request, csrf: str = Form(""), nick: str = Form("")):
@@ -1065,7 +1067,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         if not 2 <= len(nick) <= 32:
             return go("/admin", "⚠️ Ник должен быть от 2 до 32 символов.")
         player = svc.player_by_nick(nick) or svc.create_offline_player(nick, now())
-        return go(f"/admin/p/{player['id']}", f"✅ Игрок {player['nick']} добавлен. Он может зарегистрироваться под этим ником и задать PIN.")
+        return go(f"/admin/p/{player['id']}", tr("✅ Игрок {nick} добавлен. Он может зарегистрироваться под этим ником и задать PIN.", nick=player["nick"]))
 
     @app.post("/admin/settings")
     async def admin_settings(request: Request):
@@ -1086,7 +1088,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                 error = svc.set_setting(key, str(form[key]))
                 if error:
                     errors.append(error)
-        return go("/admin#settings", "⚠️ " + "; ".join(errors) if errors else "✅ Настройки сохранены.")
+        return go("/admin#settings", "⚠️ " + "; ".join(tr(e) for e in errors) if errors else "✅ Настройки сохранены.")
 
     @app.get("/admin/p/{pid}", response_class=HTMLResponse)
     def admin_player(request: Request, pid: int):
@@ -1120,10 +1122,10 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             return go(back, "🔥 Срочно включено" if flag else "Срочно выключено")
         if action == "close" and kind in KINDS:
             svc.close_timer(pid, kind, now(), suggest_next=False)
-            return go(back, f"🏁 Убран из очереди: {KIND_NAME[kind]}")
+            return go(back, tr("🏁 Убран из очереди: {kind}", kind=tr(KIND_NAME[kind])))
         if action == "resetpin":
             svc.set_pin(pid, None)
-            return go(back, f"🔑 PIN сброшен. {p['nick']} может заново зарегистрироваться под своим ником и задать новый PIN.")
+            return go(back, tr("🔑 PIN сброшен. {nick} может заново зарегистрироваться под своим ником и задать новый PIN.", nick=p["nick"]))
         if action in ("make_admin", "drop_admin"):
             if not me["is_owner"] or p["is_owner"]:
                 raise HTTPException(status_code=403, detail="Назначать админов может только владелец")
@@ -1133,7 +1135,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             if p["is_owner"]:
                 return go(back, "⚠️ Владельца удалить нельзя.")
             svc.delete_player(pid, now())
-            return go("/admin", f"🗑 {p['nick']} удалён с сайта. История его бафов сохранена в статистике.")
+            return go("/admin", tr("🗑 {nick} удалён с сайта. История его бафов сохранена в статистике.", nick=p["nick"]))
         raise HTTPException(status_code=400)
 
     # ---------- служебное ----------

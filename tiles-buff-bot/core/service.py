@@ -26,6 +26,7 @@ from .logic import (
     share,
     timer_status,
 )
+from .i18n import t
 from .timeparse import DAY, HOUR, MINUTE, format_duration
 
 KINDS = ("build", "research")
@@ -216,43 +217,43 @@ class Service:
     def set_setting(self, key: str, value: str) -> str | None:
         """Возвращает текст ошибки или None, если всё хорошо."""
         if key not in SETTINGS and key not in _INTERNAL_SETTINGS:
-            return f"Нет такой настройки: {key}"
+            return t("Нет такой настройки: {key}", key=key)
         value = value.strip()
         if key == "mode":
             if value not in ("declared", "remaining"):
-                return "mode: только declared или remaining"
+                return t("mode: только declared или remaining")
         elif key == "pattern":
             value = value.upper()
             if not re.fullmatch(r"[BW]{1,12}", value):
-                return "pattern: только буквы B и W, например BBW"
+                return t("pattern: только буквы B и W, например BBW")
         elif key == "queue_order":
             if value not in (ORDER_SHARE, ORDER_CYCLE):
-                return "queue_order: только share или cycle"
+                return t("queue_order: только share или cycle")
         elif key == "priority_item":
             if value and gamedata.item(value) is None:
-                return "priority_item: нет такого здания в справочнике"
+                return t("priority_item: нет такого здания в справочнике")
         elif key == "alliance_code":
             if len(value) > 32:
-                return "Код союза — не длиннее 32 символов"
+                return t("Код союза — не длиннее 32 символов")
         elif key in SETTINGS:
             try:
                 number = float(value.replace(",", "."))
             except ValueError:
-                return f"{key}: нужно число"
+                return t("{key}: нужно число", key=key)
             value = f"{number:g}"
             if key == "pct" and not 0 < number < 100:
-                return "pct: от 0 до 100"
+                return t("pct: от 0 до 100")
             if key in ("cooldown_hours", "confirm_minutes", "priority_weight") and number <= 0:
-                return f"{key}: должно быть больше 0"
+                return t("{key}: должно быть больше 0", key=key)
             if number < 0:
-                return f"{key}: не может быть отрицательным"
+                return t("{key}: не может быть отрицательным", key=key)
             for kind in KINDS:
                 lo, hi = f"{kind}_min", f"{kind}_max"
                 if key in (lo, hi):
                     new_lo = number if key == lo else self.setting_float(lo)
                     new_hi = number if key == hi else self.setting_float(hi)
                     if new_lo > new_hi:
-                        return f"{lo} не может быть больше {hi}"
+                        return t("{lo} не может быть больше {hi}", lo=lo, hi=hi)
         self.db.run(
             "INSERT INTO settings(key, value) VALUES(?, ?) "
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
@@ -1164,16 +1165,16 @@ class Service:
             level = r["pp_level"]
             group = 1 if level is None else (0 if level < goal else 2)
             if group == 0:
-                why = f"⚡ Электростанция {level} — ещё не построил {goal}"
+                why = t("⚡ Электростанция {level} — ещё не построил {goal}", level=level, goal=goal)
             elif group == 1:
-                why = "уровень Электростанции не указан"
+                why = t("уровень Электростанции не указан")
             else:
-                why = f"Электростанция {level} — уже построил"
+                why = t("Электростанция {level} — уже построил", level=level)
             if r["got_week"]:
-                why += f" · по рулетке за неделю: {r['got_week']}"
+                why += t(" · по рулетке за неделю: {n}", n=r["got_week"])
             paused = max(0, (r["got_at"] or 0) + gap - now) if gap else 0
             if paused:
-                why = f"⏸ пауза ещё {format_duration(paused)} · " + why
+                why = t("⏸ пауза ещё {time} · ", time=format_duration(paused)) + why
             out.append(RouletteRow(r["id"], r["nick"], level, group, r["got_week"], why, paused))
         lot = lambda pid: hashlib.sha1(f"{kind}:{draw}:{pid}".encode()).hexdigest()  # noqa: E731
         out.sort(key=lambda x: (x.paused > 0, x.group, x.got_week, lot(x.player_id)))
@@ -1251,24 +1252,26 @@ class Service:
         """Почему игрок на этом месте — одной строкой, без математики."""
         c = r.candidate
         if not r.need:
-            return "дошёл до цели — бафы больше не нужны"
-        got = f"получил {c.received} из {r.total}"
+            return t("дошёл до цели — бафы больше не нужны")
+        got = t("получил {n} из {total}", n=c.received, total=r.total)
         if c.urgent:
-            return f"🔥 срочно (отметил R4) · {got}"
+            return t("🔥 срочно (отметил R4) · {got}", got=got)
         if held:
-            return f"⏳ держит готовый баф на {KIND_ACC[held[0]]} {format_duration(held[1])} — пропускает ход, пока не отдаст"
+            return t("⏳ держит готовый баф на {kind} {time} — пропускает ход, пока не отдаст",
+                     kind=t(KIND_ACC[held[0]]), time=format_duration(held[1]))
         if r.paused_for:
-            return f"⏸ пауза после бафа ещё {format_duration(r.paused_for)} · {got}"
+            return t("⏸ пауза после бафа ещё {time} · {got}", time=format_duration(r.paused_for), got=got)
         if r.fire_in is not None:
-            return f"⏰ горит: через {format_duration(r.fire_in)} сам дойдёт до цели — баф нужен раньше · {got}"
-        prio = "⚡ приоритет ×{:g} · ".format(rules.priority_weight) if c.priority and rules.order == ORDER_SHARE else ""
+            return t("⏰ горит: через {time} сам дойдёт до цели — баф нужен раньше · {got}",
+                     time=format_duration(r.fire_in), got=got)
+        prio = t("⚡ приоритет ×{w} · ", w=f"{rules.priority_weight:g}") if c.priority and rules.order == ORDER_SHARE else ""
         if rules.order == ORDER_SHARE:
             if c.received == 0:
-                return f"{prio}ещё не получал · ждёт {format_duration(max(0, now - c.waiting_since))}"
-            return f"{prio}{got} — это {round(r.share * 100)}% от положенного"
+                return prio + t("ещё не получал · ждёт {time}", time=format_duration(max(0, now - c.waiting_since)))
+            return prio + t("{got} — это {pct}% от положенного", got=got, pct=round(r.share * 100))
         if r.slot == "B":
-            return f"самый большой остаток · {got}"
-        return f"меньше всех получил и дольше ждёт · {got}"
+            return t("самый большой остаток · {got}", got=got)
+        return t("меньше всех получил и дольше ждёт · {got}", got=got)
 
     def given_since(self, kind: str, since: int) -> int:
         return self.db.one(

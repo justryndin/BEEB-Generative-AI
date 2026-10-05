@@ -4,7 +4,7 @@
 <div class="card" style="max-width:460px;margin:20px auto">
   <img class="mark-sm" src="/static/icon.svg" alt="" width="64" height="64">
   <h1 class="center">{{ _("Вход") }}</h1>
-  {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+  {% if error %}<div class="alert alert-danger" role="alert">{{ _(error) }}</div>{% endif %}
   <form method="post" action="/login">
     <div class="field">
       <label for="nick">{{ _("Ник в игре") }}</label>
