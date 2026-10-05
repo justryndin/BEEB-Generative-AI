@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Штаб R4") }} · {{ _(site_name) }}{% endblock %}
+{% block main_class %}wide{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ _("Штаб R4") }}</h1>
+    <p>{{ _("Заметки и решения руководства, обсуждение и кто что делает. Видят только R4, игроки сюда не попадают. Страница обновляется сама.") }}</p></div>
+  <a class="btn" href="/admin">{{ ico("sliders") }} {{ _("Управление") }}</a>
+</div>
+
+<div class="hq-grid">
+  <div class="hq-main">
+    <details class="card composer" data-key="hq-new"{% if not notes %} open{% endif %}>
+      <summary>{{ ico("plus") }} {{ _("Новая запись") }}<span class="hint">{{ _("заметка или решение") }}</span></summary>
+      <form method="post" action="/hq/note" class="stack">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="seg" role="radiogroup" aria-label="{{ _("Тип записи") }}">
+          {% for k, label in NOTE_KINDS.items() %}
+          <label><input type="radio" name="kind" value="{{ k }}"{% if loop.first %} checked{% endif %}><span>{{ _(label) }}</span></label>
+          {% endfor %}
+        </div>
+        <textarea name="text" rows="3" maxlength="2000" required aria-label="{{ _("Текст") }}" placeholder="{{ _("Например: воду ставим на 20:00 МСК, основа — по Электростанции; Скальд собирает резерв.") }}"></textarea>
+        <div><button class="btn btn-primary" type="submit">{{ _("Записать") }}</button></div>
+      </form>
+    </details>
+
+    <div data-live="/hq?live=1">
+    {% for n in notes %}
+    <article class="card hq-note{{ ' is-decision' if n.kind == 'decision' }}{{ ' pinned' if n.pinned }}{{ ' fresh' if n.created_at > seen and n.author_id != me_acc }}" id="n{{ n.id }}">
+      <div class="post-head">
+        {% if n.kind == "decision" %}<span class="badge badge-good">{{ ico("check") }} {{ _("Решение") }}</span>{% else %}<span class="badge">{{ _("Заметка") }}</span>{% endif %}
+        {% if n.pinned %}<span class="badge badge-accent">{{ _("закреплено") }}</span>{% endif %}
+        {% if n.created_at > seen and n.author_id != me_acc %}<span class="badge badge-warn">{{ _("новое") }}</span>{% endif %}
+        <span class="muted">{{ n.author or "—" }} · {{ local(n.created_at) }}</span>
+      </div>
+      <p class="post-text">{{ n.text }}</p>
+      {% if n.comments %}
+      <ul class="hq-comments">
+        {% for c in n.comments %}
+        <li{% if c.created_at > seen and c.author_id != me_acc %} class="fresh"{% endif %}><span class="avatar">{{ (c.author or "?")[:1] }}</span>
+          <div><b>{{ c.author or "—" }}</b> <small class="muted">{{ local(c.created_at) }}</small><p>{{ c.text }}</p></div></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      <form method="post" action="/hq/note/{{ n.id }}/comment" class="row hq-reply">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="text" name="text" maxlength="2000" required placeholder="{{ _("Ответить…") }}" aria-label="{{ _("Комментарий") }}">
+        <button class="btn btn-sm" type="submit">{{ _("Отправить") }}</button>
+      </form>
+      <div class="post-foot">
+        <form method="post" action="/hq/note/{{ n.id }}/{{ 'unpin' if n.pinned else 'pin' }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm btn-ghost" type="submit">{{ _("Открепить") if n.pinned else _("Закрепить") }}</button></form>
+        {% if n.author_id == me_acc or me.acc_owner %}
+        <form method="post" action="/hq/note/{{ n.id }}/delete" data-confirm="{{ _("Удалить запись вместе с обсуждением?") }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm btn-ghost" type="submit">{{ _("Удалить") }}</button></form>
+        {% endif %}
+      </div>
+    </article>
+    {% else %}
+    <div class="card empty-state">{{ ico("msg") }}<p>{{ _("Пока пусто. Запиши первое решение — например, время воды или кто отвечает за события недели.") }}</p></div>
+    {% endfor %}
+    </div>
+  </div>
+
+  <aside class="hq-side" id="tasks">
+    <section class="card">
+      <div class="card-head"><h2>{{ ico("check") }} {{ _("Кто что делает") }}</h2><span class="badge">{{ opened|length }}</span></div>
+      <form method="post" action="/hq/task" class="stack hq-task-form">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="text" name="title" maxlength="300" required placeholder="{{ _("Что сделать: собрать резерв на воду…") }}" aria-label="{{ _("Задача") }}">
+        <div class="row">
+          <select name="assignee" aria-label="{{ _("Кто") }}" style="flex:1;min-width:120px">
+            <option value="0">{{ _("Кто угодно") }}</option>
+            {% for a in r4 %}<option value="{{ a.id }}"{% if a.id == me_acc %} selected{% endif %}>{{ a.nick }}</option>{% endfor %}
+          </select>
+          <input type="datetime-local" name="due" aria-label="{{ _("Срок (МСК)") }}" style="flex:1;min-width:150px">
+        </div>
+        <div><button class="btn btn-primary btn-sm" type="submit">{{ _("Добавить") }}</button> <span class="hint">{{ _("срок — по МСК, можно без срока") }}</span></div>
+      </form>
+      <ul class="hq-tasks">
+        {% for x in opened %}
+        {% set late = x.due_at and x.due_at < now_ts %}
+        <li class="{{ 'late' if late }}{{ ' is-mine' if x.assignee_id == me_acc }}">
+          <form method="post" action="/hq/task/{{ x.id }}/toggle"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="tick" type="submit" aria-label="{{ _("Сделано") }}"></button></form>
+          <div class="grow"><b>{{ x.title }}</b>
+            <span>{{ x.assignee or _("кто угодно") }}{% if x.due_at %} · {% if late %}{{ _("просрочено") }}: {% else %}{{ _("до") }} {% endif %}{{ local(x.due_at, "%d.%m %H:%M") }} {{ tz_label }}{% endif %}</span></div>
+          <form method="post" action="/hq/task/{{ x.id }}/delete" data-confirm="{{ _("Удалить задачу?") }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="icon-x" type="submit" aria-label="{{ _("Удалить") }}">×</button></form>
+        </li>
+        {% else %}
+        <li class="muted hq-none">{{ _("Открытых задач нет.") }}</li>
+        {% endfor %}
+      </ul>
+      {% if done %}
+      <details class="more" data-key="hq-done">
+        <summary>{{ _("Сделано за неделю ({n})", n=done|length) }}</summary>
+        <ul class="hq-tasks done">
+          {% for x in done %}
+          <li><form method="post" action="/hq/task/{{ x.id }}/toggle"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="tick on" type="submit" aria-label="{{ _("Вернуть в работу") }}">{{ ico("check") }}</button></form>
+            <div class="grow"><b>{{ x.title }}</b><span>{{ x.assignee or _("кто угодно") }} · {{ local(x.done_at, "%d.%m %H:%M") }}</span></div></li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+    </section>
+    <section class="card">
+      <h2>{{ ico("users") }} {{ _("Руководство") }}</h2>
+      <ul class="list-rows">
+        {% for a in r4 %}<li><span class="avatar">{{ a.nick[:1] }}</span><span class="grow"><b>{{ a.nick }}</b><span>{{ _("владелец") if a.is_owner else "R4" }}{% if a.last_seen_at %} · {{ _("был {when}", when=local(a.last_seen_at, "%d.%m %H:%M")) }}{% endif %}</span></span></li>{% endfor %}
+      </ul>
+    </section>
+  </aside>
+</div>
+{% endblock %}

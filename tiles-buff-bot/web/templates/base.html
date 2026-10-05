@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="/static/style.css?v=36">
+  <link rel="stylesheet" href="/static/style.css?v=37">
   <script>try { var t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
 <body{% if me %} data-vapid="{{ vapid_public }}" data-csrf="{{ csrf }}"{% endif %}>
@@ -41,6 +41,7 @@
     {% endfor %}
     {% if is_admin %}
     <div class="nav-group">R4</div>
+    <a class="nav-link {{ is_on('/hq') }}" href="/hq">{{ icon("layers") }}<span>{{ _("Штаб R4") }}</span>{% if hq_badge %}<span class="dotcount">{{ hq_badge }}</span>{% endif %}</a>
     <a class="nav-link {{ is_on('/admin') }}" href="/admin">{{ icon("sliders") }}<span>{{ _("Управление") }}</span></a>
     {% endif %}
     <div class="side-foot">
@@ -122,6 +123,6 @@
 </nav>
 {% endif %}
 <script>window.I18N = {{ js_strings()|tojson }};</script>
-<script src="/static/app.js?v=12" defer></script>
+<script src="/static/app.js?v=13" defer></script>
 </body>
 </html>

@@ -8,7 +8,8 @@
 - `core/service.py` — данные и очередь; `core/logic.py` — порядок очереди (по доле, «горит», пауза, рулетка);
   `core/notify.py` — Web Push; `core/polls.py` — опросы; `core/audience.py` — «кому» (все/R4/метка/выбранные/один);
   `core/crm.py` — объявления и события; `core/vs.py` + `core/powerplay.py` — Дуэль и календарь «Игры по-крупному»;
-  `core/planner.py` — путь к Электростанции 30; `core/faq.py` — вопросы и поиск; `core/tips.py` — советы; `core/analytics.py` — аналитика R4.
+  `core/planner.py` — путь к Электростанции 30; `core/faq.py` — вопросы и поиск; `core/tips.py` — советы; `core/analytics.py` — аналитика R4;
+  `core/hq.py` — Штаб R4 (заметки, решения, задачи; /hq); `core/todo.py` — «Мои задачи на сегодня»; `core/backup.py` — ежедневная копия базы.
 - `web/app.py` — все маршруты; `web/templates/` — шаблоны (`base.html` — каркас с боковым меню, `_icons.html` — SVG-спрайт);
   `web/static/style.css` — дизайн-система (токены цвета на :root, тёмная тема по умолчанию).
 - Персонажи: аккаунт (вход по нику и PIN) + твинки (`players.owner_id`), активный персонаж в `sessions.char_id`;

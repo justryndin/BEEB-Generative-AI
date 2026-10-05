@@ -148,6 +148,32 @@ CREATE TABLE IF NOT EXISTS poll_votes (
     PRIMARY KEY (poll_id, player_id)
 );
 
+-- Штаб R4: заметки и решения руководства, обсуждение, кто что делает.
+CREATE TABLE IF NOT EXISTS hq_notes (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    author_id  INTEGER REFERENCES players(id) ON DELETE SET NULL,
+    kind       TEXT NOT NULL DEFAULT 'note',  -- note, decision
+    text       TEXT NOT NULL,
+    pinned     INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS hq_comments (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    note_id    INTEGER NOT NULL REFERENCES hq_notes(id) ON DELETE CASCADE,
+    author_id  INTEGER REFERENCES players(id) ON DELETE SET NULL,
+    text       TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS hq_tasks (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    title       TEXT NOT NULL,
+    assignee_id INTEGER REFERENCES players(id) ON DELETE SET NULL,
+    due_at      INTEGER,
+    done_at     INTEGER,
+    created_by  INTEGER REFERENCES players(id) ON DELETE SET NULL,
+    created_at  INTEGER NOT NULL
+);
+
 -- Что уже отправлено, чтобы не присылать одно и то же дважды.
 CREATE TABLE IF NOT EXISTS notify_log (
     player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
@@ -195,6 +221,7 @@ MIGRATIONS = {
         ("pp_level", "INTEGER"),  # уровень Электростанции (сам игрок, R4 или по записям стройки)
         ("lang", "TEXT"),  # язык сайта и уведомлений: ru, en, es, pt
         ("owner_id", "INTEGER"),  # твинк: id основного аккаунта (вход — через него)
+        ("hq_seen_at", "INTEGER"),  # когда R4 последний раз открывал Штаб
     ],
     "sessions": [("char_id", "INTEGER")],
     "posts": [("audience", "TEXT NOT NULL DEFAULT ''"), ("nudged_at", "INTEGER")],  # какой персонаж аккаунта сейчас выбран

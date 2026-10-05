@@ -124,6 +124,9 @@
   function refresh() {
     var box = document.querySelector("[data-live]");
     if (!box || loading || document.hidden) return;
+    // Не перерисовывать, пока человек что-то печатает внутри (например, ответ в Штабе R4).
+    var typing = Array.prototype.some.call(box.querySelectorAll("input[type=text], textarea"), function (f) { return f.value; });
+    if (typing || box.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
     loading = true;
     var open = {};
     box.querySelectorAll("details[open][data-key]").forEach(function (d) { open[d.dataset.key] = true; });

@@ -18,7 +18,7 @@ from markupsafe import Markup
 
 from core import gamedata
 from core.db import Database
-from core import audience, backup, crm, faq, i18n, planner, polls, powerplay, todo, vs
+from core import audience, backup, crm, faq, hq, i18n, planner, polls, powerplay, todo, vs
 from core.i18n import LANGS, SHORT, t as tr
 from core.analytics import benefit, command_center, r4_report
 from core.tips import TIPS, player_tip
@@ -225,12 +225,14 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
 
     def render(request: Request, name: str, me=None, status_code: int = 200, **ctx) -> HTMLResponse:
         flash = unquote(request.cookies.get("flash", ""))
+        admin = svc.is_admin_player(me)
         resp = templates.TemplateResponse(
             request,
             localized(name),
             {
                 "me": me,
-                "is_admin": svc.is_admin_player(me),
+                "is_admin": admin,
+                "hq_badge": hq_badge(me) if admin else 0,
                 "csrf": me["csrf"] if me else "",
                 "flash": flash,
                 "path": request.url.path,
@@ -248,6 +250,12 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         if flash:
             resp.delete_cookie("flash")
         return resp
+
+    def hq_badge(me) -> int:
+        """Значок у «Штаба R4»: новое от других R4 и мои открытые задачи."""
+        acc = acc_id(me)
+        seen = svc.db.one("SELECT hq_seen_at FROM players WHERE id = ?", acc)
+        return hq.fresh(svc, acc, seen["hq_seen_at"] if seen else None) + hq.my_open(svc, acc)
 
     def go(url: str, flash: str | None = None) -> RedirectResponse:
         resp = RedirectResponse(url, status_code=303)
@@ -918,6 +926,69 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         else:
             raise HTTPException(status_code=404)
         return go("/polls", "✅ Готово.")
+
+    # ---------- Штаб R4 ----------
+
+    @app.get("/hq", response_class=HTMLResponse)
+    def hq_page(request: Request, live: int = 0):
+        me = need_admin(request)
+        t = now()
+        opened, done = hq.tasks(svc, now=t)
+        seen = svc.db.one("SELECT hq_seen_at FROM players WHERE id = ?", acc_id(me))["hq_seen_at"] or 0
+        if not live:  # автообновление не считается визитом: новое остаётся подсвеченным до перезагрузки
+            hq.mark_seen(svc, acc_id(me), t)
+        return render(request, "hq.html", me, notes=hq.notes(svc), opened=opened, done=done, seen=seen,
+                      r4=svc.admins(), NOTE_KINDS=hq.KINDS, now_ts=t, me_acc=acc_id(me))
+
+    @app.post("/hq/note")
+    def hq_note(request: Request, csrf: str = Form(""), text: str = Form(""), kind: str = Form("note")):
+        me = need_admin(request)
+        check_csrf(me, csrf)
+        if hq.add_note(svc, acc_id(me), text, kind, now()) is None:
+            return go("/hq", "⚠️ Напиши текст заметки.")
+        return go("/hq", "✅ Записано в Штаб.")
+
+    @app.post("/hq/note/{note_id}/comment")
+    def hq_comment(request: Request, note_id: int, csrf: str = Form(""), text: str = Form("")):
+        me = need_admin(request)
+        check_csrf(me, csrf)
+        if not hq.add_comment(svc, note_id, acc_id(me), text, now()):
+            return go("/hq", "⚠️ Напиши текст комментария.")
+        return go(f"/hq#n{note_id}")
+
+    @app.post("/hq/note/{note_id}/{action}")
+    def hq_note_action(request: Request, note_id: int, action: str, csrf: str = Form("")):
+        me = need_admin(request)
+        check_csrf(me, csrf)
+        if action in ("pin", "unpin"):
+            hq.pin_note(svc, note_id, action == "pin")
+        elif action == "delete":
+            if not hq.delete_note(svc, note_id, acc_id(me), bool(me["acc_owner"])):
+                return go("/hq", "⚠️ Удалить запись может её автор или владелец сайта.")
+        else:
+            raise HTTPException(status_code=404)
+        return go("/hq")
+
+    @app.post("/hq/task")
+    def hq_task(request: Request, csrf: str = Form(""), title: str = Form(""), assignee: int = Form(0), due: str = Form("")):
+        me = need_admin(request)
+        check_csrf(me, csrf)
+        who = assignee if assignee and any(a["id"] == assignee for a in svc.admins()) else None
+        if hq.add_task(svc, title, who, parse_local(due) if due else None, acc_id(me), now()) is None:
+            return go("/hq#tasks", "⚠️ Напиши, что нужно сделать.")
+        return go("/hq#tasks", "✅ Задача добавлена.")
+
+    @app.post("/hq/task/{task_id}/{action}")
+    def hq_task_action(request: Request, task_id: int, action: str, csrf: str = Form("")):
+        me = need_admin(request)
+        check_csrf(me, csrf)
+        if action == "toggle":
+            hq.toggle_task(svc, task_id, now())
+        elif action == "delete":
+            hq.delete_task(svc, task_id)
+        else:
+            raise HTTPException(status_code=404)
+        return go("/hq#tasks")
 
     @app.post("/answer")
     def answer(request: Request, csrf: str = Form(""), ref: str = Form(""), value: str = Form(""), next: str = Form("/")):
