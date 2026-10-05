@@ -739,3 +739,34 @@ hr.sep { border: 0; border-top: 1px solid var(--border); margin: 14px 0; }
 .todo-done span { display: inline-flex; align-items: center; gap: 4px; }
 .todo-done .i { width: 15px; height: 15px; }
 @media (max-width: 479px) { .todo-list li { flex-wrap: wrap; } .todo-list li .btn { margin-left: 44px; } }
+
+/* ---------- всплывающие сообщения, занятые кнопки, прокрутка таблиц ---------- */
+.toast {
+  position: fixed; z-index: 50; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  width: min(560px, calc(100% - 32px)); display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px;
+  border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border-strong); box-shadow: var(--shadow-lg);
+  font-size: .92rem; animation: toast-in .25s ease both;
+}
+.toast > span { flex: 1; min-width: 0; }
+.toast .i { margin-top: 2px; }
+.toast-good .i { color: var(--good); }
+.toast-warn { border-color: rgba(251, 191, 36, .45); }
+.toast-warn .i { color: var(--warn); }
+.toast-x { background: none; border: 0; color: var(--muted); font-size: 1.2rem; line-height: 1; cursor: pointer; padding: 0 2px; }
+.toast-out { opacity: 0; transform: translate(-50%, 8px); transition: opacity .2s, transform .2s; }
+@media (min-width: 1024px) { .toast { left: auto; right: 24px; bottom: 24px; transform: none; } .toast-out { transform: translateY(8px); } }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; } }
+.btn.is-busy { position: relative; color: transparent !important; pointer-events: none; }
+.btn.is-busy::after {
+  content: ""; position: absolute; inset: 0; margin: auto; width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--muted); border-top-color: transparent; animation: spin .7s linear infinite;
+}
+.btn-primary.is-busy::after, .btn-good.is-busy::after { border-color: #fff; border-top-color: transparent; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.table-wrap { position: relative; scrollbar-width: thin; }
+.table-wrap.more-right { mask-image: linear-gradient(to right, #000 85%, transparent); -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); }
+.table-wrap.more-left.more-right { mask-image: linear-gradient(to right, transparent, #000 10%, #000 85%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 85%, transparent); }
+.table-wrap.more-left:not(.more-right) { mask-image: linear-gradient(to right, transparent, #000 15%); -webkit-mask-image: linear-gradient(to right, transparent, #000 15%); }
+/* страница ошибки */
+.error-page { max-width: 460px; margin: 48px auto; text-align: center; }
+.error-page .code { font-size: 4rem; font-weight: 700; letter-spacing: -.04em; color: var(--accent-text); line-height: 1; margin: 0 0 12px; font-variant-numeric: tabular-nums; }

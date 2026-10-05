@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="/static/style.css?v=32">
+  <link rel="stylesheet" href="/static/style.css?v=33">
   <script>try { var t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
 <body{% if me %} data-vapid="{{ vapid_public }}" data-csrf="{{ csrf }}"{% endif %}>
@@ -99,7 +99,12 @@
 
     <main class="{% block main_class %}{% endblock %}">
       {% if flash %}
-      <div class="alert {{ 'alert-warn' if flash.startswith('⚠️') else 'alert-good' }} flash" role="status">{{ flash }}</div>
+      {% set warn = flash.startswith('⚠️') %}
+      <div class="toast {{ 'toast-warn' if warn else 'toast-good' }}" role="status" data-toast>
+        <svg class="i" aria-hidden="true"><use href="#i-{{ 'help' if warn else 'check' }}"/></svg>
+        <span>{{ flash[2:].strip() if warn else flash }}</span>
+        <button class="toast-x" type="button" aria-label="{{ _("Закрыть") }}" data-toast-close>×</button>
+      </div>
       {% endif %}
       {% block content %}{% endblock %}
     </main>
@@ -117,6 +122,6 @@
 </nav>
 {% endif %}
 <script>window.I18N = {{ js_strings()|tojson }};</script>
-<script src="/static/app.js?v=10" defer></script>
+<script src="/static/app.js?v=11" defer></script>
 </body>
 </html>

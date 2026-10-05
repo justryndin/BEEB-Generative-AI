@@ -31,7 +31,7 @@ def test_reservoir_poll_flow(site):  # noqa: F811
     poll = __import__("core.polls", fromlist=["get"]).get(svc, pid, None)
     assert poll.best is None and len(poll.no) == 1
     owner.post(f"/polls/{pid}/close", data={"csrf": csrf(r4)})
-    assert "⚠️ Опрос уже закрыт" in player.post(f"/polls/{pid}/vote", data={"csrf": csrf(polls_page), "c": ["0"], "role": "main"}).text
+    assert "Опрос уже закрыт" in player.post(f"/polls/{pid}/vote", data={"csrf": csrf(polls_page), "c": ["0"], "role": "main"}).text
 
 
 def test_audience_limits_posts_and_polls(site):  # noqa: F811

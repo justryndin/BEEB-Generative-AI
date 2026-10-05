@@ -1364,7 +1364,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         if exc.status_code == 303:
             return RedirectResponse(exc.headers["Location"], status_code=303)
         me = current(request)
-        return render(request, "error.html", me, status_code=exc.status_code, message=exc.detail)
+        detail = exc.detail if exc.detail not in ("Not Found", "Method Not Allowed", "Bad Request") else ""
+        return render(request, "error.html", me, status_code=exc.status_code, code=exc.status_code, message=detail)
 
     return app
 

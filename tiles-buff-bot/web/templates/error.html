@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="card center">
-  <p style="font-size:3rem;margin:0">🧊</p>
-  <h1>{{ _("Что-то пошло не так") }}</h1>
-  <p class="text-2">{{ _(message) if message else _("Страница не найдена.") }}</p>
-  <a class="btn btn-primary" href="/">{{ _("На главную") }}</a>
+<div class="error-page">
+  <p class="code">{{ code or 404 }}</p>
+  <h1>{{ _("Что-то пошло не так") if code and code != 404 else _("Такой страницы нет") }}</h1>
+  <p class="text-2">{{ _(message) if message else _("Возможно, ссылка устарела. Начни с главной — там всё важное на сегодня.") }}</p>
+  <div class="row" style="justify-content:center"><a class="btn btn-primary" href="/">{{ _("На главную") }}</a><a class="btn" href="/faq">{{ _("Вопросы и ответы") }}</a></div>
 </div>
 {% endblock %}

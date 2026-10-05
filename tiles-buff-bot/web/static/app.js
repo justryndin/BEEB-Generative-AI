@@ -60,8 +60,34 @@
     // Подтверждение важных действий.
     root.querySelectorAll("form[data-confirm]").forEach(function (form) {
       form.addEventListener("submit", function (e) {
-        if (!window.confirm(form.dataset.confirm)) e.preventDefault();
+        if (!window.confirm(form.dataset.confirm)) { e.preventDefault(); e.stopImmediatePropagation(); }
       });
+    });
+
+    // Кнопка отправки: «отправляется…» и защита от двойного нажатия.
+    root.querySelectorAll("form").forEach(function (form) {
+      if (form.dataset.busyBound) return;
+      form.dataset.busyBound = "1";
+      form.addEventListener("submit", function (e) {
+        if (e.defaultPrevented || form.method.toLowerCase() !== "post") return;
+        var btn = e.submitter || form.querySelector("button[type=submit], button:not([type])");
+        if (!btn) return;
+        if (form.dataset.busy) { e.preventDefault(); return; }
+        form.dataset.busy = "1";
+        btn.classList.add("is-busy");
+        btn.setAttribute("aria-busy", "true");
+        setTimeout(function () { delete form.dataset.busy; btn.classList.remove("is-busy"); btn.removeAttribute("aria-busy"); }, 8000);
+      });
+    });
+
+    // Таблицы, которые шире экрана: тень у края, пока есть что прокрутить.
+    root.querySelectorAll(".table-wrap").forEach(function (box) {
+      function upd() {
+        box.classList.toggle("more-right", box.scrollLeft + box.clientWidth < box.scrollWidth - 2);
+        box.classList.toggle("more-left", box.scrollLeft > 2);
+      }
+      box.addEventListener("scroll", upd, { passive: true });
+      upd();
     });
 
     // Скопировать ник, чтобы вставить в поиск в игре.
@@ -222,6 +248,15 @@
   }
   window.addEventListener("hashchange", openHash);
   document.addEventListener("DOMContentLoaded", openHash);
+
+  // Всплывающее сообщение после действия: само исчезает через 6 секунд.
+  document.querySelectorAll("[data-toast]").forEach(function (t) {
+    function hide() { t.classList.add("toast-out"); setTimeout(function () { t.remove(); }, 250); }
+    var timer = setTimeout(hide, 6000);
+    t.addEventListener("mouseenter", function () { clearTimeout(timer); });
+    var x = t.querySelector("[data-toast-close]");
+    if (x) x.addEventListener("click", hide);
+  });
 
   function initTheme() {
     document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) { btn.addEventListener("click", function () {
