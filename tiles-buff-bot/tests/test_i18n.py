@@ -16,6 +16,7 @@ def catalogs(tmp_path, monkeypatch):
     }), encoding="utf-8")
     (tmp_path / "es.json").write_text(json.dumps({"Привет, {nick}!": "¡Hola, {nick}!"}), encoding="utf-8")
     monkeypatch.setattr(i18n, "_LOCALES", tmp_path)
+    monkeypatch.setattr(i18n, "ENABLED", tuple(i18n.LANGS))
     i18n.reload()
     yield
     i18n.reload()
@@ -29,13 +30,22 @@ def test_translate_with_fallbacks(catalogs):
     assert i18n.t("VS сегодня") == "VS сегодня"
 
 
-def test_pick_lang():
+def test_only_russian_by_default():
+    assert i18n.ENABLED == ("ru",)
+    assert i18n.pick_lang("en", "en-US") == "ru"
+    with i18n.using("en"):
+        assert i18n.get_lang() == "ru"
+
+
+def test_pick_lang(monkeypatch):
+    monkeypatch.setattr(i18n, "ENABLED", tuple(i18n.LANGS))
     assert i18n.pick_lang("pt", "en-US") == "pt"
     assert i18n.pick_lang(None, "es-ES,es;q=0.9") == "es"
     assert i18n.pick_lang("xx", "de-DE") == "ru"
 
 
-def test_duration_units_follow_language():
+def test_duration_units_follow_language(monkeypatch):
+    monkeypatch.setattr(i18n, "ENABLED", tuple(i18n.LANGS))
     assert format_duration(90061) == "1д 1ч"
     with i18n.using("en"):
         assert format_duration(90061) == "1d 1h"

@@ -15,7 +15,7 @@
   <ul class="events">
     {% for o in d.list %}{% set e = o.event %}
     <li class="ev{{ ' now' if o.ongoing(now_ts) }}">
-      <div class="ev-time">{% if o.ongoing(now_ts) %}<b>{{ _("идёт") }}</b><small>{{ _("до {time}", time=local(o.end, "%H:%M")) }} {{ tz_label }}</small><small>{{ utc(o.end) }} UTC</small>{% elif e.duration >= 1440 %}<b>{{ _("весь день") }}</b><small>{{ _("с {time}", time=local(o.start)) }} {{ tz_label }}</small><small>{{ utc(o.start) }} UTC</small>{% else %}<b>{{ local(o.start, "%H:%M") }} {{ tz_label }}</b><small>{{ utc(o.start) }} UTC</small><small>{{ dur(e.duration * 60) }}</small>{% endif %}</div>
+      <div class="ev-time">{% if o.ongoing(now_ts) %}<b>{{ _("идёт") }}</b><small>{{ _("до {time}", time=local(o.end, "%H:%M")) }} {{ tz_label }}</small><small>{{ utc(o.end) }} UTC</small>{% elif e.duration >= 1440 %}<b>{{ _("весь день") }}</b><small>{{ _("с {time}", time=local(o.start)) }} {{ tz_label }}</small><small>{{ utc(o.start) }} UTC</small>{% else %}<b>{{ local(o.start, "%H:%M") }}–{{ local(o.end, "%H:%M") }}</b><small>{{ tz_label }}</small><small>{{ utc(o.start) }}–{{ utc(o.end) }} UTC</small>{% endif %}</div>
       <div class="ev-body">
         <b>{{ _(e.title) }}</b>{% if not e.checked %} <span class="badge badge-warn" title="{{ _("Время взято из гайдов — R4, сверьте с игрой") }}">{{ _("проверить") }}</span>{% endif %}
         {% if e.prepare %}<small>{{ _(e.prepare) }}</small>{% endif %}

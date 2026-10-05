@@ -304,7 +304,14 @@ def test_board_events_and_crm(site):
     assert "Событие сохранено" in r.text
     e = svc.db.one("SELECT * FROM events WHERE title = 'Сбор на медведя'")
     assert e["days"] == "26" and e["start_min"] == 22 * 60 + 30  # 01:30 МСК пн/чт = 22:30 UTC вс/ср
-    assert 'value="01:30"' in owner.get(f"/events/edit?id={e['id']}").text
+    assert 'value="01:30"' in owner.get(f"/events/edit?id={e['id']}").text and 'value="02:30"' in owner.get(f"/events/edit?id={e['id']}").text
+    # «с … до …»: через полночь и «весь день»
+    owner.post("/events/save", data={"csrf": token, "id": str(e["id"]), "title": "Сбор на медведя", "days": ["0"], "time": "23:30",
+                                     "end": "00:15", "remind": "30"})
+    assert svc.db.one("SELECT duration FROM events WHERE id = ?", e["id"])["duration"] == 45
+    owner.post("/events/save", data={"csrf": token, "id": str(e["id"]), "title": "Сбор на медведя", "days": ["0"], "time": "03:00",
+                                     "end": "03:00", "remind": "30"})
+    assert svc.db.one("SELECT duration FROM events WHERE id = ?", e["id"])["duration"] == 1440
 
     # Заметка R4 об игроке
     owner.post(f"/admin/p/{mura['id']}/crm", data={"csrf": token, "note": "онлайн вечером", "tags": "актив, R3"})

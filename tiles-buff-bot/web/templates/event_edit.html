@@ -14,7 +14,8 @@
     </fieldset>
     <div class="grid3">
       <div class="field"><label for="time">{{ _("Начало ({tz}, {offset})", tz=tz_label, offset=offset_text()) }}</label><input id="time" name="time" type="time" required value="{{ hhmm }}"></div>
-      <div class="field"><label for="hours">{{ _("Длится, часов") }}</label><input id="hours" name="hours" type="number" step="0.5" min="0.5" max="168" value="{{ (e.duration / 60)|round(1) if e else 1 }}"></div>
+      <div class="field"><label for="end">{{ _("Конец ({tz})", tz=tz_label) }}</label><input id="end" name="end" type="time" value="{{ end_hhmm }}">
+        <p class="hint">{{ _("Например 18:00 → 18:30. Конец раньше начала — значит, событие идёт через полночь. Конец = начало — весь день.") }}</p></div>
       <div class="field"><label for="remind">{{ _("Напомнить") }}</label>
         <select id="remind" name="remind">
           {% for v, t in [(-1, "не напоминать"), (0, "в момент начала"), (15, "за 15 мин"), (30, "за 30 мин"), (60, "за 1 ч"), (180, "за 3 ч"), (300, "накануне вечером (за 5 ч)")] %}

@@ -20,6 +20,9 @@ from pathlib import Path
 LANGS = {"ru": "Русский", "en": "English", "es": "Español", "pt": "Português"}
 SHORT = {"ru": "RU", "en": "EN", "es": "ES", "pt": "PT"}
 DEFAULT = "ru"
+# Какие языки включены. Сейчас сайт ведём только на русском (переводы лежат в locales/,
+# но не обновляются). Вернуть языки: ENABLED = tuple(LANGS).
+ENABLED: tuple[str, ...] = ("ru",)
 _LOCALES = Path(__file__).parent / "locales"
 _current: ContextVar[str] = ContextVar("lang", default=DEFAULT)
 
@@ -29,7 +32,7 @@ def get_lang() -> str:
 
 
 def set_lang(code: str | None):
-    return _current.set(code if code in LANGS else DEFAULT)
+    return _current.set(code if code in ENABLED else DEFAULT)
 
 
 @contextmanager
@@ -67,11 +70,11 @@ def t(text: str, **kw) -> str:
 
 def pick_lang(cookie: str | None, accept: str | None) -> str:
     """Язык из cookie, иначе из настроек браузера, иначе русский."""
-    if cookie in LANGS:
+    if cookie in ENABLED:
         return cookie
     for part in (accept or "").split(","):
         code = part.split(";")[0].strip().lower()[:2]
-        if code in LANGS:
+        if code in ENABLED:
             return code
     return DEFAULT
 

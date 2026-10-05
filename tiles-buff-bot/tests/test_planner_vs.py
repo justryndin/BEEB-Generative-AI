@@ -2,7 +2,8 @@ from core import i18n, planner, vs
 from core.timeparse import DAY
 
 
-def test_parse_and_format_amounts():
+def test_parse_and_format_amounts(monkeypatch):
+    monkeypatch.setattr(i18n, "ENABLED", tuple(i18n.LANGS))
     assert planner.parse_amount("1,12 млн") == 1_120_000
     assert planner.parse_amount("351 000") == 351_000
     assert planner.parse_amount("—") == 0

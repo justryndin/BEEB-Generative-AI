@@ -177,6 +177,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     templates.env.globals.update(
         js_strings=js_strings,
         powerplay=powerplay,
+        enabled_langs=lambda: i18n.ENABLED,
         WEEKDAYS=crm.WEEKDAYS,
         amount=lambda text: text if text in ("—", "") else planner.fmt_amount(planner.parse_amount(text)),
         dur=format_duration,
@@ -948,7 +949,12 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         me = need_admin(request)
         e = crm.event(svc, id) if id else None
         days, hhmm = to_local(e["days"], e["start_min"]) if e else (set(), "18:00")
-        return render(request, "event_edit.html", me, e=e, days=days, hhmm=hhmm, WEEKDAYS=crm.WEEKDAYS)
+        end_hhmm = ""
+        if e is not None:
+            h, m = map(int, hhmm.split(":"))
+            end = (h * 60 + m + e["duration"]) % 1440
+            end_hhmm = f"{end // 60:02d}:{end % 60:02d}"
+        return render(request, "event_edit.html", me, e=e, days=days, hhmm=hhmm, end_hhmm=end_hhmm, WEEKDAYS=crm.WEEKDAYS)
 
     @app.post("/events/save")
     async def event_save(request: Request):
@@ -959,12 +965,18 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         if conv is None:
             return go("/events", "⚠️ Время в формате ЧЧ:ММ, например 18:00.")
         try:
-            hours = float(str(form.get("hours", "1")).replace(",", "."))
             remind = int(str(form.get("remind", "60")))
             event_id = int(str(form.get("id", "0")) or 0)
+            start_h, start_m = map(int, str(form.get("time", "")).split(":"))
+            end_raw = str(form.get("end", "")).strip()
+            if end_raw:  # «с … до …»: конец раньше начала — через полночь, равен — весь день
+                end_h, end_m = map(int, end_raw.split(":"))
+                minutes = (end_h * 60 + end_m - start_h * 60 - start_m) % 1440 or 1440
+            else:
+                minutes = int(float(str(form.get("hours", "1")).replace(",", ".")) * 60)
         except ValueError:
-            return go("/events", "⚠️ Проверь длительность и напоминание.")
-        error = crm.save_event(svc, event_id or None, str(form.get("title", "")), conv[0], conv[1], int(hours * 60),
+            return go("/events", "⚠️ Проверь время начала, конца и напоминание.")
+        error = crm.save_event(svc, event_id or None, str(form.get("title", "")), conv[0], conv[1], minutes,
                                str(form.get("prepare", "")), remind, form.get("checked") == "1", form.get("rsvp") == "1")
         return go("/events", "⚠️ " + tr(error) if error else "✅ Событие сохранено.")
 
