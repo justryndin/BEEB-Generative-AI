@@ -643,3 +643,6 @@ hr.sep { border: 0; border-top: 1px solid var(--border); margin: 14px 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+table.res-table td.num { white-space: nowrap; }
+table.res-table tr.sub td { padding-top: 0; color: var(--text-2); font-size: .88rem; border-top: 0; }
