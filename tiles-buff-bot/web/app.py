@@ -176,6 +176,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
 
     templates.env.globals.update(
         js_strings=js_strings,
+        amount=lambda text: text if text in ("—", "") else planner.fmt_amount(planner.parse_amount(text)),
         dur=format_duration,
         local=local,
         both=both,
@@ -569,7 +570,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             target=target,
             for_other=target["id"] != me["id"],
             reference=(it.time_for(level) if it and level else None),
-            requires=(it.requires.get(level) if it and level else None),
+            requires=(it.requires_text(level) if it and level and it.requires.get(level) else None),
             observed=[o for o in svc.observed_times(it.code) if o[1] == level] if it and level else [],
             total_steps=3 if kind == "build" else 2,
         )

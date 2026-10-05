@@ -42,12 +42,12 @@
 
 <section class="card" id="pp">
   <h2>⚡ Power Plant: time, resources, requirements</h2>
-  <p class="hint mt0">Time without speed bonuses — per data from {{ gamedata.ITEMS["pp"].source }}. With your bonuses it’ll be faster. The level in the table is the one you’re building <b>to</b>.</p>
+  <p class="hint mt0">Time without speed bonuses — per data from {{ _(gamedata.ITEMS["pp"].source) }}. With your bonuses it’ll be faster. The level in the table is the one you’re building <b>to</b>.</p>
   {% set pp = gamedata.ITEMS["pp"] %}
   <div class="table-wrap"><table class="pp-table">
     <tr><th class="num">Lv.</th><th class="num">Time</th><th class="num">Food</th><th class="num">Wood</th><th class="num">Metal</th><th class="num">Fuel</th><th>Requires</th></tr>
     {% for lvl in range(2, 31)|reverse %}{% set c = pp.costs.get(lvl, ("—", "—", "—", "—")) %}
-    <tr{% if lvl < pp_goal %} class="prio"{% endif %}><td class="num"><b>{{ lvl }}</b></td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="num">{{ c[0] }}</td><td class="num">{{ c[1] }}</td><td class="num">{{ c[2] }}</td><td class="num">{{ c[3] }}</td><td class="text-2">{{ pp.requires_text(lvl) }}</td></tr>
+    <tr{% if lvl < pp_goal %} class="prio"{% endif %}><td class="num"><b>{{ lvl }}</b></td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="num">{{ amount(c[0]) }}</td><td class="num">{{ amount(c[1]) }}</td><td class="num">{{ amount(c[2]) }}</td><td class="num">{{ amount(c[3]) }}</td><td class="text-2">{{ pp.requires_text(lvl) }}</td></tr>
     {% endfor %}
   </table></div>
   <p class="hint">The higher the level, the more expensive and longer: 27 → 30 means 32–42 days of construction per level. Join the alliance buff queue right after starting — while the timer is long, each buff cuts the most.</p>

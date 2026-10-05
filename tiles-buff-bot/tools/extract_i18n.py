@@ -20,7 +20,7 @@ TPL_STR = re.compile(r'"((?:[^"\\\n]|\\.)*)"|\'((?:[^\'\\\n]|\\.)*)\'')
 TPL_EXPR = re.compile(r"{{.*?}}|{%.*?%}", re.S)
 # Python: что не показываем игроку.
 SKIP_PY = {"core/timeparse.py", "core/logic.py", "core/db.py", "core/analytics.py", "web/manage.py"}
-SKIP_ASSIGN = {"SETTINGS", "_KIND_WORDS", "_PP_TIMES", "_PP_COST", "_PP_SOURCE", "_PP_REQUIRES", "SOURCE", "_PREPARE_V2"}
+SKIP_ASSIGN = {"SETTINGS", "_KIND_WORDS", "_PP_TIMES", "_PP_COST", "_PP_REQUIRES", "SOURCE", "_PREPARE_V2"}
 SKIP_CALLS = {"exception", "warning", "info", "error", "debug"}
 
 
@@ -102,7 +102,7 @@ def from_data() -> set[str]:
 
 def main() -> None:
     py, fstrings = from_python()
-    keys = sorted(from_templates() | py | from_data())
+    keys = sorted(k for k in from_templates() | py | from_data() if CYR.search(k))
     out = ROOT / "core/locales/keys.json"
     out.write_text(json.dumps(keys, ensure_ascii=False, indent=0) + "\n")
     print(f"{len(keys)} ключей → {out.relative_to(ROOT)}")

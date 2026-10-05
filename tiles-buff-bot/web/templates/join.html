@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import steps with context %}
-{% block title %}{{ _("Встать в очередь") }} · {{ site_name }}{% endblock %}
+{% block title %}{{ _("Встать в очередь") }} · {{ _(site_name) }}{% endblock %}
 {% block content %}
 {% set q = "&player=" ~ target.id if for_other else "" %}
 {% if for_other %}<div class="alert alert-info">⚙️ {{ _("Записываешь за игрока <b>{nick}</b>", nick=target.nick) }}</div>{% endif %}

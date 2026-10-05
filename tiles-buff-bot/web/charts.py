@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from core.i18n import t
+
 from html import escape
 
 
@@ -63,7 +65,7 @@ def column_chart(points: list[tuple[str, int, str]], title: str) -> str:
 def bar_list(rows: list[tuple[str, int, str]], highlight: str | None = None) -> str:
     """Горизонтальные полосы: [(имя, значение, подпись справа)] — HTML, не SVG, чтобы текст не обрезался."""
     if not rows:
-        return '<p class="muted">Пока пусто — данные появятся после первых бафов.</p>'
+        return '<p class="muted">' + escape(t("Пока пусто — данные появятся после первых бафов.")) + '</p>'
     top_value = max(v for _, v, _ in rows) or 1
     out = ['<ol class="barlist">']
     for name, value, note in rows:

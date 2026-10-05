@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Я отдал баф") }} · {{ site_name }}{% endblock %}
+{% block title %}{{ _("Я отдал баф") }} · {{ _(site_name) }}{% endblock %}
 {% block content %}
 <h1>🎁 {{ _("Я отдал баф") }}</h1>
 {% if for_other %}<div class="alert alert-info">⚙️ {{ _("Отмечаешь баф за игрока <b>{nick}</b>.", nick=donor.nick) }}</div>{% endif %}

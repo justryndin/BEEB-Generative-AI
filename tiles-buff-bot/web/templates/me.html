@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import buff_line with context %}
-{% block title %}{{ _("Профиль") }} · {{ site_name }}{% endblock %}
+{% block title %}{{ _("Профиль") }} · {{ _(site_name) }}{% endblock %}
 {% block content %}
 <h1>👤 {{ me.nick }}</h1>
 <div class="row" style="margin-bottom:12px">
