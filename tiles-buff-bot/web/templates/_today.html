@@ -1,0 +1,29 @@
+{# «Мои задачи на сегодня»: today = core.todo.build(...) #}
+{% set hot = today.game|selectattr("urgent")|list %}
+<section class="card today" id="today">
+  <div class="card-head">
+    <h2><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>{{ _("Мои задачи на сегодня") }}</h2>
+    <span class="badge{% if today.todo %} badge-accent{% else %} badge-good{% endif %}">{% if today.todo %}{{ _("осталось {n}", n=today.todo|length) }}{% else %}{{ _("всё сделано") }}{% endif %}</span>
+  </div>
+  {% if today.todo %}
+  <ul class="todo-list">
+    {% for t in today.todo %}
+    <li class="{{ 'urgent' if t.urgent }}">
+      <span class="todo-ico"><svg class="i" aria-hidden="true"><use href="#i-{{ t.icon }}"/></svg></span>
+      <span class="grow"><b>{{ _(t.title) }}</b>{% if t.sub %}<span>{{ _(t.sub) }}</span>{% endif %}</span>
+      {% if t.url %}<a class="btn btn-sm{{ ' btn-primary' if t.urgent }}" href="{{ t.url }}">{{ _(t.action or "Открыть") }}</a>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="todo-empty">{{ _("На сегодня всё сделано. Загляни позже — задачи появятся сами, а важное придёт уведомлением.") }}</p>
+  {% endif %}
+  {% if hot %}
+  <ul class="todo-list todo-hot">
+    {% for g in hot %}<li><span class="todo-ico"><svg class="i" aria-hidden="true"><use href="#i-{{ g.icon }}"/></svg></span>
+      <span class="grow"><b>{{ _(g.title) }}</b>{% if g.sub %}<span>{{ _(g.sub) }}</span>{% endif %}</span>
+      {% if g.url %}<a class="btn btn-sm btn-ghost" href="{{ g.url }}">{{ _("Подробнее") }}</a>{% endif %}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% if today.done %}<p class="todo-done">{% for d in today.done %}<span><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>{{ _(d) }}</span>{% endfor %}</p>{% endif %}
+</section>

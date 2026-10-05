@@ -721,3 +721,21 @@ hr.sep { border: 0; border-top: 1px solid var(--border); margin: 14px 0; }
 .names b { color: var(--text-2); font-weight: 600; }
 .col .boards { grid-template-columns: 1fr; }
 .now-strip .lbl .i { color: var(--accent-text); width: 16px; height: 16px; }
+
+/* ---------- мои задачи на сегодня ---------- */
+.today { border-color: var(--accent-ring); }
+.todo-list { list-style: none; margin: 0; padding: 0; }
+.todo-list li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); min-width: 0; }
+.todo-list li:last-child { border-bottom: 0; }
+.todo-list .grow { flex: 1; min-width: 0; }
+.todo-list .grow b { display: block; font-weight: 600; }
+.todo-list .grow span { display: block; font-size: .84rem; color: var(--muted); }
+.todo-ico { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--muted); }
+.todo-list li.urgent .todo-ico { background: var(--accent-soft); color: var(--accent-text); }
+.todo-hot { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-strong); }
+.todo-hot .todo-ico { background: var(--warn-soft); color: var(--warn); }
+.todo-empty { margin: 0; color: var(--text-2); }
+.todo-done { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 10px 0 0; font-size: .84rem; color: var(--good); }
+.todo-done span { display: inline-flex; align-items: center; gap: 4px; }
+.todo-done .i { width: 15px; height: 15px; }
+@media (max-width: 479px) { .todo-list li { flex-wrap: wrap; } .todo-list li .btn { margin-left: 44px; } }

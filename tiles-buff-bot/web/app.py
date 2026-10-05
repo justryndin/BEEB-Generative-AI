@@ -18,7 +18,7 @@ from markupsafe import Markup
 
 from core import gamedata
 from core.db import Database
-from core import audience, backup, crm, faq, i18n, planner, polls, powerplay, vs
+from core import audience, backup, crm, faq, i18n, planner, polls, powerplay, todo, vs
 from core.i18n import LANGS, SHORT, t as tr
 from core.analytics import benefit, command_center, r4_report
 from core.tips import TIPS, player_tip
@@ -460,6 +460,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             buffs={k: buff_state(me["id"], k, t) for k in KINDS},
             polls_waiting=polls.unanswered(svc, me, t),
             faq_top=faq.top(6),
+            today=todo.build(svc, me, t, cfg.tz, bool(svc.push_subs(acc_id(me)))),
             order=svc.setting("queue_order"),
             pattern=svc.setting("pattern"),
             finished=svc.finished_timers(me["id"], t),

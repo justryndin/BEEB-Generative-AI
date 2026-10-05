@@ -1,5 +1,5 @@
 {# Карточка «VS сегодня»: тема дня Дуэли, задания, окна МСК + UTC. vs = core.vs.today(...) #}
-<section class="card vs-card">
+<section class="card vs-card" id="vs">
   {% if vs.day %}{% set d = vs.day %}
   <div class="card-head">
     <h2>⚔️ {{ _("VS сегодня") }} · {{ d.emoji }} {{ _(d.theme) }}</h2>

@@ -25,6 +25,8 @@
 {% endif %}
 
 
+{% include "_today.html" %}
+
 {% set pp_now, pp_next = vs.power_play() %}
 <div class="now-strip">
   <a class="tile" href="/guides/week">
@@ -76,6 +78,7 @@
 </section>
 {% endfor %}
 
+<div id="checks"></div>
 {% for ch in checks %}
 <section class="card life-card">
   <h2>{{ KIND_EMOJI[ch.kind] }} {{ _("Сверь время: {kind}", kind=_(KIND_NAME[ch.kind])) }}</h2>
