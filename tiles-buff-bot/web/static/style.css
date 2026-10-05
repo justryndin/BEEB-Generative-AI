@@ -849,3 +849,13 @@ details.composer > summary::-webkit-details-marker { display: none; }
 details.composer > summary .hint { margin: 0 0 0 auto; }
 details.composer[open] > summary { margin-bottom: 12px; }
 details.composer > summary .i { color: var(--accent-text); }
+
+/* гайды */
+nav.crumbs { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+nav.crumbs a { color: var(--muted); text-decoration: none; }
+nav.crumbs a:hover { color: var(--text); }
+nav.crumbs .i { width: 14px; height: 14px; }
+nav.crumbs span { color: var(--text-2); }
+.guide-head { align-items: center; justify-content: flex-start; flex-wrap: nowrap; }
+.guide-head .guide-emoji { font-size: 2rem; width: 56px; height: 56px; display: grid; place-items: center; flex: none; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--border); }
+@media (max-width: 640px) { .guide-head { align-items: flex-start; } .guide-head .guide-emoji { width: 44px; height: 44px; font-size: 1.5rem; border-radius: 12px; } }

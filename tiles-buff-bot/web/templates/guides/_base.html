@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% block title %}{{ _(guide.title) }} · {{ _("Гайды") }} · {{ _(site_name) }}{% endblock %}
 {% block content %}
-<p class="crumbs"><a href="/guides">📚 {{ _("Гайды") }}</a> ›</p>
-<h1>{{ guide.emoji }} {{ _(guide.title) }}</h1>
-<p class="text-2 mt0">{{ _(guide.summary) }}</p>
+<nav class="crumbs" aria-label="{{ _("Путь") }}"><a href="/guides">{{ _("Гайды") }}</a>{{ ico("chev") }}<span>{{ _(guide.title) }}</span></nav>
+<div class="page-head guide-head"><span class="guide-emoji">{{ guide.emoji }}</span>
+  <div><h1>{{ _(guide.title) }}</h1><p>{{ _(guide.summary) }}</p></div></div>
 {% block guide %}{% endblock %}
 <p class="hint">{{ _("Игра обновляется — если что-то изменилось, напишите R4.") }}</p>
+<h2 class="section-title">{{ _("Другие гайды") }}</h2>
 <nav class="toc" aria-label="{{ _("Другие гайды") }}">
   {% for g in guides if g.slug != guide.slug %}<a href="/guides/{{ g.slug }}">{{ g.emoji }} {{ _(g.title) }}</a>{% endfor %}
 </nav>

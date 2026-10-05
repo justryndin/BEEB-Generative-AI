@@ -5,6 +5,7 @@
   <div><h1>{{ _("Вопросы и ответы") }}</h1><p>{{ _("То, что чаще всего спрашивают в чате. Нажми на вопрос — ответ и ссылка «подробнее». Скопируй ссылку на ответ и кинь в чат.") }}</p></div>
   <form action="/search" class="row" role="search" style="flex:0 1 420px"><input type="search" name="q" placeholder="{{ _("Найти ответ…") }}" aria-label="{{ _("Поиск") }}" style="flex:1;width:auto;min-width:180px"><button class="btn btn-primary" type="submit">{{ _("Найти") }}</button></form>
 </div>
+{% include "_know_nav.html" %}
 <nav class="toc">{% for t in topics %}<a href="#t{{ loop.index }}">{{ _(t) }}</a>{% endfor %}</nav>
 <div class="grid2">
 {% for t in topics %}
