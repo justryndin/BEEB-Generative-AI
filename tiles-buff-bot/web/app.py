@@ -20,7 +20,7 @@ from core import gamedata
 from core.db import Database
 from core import audience, crm, faq, i18n, planner, polls, powerplay, vs
 from core.i18n import LANGS, SHORT, t as tr
-from core.analytics import benefit, r4_report
+from core.analytics import benefit, command_center, r4_report
 from core.tips import TIPS, player_tip
 from core.notify import NOTICE_KINDS, Notice, prefs as notify_prefs
 from core.logic import CYCLE_MAX, STATUS_NEED, buffs_needed, make_pattern, parse_pattern, timer_status
@@ -1229,6 +1229,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             for i, (day, n) in enumerate(days)
         ]
         return render(request, "admin_stats.html", me, r=r, settings_cd=svc.setting_float("cooldown_hours"),
+                      cc=command_center(svc, t, period),
                       chart=charts.column_chart(points, tr("Бафы по дням за {n} дней", n=period)))
 
     @app.post("/admin/add")

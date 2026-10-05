@@ -269,6 +269,7 @@ def test_admin_analytics_and_benefit(site):
     player.post("/gave", data={"csrf": ptoken, "kind": "build", "recipient": ivan["id"]})
     page = owner.get("/admin/stats?period=14")
     assert page.status_code == 200 and "бафов союза использовано" in page.text and "Мура" in page.text
+    assert "Командный центр" in page.text and "включили уведомления" in page.text and "Электростанция по союзу" in page.text
     assert player.get("/admin/stats").status_code == 403
     me = owner.get("/me").text
     assert "Моя выгода" in me and "получил <b>1 из" in me

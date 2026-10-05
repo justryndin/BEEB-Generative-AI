@@ -172,3 +172,42 @@ def benefit(svc: Service, player_id: int, now: int) -> dict:
         "shares": shares,
         "STATUS_NEED": STATUS_NEED,
     }
+
+
+def command_center(svc: Service, now: int, period: int = 7) -> dict:
+    """«Командный центр» R4: насколько союз пользуется порталом и слышит руководство."""
+    since = now - period * DAY
+    players = svc.players()
+    accounts = [p for p in players if p["pin_hash"]]
+    alts = [p for p in players if p["owner_id"]]
+    seen = lambda p, s: (p["last_seen_at"] or 0) >= s  # noqa: E731
+    subs = {r["player_id"] for r in svc.db.all("SELECT DISTINCT player_id FROM push_subs")}
+    langs: dict[str, int] = {}
+    for p in accounts:
+        langs[p["lang"] or "ru"] = langs.get(p["lang"] or "ru", 0) + 1
+    pp = [p["pp_level"] for p in players if p["pp_level"]]
+    bands = [("1–19", 1, 19), ("20–24", 20, 24), ("25–27", 25, 27), ("28–29", 28, 29), ("30", 30, 30)]
+    posts = svc.db.all(
+        "SELECT p.id, (SELECT COUNT(*) FROM post_reads r WHERE r.post_id = p.id) AS reads FROM posts p WHERE p.created_at >= ?", since)
+    polls_rows = svc.db.all(
+        "SELECT p.id, (SELECT COUNT(*) FROM poll_votes v WHERE v.poll_id = p.id) AS votes FROM polls p WHERE p.created_at >= ?", since)
+    n = max(len(players), 1)
+    return {
+        "period": period,
+        "players": len(players),
+        "accounts": len(accounts),
+        "alts": len(alts),
+        "never": len([p for p in players if not p["pin_hash"] and not p["owner_id"]]),
+        "active_day": len([p for p in players if seen(p, now - DAY)]),
+        "active_week": len([p for p in players if seen(p, since)]),
+        "push": len([p for p in accounts if p["id"] in subs]),
+        "langs": sorted(langs.items(), key=lambda x: -x[1]),
+        "pp_known": len(pp),
+        "pp_bands": [(label, len([x for x in pp if lo <= x <= hi])) for label, lo, hi in bands],
+        "read_rate": round(100 * sum(p["reads"] for p in posts) / (n * len(posts))) if posts else None,
+        "vote_rate": round(100 * sum(p["votes"] for p in polls_rows) / (n * len(polls_rows))) if polls_rows else None,
+        "posts": len(posts),
+        "polls": len(polls_rows),
+        "silent": sorted([p for p in players if (p["pin_hash"] or p["owner_id"]) and not seen(p, since)],
+                         key=lambda p: p["last_seen_at"] or 0)[:40],
+    }

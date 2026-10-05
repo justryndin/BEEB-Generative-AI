@@ -55,6 +55,30 @@
 </div>
 
 <section class="card">
+  <div class="card-head"><h2>{{ _("Командный центр") }}</h2><span class="muted">{{ _("за {n} дн.", n=cc.period) }}</span></div>
+  <div class="grid4">
+    <div class="tile"><div class="num">{{ cc.active_day }}<small class="muted">/{{ cc.players }}</small></div><div class="lbl">{{ _("заходили за сутки") }}</div></div>
+    <div class="tile"><div class="num">{{ cc.active_week }}<small class="muted">/{{ cc.players }}</small></div><div class="lbl">{{ _("заходили за период") }}</div></div>
+    <div class="tile"><div class="num">{{ cc.push }}<small class="muted">/{{ cc.accounts }}</small></div><div class="lbl">{{ _("включили уведомления") }}</div></div>
+    <div class="tile"><div class="num">{{ cc.accounts }}<small class="muted"> + {{ cc.alts }}</small></div><div class="lbl">{{ _("аккаунтов + твинков") }}</div></div>
+    <div class="tile"><div class="num">{% if cc.read_rate is not none %}{{ cc.read_rate }}%{% else %}—{% endif %}</div><div class="lbl">{{ _("читают объявления ({n} шт.)", n=cc.posts) }}</div></div>
+    <div class="tile"><div class="num">{% if cc.vote_rate is not none %}{{ cc.vote_rate }}%{% else %}—{% endif %}</div><div class="lbl">{{ _("отвечают на опросы ({n} шт.)", n=cc.polls) }}</div></div>
+    <div class="tile"><div class="num">{{ cc.never }}</div><div class="lbl">{{ _("ников ещё не зарегистрировались") }}</div></div>
+    <div class="tile"><div class="num">{{ cc.pp_known }}<small class="muted">/{{ cc.players }}</small></div><div class="lbl">{{ _("указали Электростанцию") }}</div></div>
+  </div>
+  <div class="grid2" style="margin-top:14px">
+    <div><h3>{{ _("Электростанция по союзу") }}</h3>
+      <ul class="barlist">{% set mx = cc.pp_bands|map(attribute=1)|max or 1 %}{% for label, n in cc.pp_bands %}
+        <li class="barrow"><span class="barname">⚡ {{ label }}</span><span class="bartrack"><span class="barfill" style="width:{{ (100 * n / mx)|round }}%"></span></span><span class="barval">{{ n }}</span></li>{% endfor %}</ul></div>
+    <div><h3>{{ _("Языки") }}</h3>
+      <ul class="barlist">{% set mx = cc.langs|map(attribute=1)|max if cc.langs else 1 %}{% for code, n in cc.langs %}
+        <li class="barrow"><span class="barname">{{ LANGS[code] }}</span><span class="bartrack"><span class="barfill" style="width:{{ (100 * n / mx)|round }}%"></span></span><span class="barval">{{ n }}</span></li>{% endfor %}</ul></div>
+  </div>
+  {% if cc.silent %}<div class="reach"><b>{{ _("Не заходили за период") }}:</b> <span class="names">{% for p in cc.silent %}<a href="/admin/p/{{ p.id }}">{{ p.nick }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</span>
+    <div class="row" style="margin-top:8px"><a class="btn btn-sm" href="/board">{{ _("Написать объявление выбранным →") }}</a></div></div>{% endif %}
+</section>
+
+<section class="card">
   <h2>✅ {{ _("Что сделать сейчас") }}</h2>
   <ul class="todo">
     {% if r.holders %}
