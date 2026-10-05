@@ -1,0 +1,101 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<nav class="toc">
+  <a href="#what">Qué es</a>
+  <a href="#who">Quién participa</a>
+  <a href="#before">Antes del combate</a>
+  <a href="#stages">Etapas</a>
+  <a href="#buildings">Edificios</a>
+  <a href="#water">Cómo conseguir agua</a>
+  <a href="#rank">Rangos</a>
+  <a href="#plan">Plan de la alianza</a>
+</nav>
+
+<section class="card" id="what">
+  <h2>💧 Qué es</h2>
+  <p>En el Reservoir Raid (Incursión al embalse), dos alianzas se enfrentan en un campo aparte: el Cañón. Capturas y mantienes edificios y consigues <b>agua purificada</b>, para la reserva de la alianza y para ti. <b>Gana la alianza que tenga más agua al terminar la cuenta atrás.</b> Las recompensas dependen del resultado de la alianza y de tu aportación personal.</p>
+  <ul class="checks">
+    <li><b>Las tropas no mueren.</b> Los heridos van al hospital de campaña: plazas ilimitadas, curación gratis, y todos se curan cuando sales de la incursión.</li>
+    <li>Las tropas de la guarnición no participan: en el campo de batalla se ponen automáticamente las tropas de <b>nivel máximo</b>.</li>
+    <li>Funcionan las bonificaciones de investigación, tecnologías de la alianza, talentos del jefe, VIP, objetos de bonificación y aspectos.</li>
+  </ul>
+  <p class="hint">Según las reglas del evento en el juego, octubre de 2026.</p>
+</section>
+
+<section class="card" id="who">
+  <h2>🧾 Quién participa</h2>
+  <ul class="rules-list">
+    <li><span class="ico">🏆</span><div><b>Alianza</b>: en el top 15 del estado por poder al empezar la inscripción.</div></li>
+    <li><span class="ico">⚡</span><div><b>Jugador</b>: Power Plant de <b>nv. 12</b> o superior y en la alianza <b>antes</b> de la inscripción. Si entraste después, no participas ni recibes recompensas.</div></li>
+    <li><span class="ico">📝</span><div><b>Inscribe</b> el líder o un R4. Eligen hasta <b>30 participantes y 10 suplentes</b>. Cuando termina la inscripción, el equipo ya no se puede cambiar.</div></li>
+    <li><span class="ico">⚖️</span><div>El rival se elige según la puntuación de emparejamiento de los participantes: cuanto más fuertes los jefes, más alta la puntuación.</div></li>
+  </ul>
+</section>
+
+<section class="card" id="before">
+  <h2>✅ Antes de entrar en el Cañón</h2>
+  <ul class="checks">
+    <li>No tienes ninguna exploración en curso.</li>
+    <li>Tus tropas no están en marcha ni en el asentamiento de otro.</li>
+    <li>No hay refuerzos en tu Estación de comunicaciones.</li>
+  </ul>
+  <p>En el campo, tu alianza siempre es la <b>azul</b>.</p>
+  <p class="hint">Si sales de la incursión mientras sigue en curso, no puedes volver durante <b>10 minutos</b>. Eso sí, al volver se curan los heridos del hospital de campaña.</p>
+</section>
+
+<section class="card" id="stages">
+  <h2>⏱ Etapas del combate</h2>
+  <ol class="steps-list">
+    <li><b>Etapa 1:</b> instalaciones de purificación de agua, plantas de tratamiento de agua, centrales solares, helipuertos.</li>
+    <li><b>Etapa 2:</b> se abren el embalse central, las fábricas militares y los campos de pruebas experimentales.</li>
+    <li><b>Etapa 3:</b> aparecen cisternas de agua en lugares aleatorios.</li>
+  </ol>
+</section>
+
+<section class="card" id="buildings">
+  <h2>🏭 Edificios: cuánta agua dan y qué aportan</h2>
+  <p class="hint mt0">«Primera captura»: recompensa única cuando el edificio se pinta de tu color por primera vez. «Ocupación»: cuánto cae cada minuto mientras lo mantienes.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Edificio</th><th class="num">Agua de la alianza</th><th class="num">Agua personal</th><th>Bonificación</th></tr>
+    <tr><td><b>Embalse central</b> ×1</td><td class="num">9 000 · +1 800/min</td><td class="num">4 500 · +900/min</td><td>—</td></tr>
+    <tr><td><b>Centro de purificación de agua</b> ×2 (SO y NE)</td><td class="num">6 000 · +1 200/min</td><td class="num">3 000 · +600/min</td><td>—</td></tr>
+    <tr><td><b>Planta de tratamiento de agua</b> ×4 (a los lados del Cañón)</td><td class="num">3 000 · +600/min</td><td class="num">1 500 · +300/min</td><td>—</td></tr>
+    <tr><td><b>Fábrica militar</b></td><td class="num">1 200 · +240/min</td><td class="num">600 · +120/min</td><td>+20% y +20% a dos estadísticas de combate (por los iconos, ataque y, al parecer, defensa)</td></tr>
+    <tr><td><b>Central solar</b></td><td class="num">1 200 · +240/min</td><td class="num">600 · +120/min</td><td>−50% en el icono del reloj; según la descripción, purificación de agua más eficiente</td></tr>
+    <tr><td><b>Complejo de desarrollo</b></td><td class="num">1 200 · +240/min</td><td class="num">600 · +120/min</td><td>Lanza una horda de infectados contra un edificio enemigo: daño a la guarnición, −ataque y −defensa del enemigo. Con cada ataque la horda se hace más fuerte, hasta 4 veces.</td></tr>
+    <tr><td><b>Helipuerto abandonado</b></td><td class="num">1 200 · +240/min</td><td class="num">600 · +120/min</td><td>Reubicadores avanzados gratis más a menudo, −50% a su recarga</td></tr>
+  </table></div>
+  <p class="hint">Volver a capturar un edificio da muy poca agua: lo que cuenta es la primera captura y mantenerlo mucho tiempo.</p>
+</section>
+
+<section class="card" id="water">
+  <h2>💧 Cómo conseguir agua</h2>
+  <ul class="checks">
+    <li><b>Mantener edificios</b>: la fuente principal. El embalse central da el triple que una planta: 1 800 por minuto para la reserva de la alianza.</li>
+    <li><b>Derrotar al enemigo:</b> por cada 10 000 de poder de tropas derrotadas, agua personal: <b>40</b> al defender un edificio, <b>80</b> al atacar. Esto no va a la reserva de la alianza.</li>
+    <li>La <b>reubicación avanzada</b> es gratis durante el evento (con recarga). También puedes usar reubicadores avanzados.</li>
+    <li><b>El asentamiento arde</b> mucho más rápido de lo normal si pierdes una defensa. Si no lo apagas a tiempo, se trasladará a la zona segura y quedarás fuera de la pelea por ese punto.</li>
+  </ul>
+</section>
+
+<section class="card" id="rank">
+  <h2>⭐ Rangos de la alianza</h2>
+  <ul class="checks">
+    <li>Una alianza nueva entra en la clasificación solo después de inscribirse; el rango se determina tras el emparejamiento y se recalcula cada ronda.</li>
+    <li><b>5 rangos.</b> En todos menos el más alto, de 0 a 5 estrellas. <b>100 puntos = una estrella</b>; después de 5 estrellas, los siguientes 100 puntos suben el rango.</li>
+  </ul>
+</section>
+
+<section class="card" id="plan">
+  <h2>🗺 Plan para la alianza</h2>
+  <ul class="rules-list">
+    <li><span class="ico">1</span><div><b>Primero, uno a cada planta cercana.</b> La primera captura da 3 000 de agua a la alianza en cada una de las cuatro plantas: son 12 000 rápidos.</div></li>
+    <li><span class="ico">2</span><div><b>Los más fuertes, a los centros y al embalse.</b> El embalse (etapa 2) y los dos centros son los que más dan por minuto: los mantienen las mejores tropas.</div></li>
+    <li><span class="ico">3</span><div><b>La fábrica militar, antes de atacar el embalse:</b> el +20% de ataque viene bien en el asalto.</div></li>
+    <li><span class="ico">4</span><div><b>El helipuerto</b> acelera los reubicadores: así es más fácil mover fuerzas al punto que están asaltando.</div></li>
+    <li><span class="ico">5</span><div><b>Apaga los asentamientos enseguida</b>; si no, te mandarán a la zona segura.</div></li>
+    <li><span class="ico">6</span><div>Los participantes más débiles, a atacar las tropas enemigas junto a los edificios que tiene el rival: por atacar se gana el doble de agua personal que por defender.</div></li>
+  </ul>
+  <p class="hint">Como las tropas no mueren y la curación es gratis, pelea sin miedo. No habrá pérdidas, y lo que decide es el agua.</p>
+</section>
+{% endblock %}

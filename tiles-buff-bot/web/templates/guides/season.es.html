@@ -16,6 +16,34 @@
   </ul>
 </section>
 
+<section class="card" id="classes">
+  <h2>🏭 Clase de temporada: Coal League o Frost Court</h2>
+  <p>En la temporada cada uno elige una clase, y cada una tiene 5 habilidades activas. Elegir cuesta un objeto especial (1 ud.).</p>
+  <div class="grid2">
+    <div>
+      <h3>🔵 Coal League (Liga del Carbón): desarrollo</h3>
+      <ul class="checks">
+        <li><b>Construcción</b>: +15% a la velocidad de construcción para ti y para un aliado que elijas durante 60 min.</li>
+        <li><b>Cooperación</b>: +15% a la velocidad de investigación para ti y para un aliado que elijas durante 60 min.</li>
+        <li><b>Rápido</b>: al instante, −4 h de construcción en todos los edificios.</li>
+        <li><b>Chispas y plata</b>: al instante, 4 000 de carbón y de lámina.</li>
+        <li><b>Cruel</b>: −5% de daño recibido durante 60 min.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>🟠 Frost Court (Corte de Escarcha): guerra</h3>
+      <ul class="checks">
+        <li><b>Ataque feroz</b>: +5% de daño de tus tropas durante 1 h.</li>
+        <li><b>Unida</b>: +5% de daño para todos los participantes del ataque durante 1 h (si hay varias habilidades así, solo funciona la más alta).</li>
+        <li><b>Contraataque</b>: +5% de daño al defender el asentamiento durante 1 h.</li>
+        <li><b>Primeros auxilios</b>: cura al instante a 20 000 heridos del hospital (no a los que ya se están curando).</li>
+        <li><b>Golpe poderoso</b>: recibe al instante 10 000 tropas de rango alto.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="example"><b>Los buffs que reparte este sitio son las habilidades «Construcción» y «Cooperación» de la Coal League.</b> Solo puede darlos quien eligió la Coal League. Para quienes construyen o investigan mucho, Coal League; para la fuerza de choque de la alianza, Frost Court.</div>
+</section>
+
 <section class="card">
   <h2>📈 Puntos de progreso de temporada</h2>
   <p>Desde la versión 2.6.0 hay tres nuevas fuentes de puntos:</p>
@@ -40,6 +68,6 @@
 
 <section class="card">
   <h2>🧊 Buffs de la alianza en la temporada</h2>
-  <p>El buff de temporada recorta un <b>{{ pct }}%</b> del tiempo declarado de construcción o investigación, al instante, tanto a quien lo recibe como a quien lo da. Se recupera en {{ cooldown }} h, por separado para construcción e investigación. A quién dárselo te lo muestra la página principal del sitio. Más detalles en la guía <a href="/guides/boosts">«Buffs y aceleradores»</a> y en la <a href="/help#queue">ayuda</a>.</p>
+  <p>Son las habilidades «Construcción» y «Cooperación» de la Coal League: en el juego dice «+15% a la velocidad durante 60 min para ti y para un aliado que elijas». El sitio calcula que el buff recorta un <b>{{ pct }}%</b> del tiempo declarado, y después de cada buff te pide verificar el temporizador, así que el efecto real se tiene en cuenta de todos modos. Se recupera en {{ cooldown }} h, por separado para construcción e investigación. A quién dárselo te lo muestra la página principal del sitio. Más detalles en la guía <a href="/guides/boosts">«Buffs y aceleradores»</a> y en la <a href="/help#queue">ayuda</a>.</p>
 </section>
 {% endblock %}
