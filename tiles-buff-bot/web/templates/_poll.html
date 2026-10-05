@@ -1,0 +1,85 @@
+{# Один опрос: голосование, итоги, для R4 — охват и кто молчит. p — core.polls.Poll #}
+{% set open = p.is_open(now_ts) %}
+<section class="card poll" id="p{{ p.id }}">
+  <div class="card-head">
+    <h2>{% if p.is_reservoir %}💧 {% endif %}{{ _(p.row.title) }}</h2>
+    <span class="row" style="gap:6px">
+      {% if r4 %}{% set k, kw = describe(p.row.audience) %}<span class="badge">{{ _(k, **kw) }}</span>{% endif %}
+      {% if open %}<span class="badge badge-good">{{ _("открыт") }}</span>{% else %}<span class="badge">{{ _("закрыт") }}</span>{% endif %}
+    </span>
+  </div>
+  {% if p.row.note %}<p class="text-2 mt0" style="white-space:pre-wrap">{{ p.row.note }}</p>{% endif %}
+  <p class="hint mt0">{{ _("Ответили: {n}", n=p.voters) }}{% if p.row.closes_at %} · {{ _("до {when}", when=local(p.row.closes_at) ~ " " ~ tz_label ~ " · " ~ utc(p.row.closes_at, "%H:%M") ~ " UTC") }}{% endif %}</p>
+
+  {% if open %}
+  <form method="post" action="/polls/{{ p.id }}/vote">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {% if p.is_reservoir %}
+    <label>{{ _("Какое время тебе подходит? (можно несколько)") }}</label>
+    <div class="vote-grid">
+      {% for o in p.options %}
+      <label class="chip"><input type="checkbox" name="c" value="{{ o.index }}"{% if o.index in p.my_choices %} checked{% endif %}>
+        <b>{{ local(o.at, "%d.%m %H:%M") }} {{ tz_label }}</b>&nbsp;<small>· {{ utc(o.at, "%H:%M") }} UTC</small></label>
+      {% endfor %}
+    </div>
+    <div class="seg" style="margin-top:10px">
+      {% for role in ["main", "reserve", "no"] %}
+      <label><input type="radio" name="role" value="{{ role }}"{% if p.my_role == role or (not p.my_role and loop.first) %} checked{% endif %}><span>{{ _(ROLE_NAME[role]) }}</span></label>
+      {% endfor %}
+    </div>
+    <p class="hint">{{ _("Нужна Электростанция от 12 ур. и членство в союзе до регистрации. Основа — до 30, резерв — до 10.") }}</p>
+    {% else %}
+    <div class="vote-grid">
+      {% for o in p.options %}
+      <label class="chip"><input type="{{ 'checkbox' if p.row.multi else 'radio' }}" name="c" value="{{ o.index }}"{% if o.index in p.my_choices %} checked{% endif %}> {{ o.label }}</label>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="row" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">{{ _("Изменить ответ") if p.voted else _("Ответить") }}</button>
+      <span class="hint">{{ _("Отвечаешь как {nick}", nick=me.nick) }}</span>
+    </div>
+  </form>
+  {% endif %}
+
+  {% if p.voters %}
+  <hr class="sep">
+  {% set total = p.voters %}
+  {% for o in p.options %}
+  <div class="poll-opt">
+    {% if p.is_reservoir %}
+    <div class="top"><b>{{ local(o.at, "%d.%m %H:%M") }} {{ tz_label }} · {{ utc(o.at, "%H:%M") }} UTC</b>
+      <span>{{ _("основа {a} · резерв {b}", a=o.main|length, b=o.reserve|length) }}{% if p.best and p.best.index == o.index %} · <b>{{ _("лучшее") }}</b>{% endif %}</span></div>
+    <div class="poll-bar"><span style="width:{{ (100 * o.main|length / [total, 1]|max)|round }}%"></span></div>
+    {% if o.main or o.reserve %}<div class="names">{% if o.main %}<b>{{ _("Основа") }}:</b> {% for v in o.main %}{{ v.nick }}{% if v.pp_level %} ⚡{{ v.pp_level }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+      {% if o.reserve %}<br><b>{{ _("Резерв") }}:</b> {% for v in o.reserve %}{{ v.nick }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</div>{% endif %}
+    {% else %}
+    <div class="top"><b>{{ o.label }}</b><span>{{ o.votes|length }} · {{ (100 * o.votes|length / [total, 1]|max)|round|int }}%</span></div>
+    <div class="poll-bar"><span style="width:{{ (100 * o.votes|length / [total, 1]|max)|round }}%"></span></div>
+    {% if o.votes %}<div class="names">{% for v in o.votes %}{{ v.nick }}{% if not loop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% if p.is_reservoir and p.no %}<div class="names"><b>{{ _("Не смогут") }}:</b> {% for v in p.no %}{{ v.nick }}{% if not loop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+  {% if p.is_reservoir and r4 and p.best %}{% set main, reserve = p.roster() %}
+  <div class="example">{{ _("<b>Предложение состава</b> на {when}: основа {a} из 30, резерв {b} из 10 (сначала — у кого выше Электростанция). Регистрирует лидер или R4 в игре.", when=local(p.best.at, "%d.%m %H:%M") ~ " " ~ tz_label, a=main|length, b=reserve|length) }}
+    {% set weak = main|selectattr("pp_level")|selectattr("pp_level", "lt", 12)|list %}
+    {% if weak %}<br>⚠️ {{ _("Электростанция ниже 12 — не пустят в рейд:") }} {% for v in weak %}{{ v.nick }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+  </div>
+  {% endif %}
+  {% endif %}
+
+  {% if r4 and reach %}{% set members, silent = reach[p.id] %}
+  <div class="reach">
+    <div class="reach-head"><span>{{ _("Охват") }}: <b>{{ members|length - silent|length }}/{{ members|length }}</b> {{ _("ответили") }}</span>
+      <span class="meter"><span style="width:{{ (100 * (members|length - silent|length) / [members|length, 1]|max)|round }}%"></span></span>
+      {% if open and silent %}<form method="post" action="/polls/{{ p.id }}/nudge"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm" type="submit">🔔 {{ _("Напомнить молчунам ({n})", n=silent|length) }}</button></form>{% endif %}</div>
+    {% if silent %}<div class="names"><b>{{ _("Ещё не ответили") }}:</b> {% for m in silent[:60] %}{{ m.nick }}{% if not loop.last %}, {% endif %}{% endfor %}{% if silent|length > 60 %} …{% endif %}</div>{% endif %}
+    {% if p.row.nudged_at %}<div class="names">{{ _("Последнее напоминание: {when}", when=local(p.row.nudged_at)) }}</div>{% endif %}
+    <div class="row" style="margin-top:8px">
+      {% if open %}<form method="post" action="/polls/{{ p.id }}/close"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm" type="submit">{{ _("Закрыть опрос") }}</button></form>{% endif %}
+      <form method="post" action="/polls/{{ p.id }}/delete" data-confirm="{{ _("Удалить опрос?") }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm btn-danger" type="submit">{{ _("Удалить") }}</button></form>
+    </div>
+  </div>
+  {% endif %}
+</section>

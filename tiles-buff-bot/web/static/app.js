@@ -189,22 +189,51 @@
   // Часы в шапке: местное время (МСК) и серверное (UTC), идут каждую секунду.
   // Отсчёт — от времени сервера сайта, а не от часов телефона (они бывают сбиты).
   function initClock() {
-    var box = document.querySelector("[data-clock]");
-    if (!box) return;
-    var skew = parseInt(box.dataset.now, 10) * 1000 - Date.now();
-    var off = parseInt(box.dataset.off, 10) * 60000;
-    var loc = box.querySelector("[data-clock-local]"), utc = box.querySelector("[data-clock-utc]");
-    function fmt(ms) { return new Date(ms).toISOString().substr(11, 8); }
-    function tick() {
-      var t = Date.now() + skew;
-      utc.textContent = fmt(t);
-      loc.textContent = fmt(t + off);
-    }
-    tick();
-    setInterval(tick, 1000);
+    document.querySelectorAll("[data-clock]").forEach(function (box) {
+      var skew = parseInt(box.dataset.now, 10) * 1000 - Date.now();
+      var off = parseInt(box.dataset.off, 10) * 60000;
+      var loc = box.querySelector("[data-clock-local]"), utc = box.querySelector("[data-clock-utc]");
+      var len = loc && loc.textContent.trim().length === 5 ? 5 : 8;  // ЧЧ:ММ или ЧЧ:ММ:СС
+      function fmt(ms) { return new Date(ms).toISOString().substr(11, len); }
+      function tick() {
+        var t = Date.now() + skew;
+        if (utc) utc.textContent = fmt(t);
+        if (loc) loc.textContent = fmt(t + off);
+      }
+      tick();
+      setInterval(tick, 1000);
+    });
   }
 
+  // Тема: тёмная/светлая, выбор запоминается в браузере.
+  // Поле-фильтр списка: data-filter=".selector" прячет строки, где нет введённого текста.
+  document.addEventListener("input", function (e) {
+    var sel = e.target.dataset && e.target.dataset.filter;
+    if (!sel) return;
+    var q = e.target.value.trim().toLowerCase();
+    var box = e.target.closest("fieldset, section, form") || document;
+    box.querySelectorAll(sel).forEach(function (el) { el.hidden = q && el.textContent.toLowerCase().indexOf(q) < 0; });
+  });
+
+  function initTheme() {
+    document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) { btn.addEventListener("click", function () {
+      var root = document.documentElement;
+      var dark = root.dataset.theme ? root.dataset.theme === "dark" : !matchMedia("(prefers-color-scheme: light)").matches;
+      root.dataset.theme = dark ? "light" : "dark";
+      try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+    }); });
+  }
+
+  // Меню персонажа и мобильное меню закрываются кликом мимо.
+  document.addEventListener("click", function (e) {
+    document.querySelectorAll("details.charmenu[open]").forEach(function (d) { if (!d.contains(e.target)) d.removeAttribute("open"); });
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { var t = document.getElementById("nav-toggle"); if (t) t.checked = false; }
+  });
+
   initClock();
+  initTheme();
   initPush();
   bind(document);
   if (document.querySelector("[data-live]")) {

@@ -1,0 +1,21 @@
+{# Форма «Кому»: всем / R4 / по метке / выбранным / одному. Нужны aud_players, aud_tags. #}
+<fieldset class="aud field">
+  <legend class="label">{{ _("Кому") }}</legend>
+  <div class="seg" role="radiogroup">
+    {% for value, label in [("all", "Всем"), ("r4", "Только R4"), ("tag", "По метке"), ("ids", "Выбранным"), ("one", "Одному игроку")] %}
+    <label><input type="radio" name="aud" value="{{ value }}"{% if loop.first %} checked{% endif %}><span>{{ _(label) }}</span></label>
+    {% endfor %}
+  </div>
+  <div class="aud-tag aud-sub">
+    {% if aud_tags %}
+    <select name="aud_tag" aria-label="{{ _("Метка") }}">{% for t in aud_tags %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select>
+    {% else %}<p class="hint">{{ _("Меток пока нет — их ставят в карточке игрока («Управление» → игрок → метки).") }}</p>{% endif %}
+  </div>
+  <div class="aud-ids aud-sub">
+    <input type="search" placeholder="{{ _("Найти игрока…") }}" data-filter=".aud-list label" aria-label="{{ _("Найти игрока") }}">
+    <div class="aud-list">{% for p in aud_players %}<label class="check"><input type="checkbox" name="aud_ids" value="{{ p.id }}"> {{ p.nick }}{% if p.pp_level %} <small>⚡{{ p.pp_level }}</small>{% endif %}</label>{% endfor %}</div>
+  </div>
+  <div class="aud-one aud-sub">
+    <select name="aud_one" aria-label="{{ _("Игрок") }}">{% for p in aud_players %}<option value="{{ p.id }}">{{ p.nick }}</option>{% endfor %}</select>
+  </div>
+</fieldset>

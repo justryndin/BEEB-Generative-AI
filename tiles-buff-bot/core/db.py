@@ -122,6 +122,32 @@ CREATE TABLE IF NOT EXISTS events (
     rsvp       INTEGER NOT NULL DEFAULT 0
 );
 
+-- Опросы R4. kind: generic — свои варианты; reservoir — 3 времени Рейда на резервуар + основа/резерв.
+CREATE TABLE IF NOT EXISTS polls (
+    id         INTEGER PRIMARY KEY,
+    kind       TEXT NOT NULL DEFAULT 'generic',
+    title      TEXT NOT NULL,
+    note       TEXT NOT NULL DEFAULT '',
+    options    TEXT NOT NULL,             -- JSON: список вариантов (для reservoir — время UTC в секундах)
+    multi      INTEGER NOT NULL DEFAULT 0,
+    closes_at  INTEGER,
+    closed     INTEGER NOT NULL DEFAULT 0,
+    created_by INTEGER REFERENCES players(id) ON DELETE SET NULL,
+    created_at INTEGER NOT NULL,
+    audience   TEXT NOT NULL DEFAULT '',  -- кому: см. core/audience.py
+    nudged_at  INTEGER                    -- R4 нажали «напомнить тем, кто не ответил»
+);
+
+-- Ответы: один персонаж — один ответ на опрос (можно менять).
+CREATE TABLE IF NOT EXISTS poll_votes (
+    poll_id    INTEGER NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+    player_id  INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    choices    TEXT NOT NULL DEFAULT '[]',  -- JSON: номера выбранных вариантов
+    role       TEXT NOT NULL DEFAULT '',    -- reservoir: main, reserve, no
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY (poll_id, player_id)
+);
+
 -- Что уже отправлено, чтобы не присылать одно и то же дважды.
 CREATE TABLE IF NOT EXISTS notify_log (
     player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
@@ -168,7 +194,10 @@ MIGRATIONS = {
         ("crm_tags", "TEXT"),  # метки через запятую: «актив, новичок»
         ("pp_level", "INTEGER"),  # уровень Электростанции (сам игрок, R4 или по записям стройки)
         ("lang", "TEXT"),  # язык сайта и уведомлений: ru, en, es, pt
+        ("owner_id", "INTEGER"),  # твинк: id основного аккаунта (вход — через него)
     ],
+    "sessions": [("char_id", "INTEGER")],
+    "posts": [("audience", "TEXT NOT NULL DEFAULT ''"), ("nudged_at", "INTEGER")],  # какой персонаж аккаунта сейчас выбран
     "donations": [("undo", "TEXT"), ("undone_by", "INTEGER"), ("undone_at", "INTEGER")],
 }
 

@@ -253,7 +253,7 @@ def test_push_subscribe_and_settings(site):
     assert owner.post("/push/subscribe", json={**sub, "csrf": "bad"}).status_code == 400
     owner.post("/me/notify", data={"csrf": token, "on_got": "1", "quiet": "1"})
     from core.notify import prefs
-    assert set(prefs(svc.player(ivan["id"]))["off"]) == {"ready", "next", "done", "news", "events", "check", "tips"}
+    assert set(prefs(svc.player(ivan["id"]))["off"]) == {"ready", "next", "done", "news", "events", "check", "tips", "polls"}
     owner.post("/push/unsubscribe", json={"csrf": token, "endpoint": "https://push.example/1"})
     assert svc.push_subs(ivan["id"]) == []
 

@@ -366,6 +366,7 @@ class Service:
                 player_id,
                 player_id,
             )
+            self.db.run("UPDATE players SET owner_id = NULL WHERE owner_id = ?", player_id)
             self.db.run("DELETE FROM players WHERE id = ?", player_id)
 
     def is_admin(self, tg_id: int, owner_ids: frozenset[int]) -> bool:
@@ -919,7 +920,54 @@ class Service:
     # ---------- вход на сайт ----------
 
     def is_admin_player(self, player) -> bool:
-        return bool(player and (player["is_admin"] or player["is_owner"]))
+        if not player:
+            return False
+        if "acc_admin" in player.keys():  # строка сессии: права — у аккаунта, не у твинка
+            return bool(player["acc_admin"] or player["acc_owner"])
+        return bool(player["is_admin"] or player["is_owner"])
+
+    # ---------- персонажи (твинки) ----------
+
+    def characters(self, account_id: int):
+        """Основной персонаж аккаунта и его твинки."""
+        return self.db.all(
+            "SELECT * FROM players WHERE id = ? OR owner_id = ? ORDER BY owner_id IS NOT NULL, nick_key",
+            account_id, account_id,
+        )
+
+    def add_character(self, account_id: int, nick: str, now: int):
+        """Добавить твинка. Ник, который R4 завели без PIN, можно забрать себе. Возвращает (персонаж, ошибка)."""
+        nick = clean_nick(nick)
+        if not 2 <= len(nick) <= 32:
+            return None, "nick"
+        existing = self.player_by_nick(nick)
+        if existing is not None:
+            if existing["id"] == account_id or existing["owner_id"] == account_id:
+                return None, "mine"
+            if existing["pin_hash"] or existing["owner_id"] or self.db.one(
+                "SELECT 1 FROM players WHERE owner_id = ?", existing["id"]
+            ):
+                return None, "taken"
+            self.db.run("UPDATE players SET owner_id = ? WHERE id = ?", account_id, existing["id"])
+            return self.player(existing["id"]), None
+        cur = self.db.run(
+            "INSERT INTO players(nick, nick_key, created_at, owner_id, agreed_at) "
+            "VALUES(?, ?, ?, ?, (SELECT agreed_at FROM players WHERE id = ?))",
+            nick, nick_key(nick), now, account_id, account_id,
+        )
+        return self.player(cur.lastrowid), None
+
+    def release_character(self, account_id: int, char_id: int) -> bool:
+        """Отвязать твинка от аккаунта (история бафов остаётся)."""
+        cur = self.db.run("UPDATE players SET owner_id = NULL WHERE id = ? AND owner_id = ?", char_id, account_id)
+        self.db.run("UPDATE sessions SET char_id = NULL WHERE char_id = ?", char_id)
+        return cur.rowcount > 0
+
+    def switch_character(self, token: str, account_id: int, char_id: int) -> bool:
+        if not any(c["id"] == char_id for c in self.characters(account_id)):
+            return False
+        self.db.run("UPDATE sessions SET char_id = ? WHERE token = ?", None if char_id == account_id else char_id, token)
+        return True
 
     def register_web(self, nick: str, pin: str, now: int):
         """Регистрация по нику и PIN. Возвращает (игрок, ошибка).
@@ -1005,9 +1053,12 @@ class Service:
     def session(self, token: str | None, now: int, max_age: int):
         if not token:
             return None
+        # Действуем от выбранного персонажа (или основного); права и настройки — от аккаунта.
         return self.db.one(
-            "SELECT s.csrf, p.* FROM sessions s JOIN players p ON p.id = s.player_id "
-            "WHERE s.token = ? AND s.created_at > ?",
+            "SELECT s.csrf, s.player_id AS account_id, a.nick AS account_nick, a.is_admin AS acc_admin, "
+            "a.is_owner AS acc_owner, p.* FROM sessions s JOIN players a ON a.id = s.player_id "
+            "JOIN players p ON p.id = COALESCE(s.char_id, s.player_id) "
+            "WHERE s.token = ? AND s.created_at > ? AND (p.id = a.id OR p.owner_id = a.id)",
             token,
             now - max_age,
         )
@@ -1047,7 +1098,8 @@ class Service:
         self.db.run("UPDATE players SET notify_prefs = ? WHERE id = ?", json.dumps(prefs), player_id)
 
     def touch_seen(self, player_id: int, now: int) -> None:
-        self.db.run("UPDATE players SET last_seen_at = ? WHERE id = ?", now, player_id)
+        """Отметка «заходил на сайт» — для аккаунта и всех его твинков (рулетка берёт активных)."""
+        self.db.run("UPDATE players SET last_seen_at = ? WHERE id = ? OR owner_id = ?", now, player_id, player_id)
 
     # ---------- лента и статистика ----------
 

@@ -4,64 +4,119 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}{{ _(site_name) }}{% endblock %}</title>
-  <meta name="theme-color" content="#0d0a14">
+  <meta name="theme-color" content="#0b0d12">
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/static/icon-180.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="/static/style.css?v=22">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/style.css?v=30">
+  <script>try { var t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
 <body{% if me %} data-vapid="{{ vapid_public }}" data-csrf="{{ csrf }}"{% endif %}>
-{% set nav = [
-  ("/", "🏠", _("Главная")),
-  ("/join", "➕", _("Встать")),
-  ("/give", "🎁", _("Я отдал")),
-  ("/board", "📣", _("Союз")),
-  ("/me", "👤", _("Профиль")),
+{% include "_icons.html" %}
+{% macro icon(name, cls="") %}<svg class="i {{ cls }}" aria-hidden="true"><use href="#i-{{ name }}"/></svg>{% endmacro %}
+{% macro is_on(href) %}{{ 'on' if path == href or (href != '/' and path.startswith(href)) }}{% endmacro %}
+{% set groups = [
+  (none, [("/", "home", _("Главная"))]),
+  (_("Бафы союза"), [("/join", "plus", _("Встать в очередь")), ("/give", "gift", _("Я отдал баф"))]),
+  (_("Союз"), [("/board", "msg", _("Объявления")), ("/events", "cal", _("События")), ("/polls", "poll", _("Опросы"))]),
+  (_("Знания"), [("/faq", "help", _("Вопросы и ответы")), ("/guides", "book", _("Гайды"))]),
+  (_("Аналитика"), [("/stats", "chart", _("Статистика"))]),
 ] %}
-<header class="topbar">
-  <div class="topbar-in">
-    <a class="logo" href="/"><img src="/static/icon.svg" alt="" width="34" height="34"><span>{{ _(site_name) }}</span></a>
-    {% if me %}
-    <nav class="topnav" aria-label="{{ _("Разделы") }}">
-      {% for href, ico, name in nav %}
-      <a href="{{ href }}" class="{{ 'on' if path == href or (href != '/' and path.startswith(href)) or (href == '/board' and (path.startswith('/events') or path.startswith('/guides'))) }}">{{ name }}{% if href == "/board" and unread %} <span class="dotcount">{{ unread }}</span>{% endif %}</a>
-      {% endfor %}
-      <a href="/stats" class="{{ 'on' if path.startswith('/stats') }}">{{ _("Статистика") }}</a>
-      {% if is_admin %}<a href="/admin" class="{{ 'on' if path.startswith('/admin') }}">⚙️ {{ _("Управление") }}</a>{% endif %}
-    </nav>
-    <span class="who">{{ me.nick }}</span>
+<div class="shell">
+  {% if me %}
+  <input type="checkbox" id="nav-toggle" class="nav-toggle sr-only" aria-hidden="true">
+  <label for="nav-toggle" class="scrim" aria-hidden="true"></label>
+  <aside class="side" aria-label="{{ _("Разделы") }}">
+    <a class="brand" href="/"><img src="/static/icon.svg" alt="" width="30" height="30"><span>{{ _(site_name) }}<small>Tiles Survive · {{ _("портал союза") }}</small></span></a>
+    {% for title, links in groups %}
+    {% if title %}<div class="nav-group">{{ title }}</div>{% endif %}
+    {% for href, ico, name in links %}
+    <a class="nav-link {{ is_on(href) }}" href="{{ href }}">{{ icon(ico) }}<span>{{ name }}</span>{% if href == "/board" and unread %}<span class="dotcount">{{ unread }}</span>{% endif %}{% if href == "/polls" and open_polls %}<span class="dotcount">{{ open_polls }}</span>{% endif %}</a>
+    {% endfor %}
+    {% endfor %}
+    {% if is_admin %}
+    <div class="nav-group">R4</div>
+    <a class="nav-link {{ is_on('/admin') }}" href="/admin">{{ icon("sliders") }}<span>{{ _("Управление") }}</span></a>
     {% endif %}
-    <a class="help-link" href="/help" aria-label="{{ _("Справка: как всё устроено") }}" title="{{ _("Как всё устроено") }}">❓</a>
-  </div>
-  <div class="clockbar" data-clock data-now="{{ now_epoch }}" data-off="{{ tz_offset_min }}">
-    <span>🕒 {{ tz_label }} ({{ offset_text() }}) <b data-clock-local>{{ local(now_epoch, "%H:%M:%S") }}</b></span>
-    <span>🌐 {{ _("Сервер (UTC)") }} <b data-clock-utc>{{ utc(now_epoch, "%H:%M:%S") }}</b></span>
-    <span class="langs" aria-label="Language">{% for code in LANGS %}<a href="/lang/{{ code }}?next={{ path|urlencode }}" class="{{ 'on' if code == lang() }}" lang="{{ code }}" title="{{ LANGS[code] }}">{{ SHORT[code] }}</a>{% endfor %}</span>
-  </div>
-</header>
-
-<main class="{% block main_class %}{% endblock %}">
-  {% if flash %}
-  <div class="alert {{ 'alert-warn' if flash.startswith('⚠️') else 'alert-good' }} flash" role="status">{{ flash }}</div>
+    <div class="side-foot">
+      <div class="side-prefs"><span class="langs" aria-label="Language">{% for code in LANGS %}<a href="/lang/{{ code }}?next={{ path|urlencode }}" class="{{ 'on' if code == lang() }}" lang="{{ code }}" title="{{ LANGS[code] }}">{{ SHORT[code] }}</a>{% endfor %}</span>
+        <button class="icon-btn" type="button" data-theme-toggle aria-label="{{ _("Светлая или тёмная тема") }}">{{ icon("moon") }}</button></div>
+      <a class="nav-link {{ is_on('/me') }}" href="/me">{{ icon("user") }}<span>{{ _("Профиль и персонажи") }}</span></a>
+      <a class="nav-link {{ is_on('/help') }}" href="/help">{{ icon("file") }}<span>{{ _("Справка") }}</span></a>
+    </div>
+  </aside>
   {% endif %}
-  {% block content %}{% endblock %}
-</main>
+
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-in">
+        {% if me %}<label for="nav-toggle" class="icon-btn menu-btn" aria-label="{{ _("Меню") }}">{{ icon("menu") }}</label>{% endif %}
+        <a class="top-brand" href="/"><img src="/static/icon.svg" alt="" width="26" height="26"><span>{{ _(site_name) }}</span></a>
+        {% if me %}
+        <form class="search" action="/search" role="search">
+          {{ icon("search") }}<input type="search" name="q" value="{{ q or '' }}" placeholder="{{ _("Поиск: вода, питомцы, Электростанция…") }}" aria-label="{{ _("Поиск") }}">
+        </form>
+        {% endif %}
+        <div class="top-right">
+          <div class="clocks" data-clock data-now="{{ now_epoch }}" data-off="{{ tz_offset_min }}">
+            <span>{{ tz_label }} <b data-clock-local>{{ local(now_epoch, "%H:%M") }}</b></span>
+            <span>UTC <b data-clock-utc>{{ utc(now_epoch, "%H:%M") }}</b></span>
+          </div>
+          <span class="langs{% if not me %} always{% endif %}" aria-label="Language">{% for code in LANGS %}<a href="/lang/{{ code }}?next={{ path|urlencode }}" class="{{ 'on' if code == lang() }}" lang="{{ code }}" title="{{ LANGS[code] }}">{{ SHORT[code] }}</a>{% endfor %}</span>
+          <button class="icon-btn" type="button" data-theme-toggle aria-label="{{ _("Светлая или тёмная тема") }}">{{ icon("moon") }}</button>
+          {% if me %}
+          <details class="charmenu">
+            <summary aria-label="{{ _("Персонаж") }}"><span class="avatar">{{ me.nick[:1] }}</span><span class="who-nick">{{ me.nick }}</span>{{ icon("down") }}</summary>
+            <div class="menu">
+              {% if chars and chars|length > 1 %}
+              <div class="menu-title">{{ _("Мои персонажи") }}</div>
+              {% for c in chars %}
+              <form method="post" action="/char/{{ c.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="{{ path }}">
+                <button type="submit" class="{{ 'on' if c.id == me.id }}"><span class="avatar">{{ c.nick[:1] }}</span>{{ c.nick }}{% if c.id == me.id %} {{ icon("check") }}{% endif %}</button></form>
+              {% endfor %}
+              <hr>
+              {% endif %}
+              <a href="/me#chars">{{ icon("users") }}{{ _("Добавить персонажа (твинк)") }}</a>
+              <a href="/me">{{ icon("user") }}{{ _("Профиль") }}</a>
+              <a href="/me#notify">{{ icon("bell") }}{{ _("Уведомления") }}</a>
+              <hr>
+              <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit">{{ icon("out") }}{{ _("Выйти") }}</button></form>
+            </div>
+          </details>
+          {% endif %}
+        </div>
+      </div>
+      <div class="clockbar" data-clock data-now="{{ now_epoch }}" data-off="{{ tz_offset_min }}">
+        <span>{{ tz_label }} ({{ offset_text() }}) <b data-clock-local>{{ local(now_epoch, "%H:%M:%S") }}</b></span>
+        <span>{{ _("Сервер (UTC)") }} <b data-clock-utc>{{ utc(now_epoch, "%H:%M:%S") }}</b></span>
+      </div>
+    </header>
+
+    <main class="{% block main_class %}{% endblock %}">
+      {% if flash %}
+      <div class="alert {{ 'alert-warn' if flash.startswith('⚠️') else 'alert-good' }} flash" role="status">{{ flash }}</div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+    <p class="footer"><a href="/help">{{ _("Справка") }}</a> · <a href="/rules">{{ _("Условия") }}</a> · <a href="/stats">{{ _("Статистика") }}</a><br>{{ _(site_name) }} · Tiles Survive · {{ _("сезон «Эра метели»") }}</p>
+  </div>
+</div>
 
 {% if me %}
 <nav class="tabbar" aria-label="{{ _("Разделы") }}">
-  {% for href, ico, name in nav %}
-  {% if href == "/me" and is_admin %}
-  <a href="/admin" class="{{ 'on' if path.startswith('/admin') }}"><span class="ico">⚙️</span>{{ _("Управление") }}</a>
-  {% else %}
-  <a href="{{ href }}" class="{{ 'on' if path == href or (href != '/' and path.startswith(href)) or (href == '/board' and (path.startswith('/events') or path.startswith('/guides'))) }}"><span class="ico">{{ ico }}{% if href == "/board" and unread %}<span class="dotcount">{{ unread }}</span>{% endif %}</span>{{ name }}</a>
-  {% endif %}
-  {% endfor %}
+  <a href="/" class="{{ is_on('/') }}">{{ icon("home") }}{{ _("Главная") }}</a>
+  <a href="/join" class="{{ is_on('/join') }}">{{ icon("plus") }}{{ _("Встать") }}</a>
+  <a href="/give" class="{{ is_on('/give') }}">{{ icon("gift") }}{{ _("Я отдал") }}</a>
+  <a href="/faq" class="{{ is_on('/faq') }}">{{ icon("help") }}{{ _("Ответы") }}</a>
+  <label for="nav-toggle" role="button" tabindex="0">{{ icon("menu") }}{{ _("Меню") }}{% if unread or open_polls %}<span class="dotcount">{{ (unread or 0) + (open_polls or 0) }}</span>{% endif %}</label>
 </nav>
 {% endif %}
-<p class="footer"><a href="/help">❓ {{ _("Справка") }}</a> · <a href="/stats">📊 {{ _("Статистика") }}</a> · <a href="/guides">📚 {{ _("Гайды") }}</a> · <a href="/rules">📜 {{ _("Условия") }}</a>{% if me and is_admin %} · <a href="/me">👤 {{ _("Профиль") }}</a>{% endif %}<br>© {{ _(site_name) }} · Tiles Survive · {{ _("сезон «Эра метели»") }}</p>
 <script>window.I18N = {{ js_strings()|tojson }};</script>
-<script src="/static/app.js?v=9" defer></script>
+<script src="/static/app.js?v=10" defer></script>
 </body>
 </html>

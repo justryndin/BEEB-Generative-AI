@@ -1,12 +1,8 @@
 {% extends "base.html" %}
 {% block title %}{{ _("Объявления") }} · {{ _(site_name) }}{% endblock %}
 {% block content %}
-<h1>📣 {{ _("Союз") }}</h1>
-<nav class="tabs" style="grid-template-columns:repeat(3,1fr)">
-  <a href="/board" class="on">{{ _("Объявления") }}</a>
-  <a href="/events">📅 {{ _("События") }}</a>
-  <a href="/guides">📚 {{ _("Гайды") }}</a>
-</nav>
+<div class="page-head"><div><h1>{{ _("Объявления") }}</h1><p>{{ _("Сообщения R4 союзу. Важные приходят на телефон.") }}</p></div>
+  <div class="row"><a class="btn" href="/events">{{ _("События") }}</a><a class="btn" href="/polls">{{ _("Опросы") }}</a></div></div>
 
 {% if is_admin %}
 <section class="card">
@@ -18,28 +14,41 @@
     <label class="check"><input type="checkbox" name="pinned" value="1"> 📌 {{ _("Закрепить на главной") }}</label>
     <label class="check"><input type="checkbox" name="important" value="1"> 🔔 {{ _("Важное — прислать всем на телефон") }}</label>
     <label class="check"><input type="checkbox" name="rsvp" value="1"> {{ _("Спросить «Буду / Не смогу»") }}</label>
+    {% include "_audience.html" %}
     <button class="btn btn-primary" type="submit">{{ _("Опубликовать") }}</button>
   </form>
 </section>
 {% endif %}
 
 {% for p in items %}
-<article class="card post{{ ' pinned' if p.pinned }}{{ ' fresh' if not p.seen }}">
+<article class="card post{{ ' pinned' if p.pinned }}{{ ' fresh' if not p.seen }}" id="post{{ p.id }}">
   <div class="post-head">
     {% if p.pinned %}<span class="badge badge-accent">📌 {{ _("закреплено") }}</span>{% endif %}
     {% if p.important %}<span class="badge badge-urgent">🔔 {{ _("важное") }}</span>{% endif %}
     {% if not p.seen %}<span class="badge">{{ _("новое") }}</span>{% endif %}
+    {% if is_admin and p.audience and p.audience != "all" %}{% set k, kw = describe(p.audience) %}<span class="badge">{{ _(k, **kw) }}</span>{% endif %}
     <span class="muted">{{ p.author or "R4" }} · {{ local(p.created_at) }}</span>
   </div>
   <p class="post-text">{{ p.text }}</p>
   {% if p.rsvp %}{% with ref = "post:" ~ p.id, a = answers["post:" ~ p.id], next = "/board" %}{% include "_rsvp.html" %}{% endwith %}{% endif %}
   <div class="post-foot">
-    <span class="hint">{{ _("прочитали {reads} из {total}", reads=p.reads, total=players) }}</span>
+    {% if not reach %}<span class="hint">{{ _("прочитали {reads} из {total}", reads=p.reads, total=players) }}</span>{% endif %}
     {% if is_admin %}
     <form method="post" action="/board/{{ p.id }}/{{ 'unpin' if p.pinned else 'pin' }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm btn-ghost" type="submit">{{ _("Открепить") if p.pinned else "📌 " ~ _("Закрепить") }}</button></form>
     <form method="post" action="/board/{{ p.id }}/delete" data-confirm="{{ _("Удалить объявление?") }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm btn-ghost" type="submit">🗑</button></form>
     {% endif %}
   </div>
+  {% if reach %}{% set r = reach[p.id] %}{% set m = r.members|length %}
+  <div class="reach">
+    <div class="reach-head"><span>{{ _("Прочитали") }}: <b>{{ r.read|length }}/{{ m }}</b></span>
+      <span class="meter"><span style="width:{{ (100 * r.read|length / [m, 1]|max)|round }}%"></span></span>
+      {% if p.rsvp %}<span>{{ _("Ответили") }}: <b>{{ r.answered|length }}/{{ m }}</b></span>{% endif %}
+      {% if r.unread or r.silent %}<form method="post" action="/board/{{ p.id }}/nudge"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm" type="submit">🔔 {{ _("Напомнить ({n})", n=(r.unread + r.silent)|map(attribute="id")|unique|list|length) }}</button></form>{% endif %}</div>
+    {% if r.unread %}<div class="names"><b>{{ _("Не прочитали") }}:</b> {% for x in r.unread[:60] %}{{ x.nick }}{% if not loop.last %}, {% endif %}{% endfor %}{% if r.unread|length > 60 %} …{% endif %}</div>{% endif %}
+    {% if r.silent %}<div class="names"><b>{{ _("Не ответили") }}:</b> {% for x in r.silent[:60] %}{{ x.nick }}{% if not loop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+    {% if p.nudged_at %}<div class="names">{{ _("Последнее напоминание: {when}", when=local(p.nudged_at)) }}</div>{% endif %}
+  </div>
+  {% endif %}
 </article>
 {% else %}
 <p class="empty">{{ _("Объявлений пока нет.") }}{% if is_admin %} {{ _("Напиши первое — оно появится у всех на главной.") }}{% endif %}</p>

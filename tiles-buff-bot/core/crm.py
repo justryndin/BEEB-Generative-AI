@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from . import audience
 from .service import Service
 from .timeparse import DAY, MINUTE
 
@@ -137,44 +138,70 @@ def delete_event(svc: Service, event_id: int) -> None:
 
 # ---------- доска объявлений ----------
 
-def add_post(svc: Service, author_id: int, text: str, pinned: bool, important: bool, rsvp: bool, now: int) -> int | None:
+def add_post(svc: Service, author_id: int, text: str, pinned: bool, important: bool, rsvp: bool, now: int,
+             aud: str = "") -> int | None:
     text = text.strip()[:2000]
     if not text:
         return None
     cur = svc.db.run(
-        "INSERT INTO posts(author_id, text, pinned, important, rsvp, created_at) VALUES(?, ?, ?, ?, ?, ?)",
-        author_id, text, int(pinned), int(important), int(rsvp), now,
+        "INSERT INTO posts(author_id, text, pinned, important, rsvp, created_at, audience) VALUES(?, ?, ?, ?, ?, ?, ?)",
+        author_id, text, int(pinned), int(important), int(rsvp), now, aud,
     )
     svc.db.run("INSERT OR IGNORE INTO post_reads(post_id, player_id) VALUES(?, ?)", cur.lastrowid, author_id)
     return cur.lastrowid
 
 
-def posts(svc: Service, player_id: int, limit: int = 50):
-    return svc.db.all(
+def posts(svc: Service, player, limit: int = 50, everything: bool = False):
+    """Объявления, адресованные персонажу (R4 видят все)."""
+    rows = svc.db.all(
         "SELECT p.*, a.nick AS author, "
         "(SELECT COUNT(*) FROM post_reads r WHERE r.post_id = p.id) AS reads, "
         "EXISTS(SELECT 1 FROM post_reads r WHERE r.post_id = p.id AND r.player_id = ?) AS seen "
         "FROM posts p LEFT JOIN players a ON a.id = p.author_id ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?",
-        player_id, limit,
+        player["id"], limit,
     )
+    return [r for r in rows if everything or audience.includes(svc, r["audience"], player)]
 
 
-def pinned_posts(svc: Service, limit: int = 2):
-    return svc.db.all(
+def pinned_posts(svc: Service, player, limit: int = 2):
+    rows = svc.db.all(
         "SELECT p.*, a.nick AS author FROM posts p LEFT JOIN players a ON a.id = p.author_id "
-        "WHERE p.pinned = 1 ORDER BY p.created_at DESC LIMIT ?", limit,
+        "WHERE p.pinned = 1 ORDER BY p.created_at DESC LIMIT 20",
     )
+    return [r for r in rows if audience.includes(svc, r["audience"], player)][:limit]
 
 
-def unread(svc: Service, player_id: int) -> int:
-    return svc.db.one(
-        "SELECT COUNT(*) AS n FROM posts p WHERE NOT EXISTS("
-        "SELECT 1 FROM post_reads r WHERE r.post_id = p.id AND r.player_id = ?)", player_id,
-    )["n"]
+def unread(svc: Service, player) -> int:
+    rows = svc.db.all(
+        "SELECT p.id, p.audience FROM posts p WHERE NOT EXISTS("
+        "SELECT 1 FROM post_reads r WHERE r.post_id = p.id AND r.player_id = ?)", player["id"],
+    )
+    return sum(1 for r in rows if audience.includes(svc, r["audience"], player))
 
 
-def mark_read(svc: Service, player_id: int) -> None:
-    svc.db.run("INSERT OR IGNORE INTO post_reads(post_id, player_id) SELECT id, ? FROM posts", player_id)
+def mark_read(svc: Service, player) -> None:
+    for r in svc.db.all("SELECT id, audience FROM posts"):
+        if audience.includes(svc, r["audience"], player):
+            svc.db.run("INSERT OR IGNORE INTO post_reads(post_id, player_id) VALUES(?, ?)", r["id"], player["id"])
+
+
+def post_reach(svc: Service, post) -> dict:
+    """Аналитика для R4: охват, кто прочитал, кто ответил, кто молчит."""
+    members = audience.members(svc, post["audience"])
+    read = {r["player_id"] for r in svc.db.all("SELECT player_id FROM post_reads WHERE post_id = ?", post["id"])}
+    answered = {r["player_id"]: r["answer"] for r in svc.db.all(
+        "SELECT player_id, answer FROM answers WHERE ref = ?", f"post:{post['id']}")}
+    return {
+        "members": members,
+        "read": [m for m in members if m["id"] in read],
+        "unread": [m for m in members if m["id"] not in read],
+        "answered": answered,
+        "silent": [m for m in members if m["id"] not in answered] if post["rsvp"] else [],
+    }
+
+
+def nudge_post(svc: Service, post_id: int, now: int) -> None:
+    svc.db.run("UPDATE posts SET nudged_at = ? WHERE id = ?", now, post_id)
 
 
 def set_pin(svc: Service, post_id: int, pinned: bool) -> None:

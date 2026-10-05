@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Опросы") }} · {{ _(site_name) }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ _("Опросы") }}</h1><p>{{ _("Время Рейда на резервуар, состав и другие решения союза. Ответ — в один клик, менять можно до закрытия.") }}</p></div>
+  {% if r4 %}<div class="row"><a class="btn btn-primary" href="/polls/new?kind=reservoir">💧 {{ _("Опрос: время воды") }}</a><a class="btn" href="/polls/new?kind=generic">{{ _("Свой опрос") }}</a></div>{% endif %}
+</div>
+{% if not opened and not closed %}<div class="card"><p class="empty">{{ _("Опросов пока нет.") }}{% if r4 %} {{ _("Создай первый — кнопка выше.") }}{% endif %}</p></div>{% endif %}
+<div class="grid2">
+  {% for p in opened %}<div>{% include "_poll.html" %}</div>{% endfor %}
+</div>
+{% if closed %}
+<h2 class="section-title">{{ _("Закрытые") }}</h2>
+<div class="grid2">{% for p in closed %}<div>{% include "_poll.html" %}</div>{% endfor %}</div>
+{% endif %}
+{% endblock %}

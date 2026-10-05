@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ _("Новый опрос") }} · {{ _(site_name) }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/polls">{{ _("Опросы") }}</a></p>
+<div class="page-head"><div><h1>{% if kind == "reservoir" %}💧 {{ _("Опрос: время Рейда на резервуар") }}{% else %}{{ _("Новый опрос") }}{% endif %}</h1>
+  <p>{% if kind == "reservoir" %}{{ _("Игра даёт 3 времени на выбор — впиши их, игроки отметят, когда могут, и кто в основе или в резерве.") }}{% else %}{{ _("Свой вопрос и варианты ответа.") }}{% endif %}</p></div></div>
+<form class="card" method="post" action="/polls/create">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="kind" value="{{ kind }}">
+  <div class="field"><label for="title">{{ _("Вопрос") }}</label>
+    <input id="title" name="title" type="text" maxlength="200" {% if kind == "reservoir" %}placeholder="{{ _("Рейд на резервуар: время и состав") }}"{% else %}required{% endif %}></div>
+  {% if kind == "reservoir" %}
+  <div class="grid3">
+    {% for i in [1, 2, 3] %}<div class="field"><label for="t{{ i }}">{{ _("Время {n} ({tz})", n=i, tz=tz_label) }}</label><input id="t{{ i }}" name="t{{ i }}" type="datetime-local"{% if i == 1 %} required{% endif %}></div>{% endfor %}
+  </div>
+  <p class="hint mt0">{{ _("Пиши время по {tz} — игрокам покажем и {tz}, и UTC.", tz=tz_label) }}</p>
+  {% else %}
+  <div class="field"><label for="options">{{ _("Варианты — каждый с новой строки") }}</label><textarea id="options" name="options" rows="5" required></textarea></div>
+  <label class="check field"><input type="checkbox" name="multi" value="1"> {{ _("Можно выбрать несколько") }}</label>
+  {% endif %}
+  <div class="field"><label for="note">{{ _("Пояснение (необязательно)") }}</label><textarea id="note" name="note" rows="3"></textarea></div>
+  <div class="field"><label for="closes">{{ _("Закрыть автоматически ({tz}, необязательно)", tz=tz_label) }}</label><input id="closes" name="closes" type="datetime-local"></div>
+  {% include "_audience.html" %}
+  <button class="btn btn-primary btn-big" type="submit">{{ _("Открыть опрос и уведомить") }}</button>
+</form>
+{% endblock %}

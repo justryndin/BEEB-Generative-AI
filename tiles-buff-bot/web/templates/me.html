@@ -43,6 +43,26 @@
   </form>
 </section>
 
+<section class="card" id="chars">
+  <div class="card-head"><h2>{{ _("Мои персонажи") }}</h2><span class="badge">{{ chars|length }}</span></div>
+  <p class="hint mt0">{{ _("Один вход — несколько персонажей (твинков). У каждого своя очередь, свои бафы и своя Электростанция. Переключайся в меню с ником вверху: всё, что делаешь, — от имени выбранного.") }}</p>
+  <ul class="list-rows">
+    {% for c in chars %}
+    <li class="char-row"><span class="avatar">{{ c.nick[:1] }}</span>
+      <span class="grow"><b>{{ c.nick }}</b><span>{% if not c.owner_id %}{{ _("основной — вход по PIN") }}{% else %}{{ _("твинк") }}{% endif %}{% if c.pp_level %} · ⚡ {{ c.pp_level }}{% endif %}</span></span>
+      {% if c.id == me.id %}<span class="badge badge-accent">{{ _("выбран") }}</span>
+      {% else %}<form method="post" action="/char/{{ c.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="/"><button class="btn btn-sm" type="submit">{{ _("Играть за него") }}</button></form>{% endif %}
+      {% if c.owner_id %}<form method="post" action="/me/chars/{{ c.id }}/release" data-confirm="{{ _("Отвязать {nick} от аккаунта?", nick=c.nick) }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm btn-ghost" type="submit">{{ _("Отвязать") }}</button></form>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  <form method="post" action="/me/chars/add" class="row" style="margin-top:12px">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input name="nick" type="text" maxlength="32" placeholder="{{ _("Ник твинка — точно как в игре") }}" aria-label="{{ _("Ник твинка") }}" style="flex:1;min-width:200px" required>
+    <button class="btn btn-primary" type="submit">{{ _("Добавить персонажа") }}</button>
+  </form>
+</section>
+
 <section class="card" id="notify">
   <h2>🔔 {{ _("Уведомления на телефон") }}</h2>
   <p class="text-2 mt0">{{ _("Сайт сам напишет, когда твой баф готов и кому его отдать, когда тебе отдали баф и когда ты следующий. Следить не нужно.") }}</p>

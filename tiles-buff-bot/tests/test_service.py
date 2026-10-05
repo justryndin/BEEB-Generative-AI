@@ -334,7 +334,7 @@ def test_notices_for_important_posts_and_events():
     crm.add_post(svc, a["id"], "Важно: сбор\nподробности", False, True, False, monday + 10 * HOUR)
     keys = {n.key: n for n in due_notices(svc, utc, monday + 11 * HOUR + 10 * 60)}
     post = next(n for k, n in keys.items() if k.startswith("post:"))
-    assert post.body == "Важно: сбор" and post.url == "/board"
+    assert post.body == "Важно: сбор" and post.url.startswith("/board#post")
     ev = next(n for k, n in keys.items() if k.startswith("event:"))
     assert "Сбор" in ev.title and "12:00" in ev.title and ev.body == "Щиты!"
     # Раньше чем за час до начала — ещё не напоминаем

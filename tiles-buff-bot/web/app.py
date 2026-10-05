@@ -18,7 +18,7 @@ from markupsafe import Markup
 
 from core import gamedata
 from core.db import Database
-from core import crm, i18n, planner, powerplay, vs
+from core import audience, crm, i18n, planner, polls, powerplay, vs
 from core.i18n import LANGS, SHORT, t as tr
 from core.analytics import benefit, r4_report
 from core.tips import player_tip
@@ -204,6 +204,10 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     def current(request: Request):
         return svc.session(request.cookies.get("sid"), now(), max_age)
 
+    def acc_id(me) -> int:
+        """Аккаунт, через который вошли: настройки, PIN, уведомления — у него, а не у твинка."""
+        return me["account_id"] if me is not None and "account_id" in me.keys() else me["id"]
+
     def localized(name: str) -> str:
         """Большие тексты (справка, условия, гайды) переведены целыми страницами: help.en.html и т. п.
         Нет страницы на нужном языке — берём английскую, нет и её — русскую."""
@@ -228,7 +232,9 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                 "flash": flash,
                 "path": request.url.path,
                 "vapid_public": svc.setting("vapid_public") if me else "",
-                "unread": crm.unread(svc, me["id"]) if me else 0,
+                "unread": crm.unread(svc, me) if me else 0,
+                "open_polls": polls.waiting_for(svc, me, now()) if me else 0,
+                "chars": svc.characters(acc_id(me)) if me else [],
                 "pp_goal": int(svc.setting_float("priority_below")),
                 "now_epoch": now(),
                 "tz_offset_min": utc_offset_min(),
@@ -317,7 +323,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             code = i18n.DEFAULT
         me = current(request)
         if me is not None:
-            svc.db.run("UPDATE players SET lang = ? WHERE id = ?", code, me["id"])
+            svc.db.run("UPDATE players SET lang = ? WHERE id = ? OR owner_id = ?", code, acc_id(me), acc_id(me))
         resp = RedirectResponse(next if next.startswith("/") and not next.startswith("//") else "/", status_code=303)
         resp.set_cookie("lang", code, max_age=365 * DAY, samesite="lax", secure=cfg.secure_cookies)
         return resp
@@ -436,14 +442,14 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                 k: sum(1 for r in svc.queue_view(k, t).rows if r.status == STATUS_NEED) for k in KINDS
             })
         received = svc.received_since(me["id"], me["last_seen_at"] or t)
-        svc.touch_seen(me["id"], t)
+        svc.touch_seen(acc_id(me), t)
         return render(
             request, "home.html", me,
             boards=boards(me, t),
             received=received,
             own_gift=svc.last_own_gift(me["id"], t - SELF_UNDO_SECONDS),
             checks=svc.time_checks(me["id"], t),
-            pinned=crm.pinned_posts(svc),
+            pinned=crm.pinned_posts(svc, me),
             tip=tip_for(me, t, tip),
             tip_step=tip,
             soon=[o for o in crm.occurrences(svc, t, 1) if o.start - t < DAY][:2],
@@ -764,18 +770,34 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
     @app.get("/board", response_class=HTMLResponse)
     def board(request: Request):
         me = need_login(request)
-        items = crm.posts(svc, me["id"])
-        crm.mark_read(svc, me["id"])
+        r4 = svc.is_admin_player(me)
+        items = crm.posts(svc, me, everything=r4)
+        crm.mark_read(svc, me)
         refs = [f"post:{p['id']}" for p in items if p["rsvp"]]
+        reach = {p["id"]: crm.post_reach(svc, p) for p in items} if r4 else {}
         return render(request, "board.html", me, items=items, answers=crm.answers(svc, refs),
-                      players=len(svc.players()), unread=0)
+                      players=len(svc.players()), unread=0, reach=reach, describe=lambda a: audience.describe(svc, a),
+                      **(audience_ctx() if r4 else {}))
+
+    def audience_ctx() -> dict:
+        """Для формы «Кому»: игроки и метки CRM."""
+        return {"aud_players": svc.players(), "aud_tags": audience.all_tags(svc)}
+
+    def read_audience(form) -> str:
+        ids = [int(x) for x in form.getlist("aud_ids") if str(x).isdigit()]
+        one = str(form.get("aud_one", ""))
+        if form.get("aud") == "one" and one.isdigit():
+            return audience.make(audience.IDS, ids=[int(one)])
+        return audience.make(str(form.get("aud", "all")), str(form.get("aud_tag", "")), ids)
 
     @app.post("/board")
-    def board_add(request: Request, csrf: str = Form(""), text: str = Form(""), pinned: str = Form(""),
-                  important: str = Form(""), rsvp: str = Form("")):
+    async def board_add(request: Request):
         me = need_admin(request)
-        check_csrf(me, csrf)
-        if crm.add_post(svc, me["id"], text, pinned == "1", important == "1", rsvp == "1", now()) is None:
+        form = await request.form()
+        check_csrf(me, str(form.get("csrf", "")))
+        text, important = str(form.get("text", "")), str(form.get("important", ""))
+        if crm.add_post(svc, me["id"], text, form.get("pinned") == "1", important == "1", form.get("rsvp") == "1",
+                        now(), read_audience(form)) is None:
             return go("/board", "⚠️ Напиши текст объявления.")
         tail = tr(" Важное — придёт всем на телефон в течение минуты.") if important == "1" else ""
         return go("/board", tr("✅ Опубликовано.") + tail)
@@ -790,9 +812,88 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             crm.set_pin(svc, post_id, False)
         elif action == "delete":
             crm.delete_post(svc, post_id)
+        elif action == "nudge":
+            crm.nudge_post(svc, post_id, now())
+            return go(f"/board#post{post_id}", "🔔 Напомним на телефон тем, кто ещё не прочитал или не ответил.")
         else:
             raise HTTPException(status_code=404)
         return go("/board", "✅ Готово.")
+
+    # ---------- опросы ----------
+
+    @app.get("/polls", response_class=HTMLResponse)
+    def polls_page(request: Request):
+        me = need_login(request)
+        r4 = svc.is_admin_player(me)
+        opened, closed = polls.listing(svc, me, now(), everything=r4)
+        reach = {p.id: p.reach(svc) for p in opened + closed} if r4 else {}
+        return render(request, "polls.html", me, opened=opened, closed=closed, r4=r4, now_ts=now(), reach=reach,
+                      ROLE_NAME=polls.ROLE_NAME, describe=lambda a: audience.describe(svc, a))
+
+    @app.get("/polls/new", response_class=HTMLResponse)
+    def poll_new(request: Request, kind: str = "reservoir"):
+        me = need_admin(request)
+        return render(request, "poll_new.html", me, kind=kind if kind in ("reservoir", "generic") else "generic",
+                      **audience_ctx())
+
+    def parse_local(value: str) -> int | None:
+        """«2026-10-07T19:00» по времени сайта (МСК) → UTC-секунды."""
+        try:
+            return int(datetime.strptime(value.strip(), "%Y-%m-%dT%H:%M").replace(tzinfo=cfg.tz).timestamp())
+        except ValueError:
+            return None
+
+    @app.post("/polls/create")
+    async def poll_create(request: Request):
+        me = need_admin(request)
+        form = await request.form()
+        check_csrf(me, str(form.get("csrf", "")))
+        kind = "reservoir" if form.get("kind") == "reservoir" else "generic"
+        title = str(form.get("title", "")).strip()
+        if kind == "reservoir":
+            options = sorted({t for t in (parse_local(str(form.get(f"t{i}", ""))) for i in (1, 2, 3)) if t})
+            title = title or "Рейд на резервуар: время и состав"
+        else:
+            options = [o.strip()[:120] for o in str(form.get("options", "")).splitlines() if o.strip()][:12]
+        if not title or len(options) < (1 if kind == "reservoir" else 2):
+            return go(f"/polls/new?kind={kind}", "⚠️ Нужен вопрос и хотя бы два варианта (для воды — хотя бы одно время).")
+        pid = polls.create(svc, kind, title, str(form.get("note", "")), options, form.get("multi") == "1",
+                           parse_local(str(form.get("closes", ""))), me["id"], now(), read_audience(form))
+        return go(f"/polls#p{pid}", "✅ Опрос открыт — участникам придёт уведомление.")
+
+    @app.post("/polls/{poll_id}/vote")
+    async def poll_vote(request: Request, poll_id: int):
+        me = need_login(request)
+        form = await request.form()
+        check_csrf(me, str(form.get("csrf", "")))
+        poll = polls.get(svc, poll_id, me["id"])
+        if poll is None or not polls.visible(svc, poll.row, me):
+            raise HTTPException(status_code=404, detail="Опрос не найден")
+        choices = [int(c) for c in form.getlist("c") if str(c).isdigit()]
+        error = polls.vote(svc, poll_id, me["id"], choices, str(form.get("role", "")), now())
+        if error:
+            return go(f"/polls#p{poll_id}", {
+                "closed": "⚠️ Опрос уже закрыт.",
+                "role": "⚠️ Выбери: участвую, в резерв или не смогу.",
+                "time": "⚠️ Отметь хотя бы одно время, которое тебе подходит.",
+                "empty": "⚠️ Выбери вариант.",
+            }.get(error, "⚠️ Не получилось."))
+        return go(f"/polls#p{poll_id}", tr("✅ Ответ записан ({nick}). Можно изменить до закрытия.", nick=me["nick"]))
+
+    @app.post("/polls/{poll_id}/{action}")
+    def poll_action(request: Request, poll_id: int, action: str, csrf: str = Form("")):
+        me = need_admin(request)
+        check_csrf(me, csrf)
+        if action == "close":
+            polls.close(svc, poll_id)
+        elif action == "delete":
+            polls.delete(svc, poll_id)
+        elif action == "nudge":
+            polls.nudge(svc, poll_id, now())
+            return go(f"/polls#p{poll_id}", "🔔 Напомним на телефон тем, кто ещё не ответил.")
+        else:
+            raise HTTPException(status_code=404)
+        return go("/polls", "✅ Готово.")
 
     @app.post("/answer")
     def answer(request: Request, csrf: str = Form(""), ref: str = Form(""), value: str = Form(""), next: str = Form("/")):
@@ -890,7 +991,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         keys = data.get("keys") or {}
         if not endpoint.startswith("https://") or not keys.get("p256dh") or not keys.get("auth"):
             raise HTTPException(status_code=400, detail="Неверная подписка")
-        svc.add_push(me["id"], endpoint, str(keys["p256dh"]), str(keys["auth"]), now())
+        svc.add_push(acc_id(me), endpoint, str(keys["p256dh"]), str(keys["auth"]), now())
         return {"ok": True}
 
     @app.post("/push/unsubscribe")
@@ -898,7 +999,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         me = need_login(request)
         data = await request.json()
         check_csrf(me, str(data.get("csrf", "")))
-        svc.drop_push(str(data.get("endpoint", "")), me["id"])
+        svc.drop_push(str(data.get("endpoint", "")), acc_id(me))
         return {"ok": True}
 
     @app.post("/push/test")
@@ -906,8 +1007,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         me = need_login(request)
         check_csrf(me, csrf)
         t = now()
-        n = Notice(me["id"], f"test:{t}", "test", "🔔 Проверка", "Уведомления работают. Так придёт «баф готов — отдай X».", "/")
-        if not svc.push_subs(me["id"]):
+        n = Notice(acc_id(me), f"test:{t}", "test", "🔔 Проверка", "Уведомления работают. Так придёт «баф готов — отдай X».", "/")
+        if not svc.push_subs(acc_id(me)):
             return go("/me#notify", "⚠️ На этом аккаунте нет устройств — сначала нажми «Включить уведомления».")
         ok = push.deliver(svc, n, t)
         return go("/me#notify", "✅ Отправил — посмотри на телефон." if ok else "⚠️ Не дошло. Нажми «Включить уведомления» ещё раз.")
@@ -918,7 +1019,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         form = await request.form()
         check_csrf(me, str(form.get("csrf", "")))
         off = [k for k in NOTICE_KINDS if form.get(f"on_{k}") != "1"]
-        svc.set_notify_prefs(me["id"], {"off": off, "quiet": form.get("quiet") == "1"})
+        svc.set_notify_prefs(acc_id(me), {"off": off, "quiet": form.get("quiet") == "1"})
         return go("/me#notify", "✅ Настройки уведомлений сохранены.")
 
     @app.post("/me/pp")
@@ -945,18 +1046,53 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                    pin2: str = Form("")):
         me = need_login(request)
         check_csrf(me, csrf)
-        _, error = svc.login(me["nick"], old.strip(), now())
+        _, error = svc.login(me["account_nick"], old.strip(), now())
         if error:
             return go("/me", "⚠️ Текущий PIN-код неверный.")
         if not valid_pin(pin.strip()) or pin.strip() != pin2.strip():
             return go("/me", "⚠️ Новый PIN — 4 цифры, и оба раза одинаково.")
-        svc.set_pin(me["id"], pin.strip())
+        svc.set_pin(acc_id(me), pin.strip())
         return go("/me", "✅ PIN-код изменён.")
+
+    @app.post("/char/{cid}")
+    def switch_char(request: Request, cid: int, csrf: str = Form(""), next: str = Form("/")):
+        """Сменить персонажа: дальше все действия — от его имени."""
+        me = need_login(request)
+        check_csrf(me, csrf)
+        if not svc.switch_character(request.cookies.get("sid", ""), acc_id(me), cid):
+            return go("/me", "⚠️ Это не твой персонаж.")
+        nick = svc.player(cid)["nick"]
+        return go(next if next.startswith("/") and not next.startswith("//") else "/",
+                  tr("Теперь ты играешь за {nick}.", nick=nick))
+
+    @app.post("/me/chars/add")
+    def add_char(request: Request, csrf: str = Form(""), nick: str = Form("")):
+        me = need_login(request)
+        check_csrf(me, csrf)
+        char, error = svc.add_character(acc_id(me), nick, now())
+        if error:
+            return go("/me#chars", {
+                "nick": "⚠️ Ник должен быть от 2 до 32 символов.",
+                "mine": "⚠️ Этот персонаж уже у тебя в списке.",
+                "taken": "⚠️ Этот ник уже чей-то аккаунт или твинк. Если это ошибка — напиши R4.",
+            }[error])
+        return go("/me#chars", tr("✅ Персонаж {nick} добавлен. Переключайся в меню с ником вверху.", nick=char["nick"]))
+
+    @app.post("/me/chars/{cid}/release")
+    def release_char(request: Request, cid: int, csrf: str = Form("")):
+        me = need_login(request)
+        check_csrf(me, csrf)
+        if svc.release_character(acc_id(me), cid):
+            return go("/me#chars", "✅ Персонаж отвязан. Его история бафов сохранена.")
+        return go("/me#chars", "⚠️ Это не твой твинк.")
 
     @app.post("/me/delete")
     def delete_me(request: Request, csrf: str = Form("")):
         me = need_login(request)
         check_csrf(me, csrf)
+        if me["id"] != acc_id(me):  # удаляем только выбранного твинка, аккаунт остаётся
+            svc.delete_player(me["id"], now())
+            return go("/me", tr("🗑 Персонаж {nick} удалён.", nick=me["nick"]))
         svc.delete_player(me["id"], now())
         resp = go("/login", "Ты удалён с сайта. Вернуться можно в любой момент — просто зарегистрируйся снова.")
         resp.delete_cookie("sid")
@@ -1123,7 +1259,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             urgent={k: bool((svc.active_timer(pid, k) or {"urgent": 0})["urgent"]) for k in KINDS},
             buffs={k: buff_state(pid, k, t) for k in KINDS},
             given=given, received=received,
-            is_owner=bool(me["is_owner"]),
+            is_owner=bool(me["acc_owner"]),
         )
 
     @app.post("/admin/p/{pid}/{action}")
@@ -1144,7 +1280,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             svc.set_pin(pid, None)
             return go(back, tr("🔑 PIN сброшен. {nick} может заново зарегистрироваться под своим ником и задать новый PIN.", nick=p["nick"]))
         if action in ("make_admin", "drop_admin"):
-            if not me["is_owner"] or p["is_owner"]:
+            if not me["acc_owner"] or p["is_owner"]:
                 raise HTTPException(status_code=403, detail="Назначать админов может только владелец")
             svc.set_admin(pid, action == "make_admin")
             return go(back, "⭐ Теперь админ" if action == "make_admin" else "Админ снят")
