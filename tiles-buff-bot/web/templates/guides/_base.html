@@ -5,11 +5,7 @@
 <h1>{{ guide.emoji }} {{ _(guide.title) }}</h1>
 <p class="text-2 mt0">{{ _(guide.summary) }}</p>
 {% block guide %}{% endblock %}
-<section class="card sources">
-  <h2>📎 {{ _("Источники") }}</h2>
-  <p class="hint mt0">{{ _("Пересказ своими словами. Игра обновляется — если что-то изменилось, напишите R4.") }}</p>
-  <ul class="feed">{% for name, url in guide.sources %}<li>{% if url %}<a href="{{ url }}" rel="noopener" target="_blank">{{ _(name) }}</a>{% else %}{{ _(name) }}{% endif %}</li>{% endfor %}</ul>
-</section>
+<p class="hint">{{ _("Игра обновляется — если что-то изменилось, напишите R4.") }}</p>
 <nav class="toc" aria-label="{{ _("Другие гайды") }}">
   {% for g in guides if g.slug != guide.slug %}<a href="/guides/{{ g.slug }}">{{ g.emoji }} {{ _(g.title) }}</a>{% endfor %}
 </nav>

@@ -389,7 +389,7 @@ def test_guides_section(site):
     from web.guides import GUIDES
     for g in GUIDES:
         page = owner.get(f"/guides/{g.slug}")
-        assert page.status_code == 200 and g.title in page.text and "Источники" in page.text
+        assert page.status_code == 200 and g.title in page.text and "Источники" not in page.text
     assert owner.get("/guides/nope").status_code == 404
     assert owner.get("/tips").url.path == "/guides"
     assert "Электростанция: время, ресурсы, требования" in owner.get("/guides/build").text

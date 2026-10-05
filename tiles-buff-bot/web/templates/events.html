@@ -32,7 +32,7 @@
 {% if is_admin %}
 <section class="card">
   <div class="card-head"><h2>⚙️ {{ _("Расписание союза") }}</h2><a class="btn btn-sm btn-primary" href="/events/edit">➕ {{ _("Событие") }}</a></div>
-  <p class="hint mt0">{{ _("Стартовый набор взят из открытых гайдов — источники расходятся. Сверьте время с игрой, поправьте и снимите «проверить». Напоминание приходит игрокам на телефон.") }}</p>
+  <p class="hint mt0">{{ _("Стартовый набор примерный. Сверьте время с игрой, поправьте и снимите «проверить». Напоминание приходит игрокам на телефон.") }}</p>
   <ul class="feed">
     {% for x in all_events %}{% set e = x.e %}
     <li><span><b>{{ _(e.title) }}</b>{% if not e.checked %} <span class="badge badge-warn">{{ _("проверить") }}</span>{% endif %}<br>

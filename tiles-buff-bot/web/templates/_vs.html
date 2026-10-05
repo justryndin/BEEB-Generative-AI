@@ -21,8 +21,8 @@
     {{ _("Дальше: {emoji} {theme}.", emoji=pp_next.theme.emoji, theme=_(pp_next.theme.name)) }} <a href="/guides/week#pp">{{ _("Календарь →") }}</a></p>
   <p class="hint">{{ _(vs_reset) }} {{ _("До конца дня:") }} <b>{{ dur(vs.ends_at - now_ts) }}</b>.
     {% if vs.tomorrow %}{{ _("Завтра:") }} {{ vs.tomorrow.emoji }} {{ _(vs.tomorrow.theme) }}.{% endif %}</p>
-  <details class="more" data-key="vs-target"><summary>{{ _("Сколько набирать и откуда данные") }}</summary>
+  <details class="more" data-key="vs-target"><summary>{{ _("Сколько набирать") }}</summary>
     <p class="text-2">{{ _(vs_target) }}</p>
-    <p class="hint">{{ _("Источники: патч-ноты 2.6.0–2.6.200, LootBar, [Dan]Dangers, DTF (на октябрь 2026). «Спорно» — источники расходятся, сверяйся с заданиями в игре.") }} <a href="/guides/week">{{ _("Неделя: когда что тратить →") }}</a></p>
+    <p class="hint">{{ _("«Спорно» — сверяйся с заданиями в игре.") }} <a href="/guides/week">{{ _("Неделя: когда что тратить →") }}</a></p>
   </details>
 </section>
