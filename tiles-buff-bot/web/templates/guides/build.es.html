@@ -47,7 +47,7 @@
   <div class="table-wrap"><table class="pp-table">
     <tr><th class="num">Nv.</th><th class="num">Tiempo</th><th class="num">Comida</th><th class="num">Madera</th><th class="num">Metal</th><th class="num">Combustible</th><th>Qué se necesita</th></tr>
     {% for lvl in range(2, 31)|reverse %}{% set c = pp.costs.get(lvl, ("—", "—", "—", "—")) %}
-    <tr{% if lvl < pp_goal %} class="prio"{% endif %}><td class="num"><b>{{ lvl }}</b></td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="num">{{ c[0] }}</td><td class="num">{{ c[1] }}</td><td class="num">{{ c[2] }}</td><td class="num">{{ c[3] }}</td><td class="text-2">{{ pp.requires.get(lvl, "—") }}</td></tr>
+    <tr{% if lvl < pp_goal %} class="prio"{% endif %}><td class="num"><b>{{ lvl }}</b></td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="num">{{ c[0] }}</td><td class="num">{{ c[1] }}</td><td class="num">{{ c[2] }}</td><td class="num">{{ c[3] }}</td><td class="text-2">{{ pp.requires_text(lvl) }}</td></tr>
     {% endfor %}
   </table></div>
   <p class="hint">Cuanto más alto el nivel, más caro y más largo: de 27 a 30 son 32–42 días de construcción por nivel. Apúntate a la cola de buffs de la alianza justo después de iniciarla: mientras el temporizador es largo, cada buff recorta lo máximo.</p>
@@ -70,7 +70,7 @@
     <tr><th>Edificio</th><th class="num">Nv.</th><th class="num">Normalmente</th><th class="num">Registros</th></tr>
     {% for code, lvl, median, count in observed %}
     {% set it = gamedata.item(code) %}
-    <tr><td>{{ it.ru if it else code }}</td><td class="num">{{ lvl }}</td><td class="num">{{ dur(median) }}</td><td class="num">{{ count }}</td></tr>
+    <tr><td>{{ it.name if it else code }}</td><td class="num">{{ lvl }}</td><td class="num">{{ dur(median) }}</td><td class="num">{{ count }}</td></tr>
     {% endfor %}
   </table></div>
   {% endif %}

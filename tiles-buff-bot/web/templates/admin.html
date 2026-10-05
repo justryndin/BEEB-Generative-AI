@@ -75,7 +75,7 @@
         <label for="priority_item">⚡ {{ _("Приоритетная стройка") }}</label>
         <select id="priority_item" name="priority_item">
           <option value="" {{ 'selected' if not settings.priority_item }}>{{ _("без приоритета") }}</option>
-          {% for it in gamedata.items_for("build") if it.max_level %}<option value="{{ it.code }}" {{ 'selected' if settings.priority_item == it.code }}>{{ it.ru }}</option>{% endfor %}
+          {% for it in gamedata.items_for("build") if it.max_level %}<option value="{{ it.code }}" {{ 'selected' if settings.priority_item == it.code }}>{{ it.name }}</option>{% endfor %}
         </select>
       </div>
       <div class="field">

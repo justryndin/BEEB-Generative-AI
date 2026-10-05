@@ -1,0 +1,25 @@
+{# Карточка «VS сегодня»: тема дня Дуэли, задания, окна МСК + UTC. vs = core.vs.today(...) #}
+<section class="card vs-card">
+  {% if vs.day %}{% set d = vs.day %}
+  <div class="card-head">
+    <h2>⚔️ {{ _("VS сегодня") }} · {{ d.emoji }} {{ _(d.theme) }}</h2>
+    <span class="badge badge-accent">{{ _("день {n} из 6", n=d.num) }}</span>
+  </div>
+  <ul class="checks">
+    {% for task in d.tasks %}<li>{{ _(task.text) }}{% if task.disputed %} <span class="badge badge-warn" title="{{ _("Источники расходятся — сверь с заданиями в игре") }}">{{ _("спорно") }}</span>{% endif %}</li>{% endfor %}
+  </ul>
+  {% for what, a, b, ua, ub in vs.windows() %}
+  <p class="mt0">⏰ <b>{{ _(what) }}</b>: {{ _("лучшее окно {msk} МСК · {utc} UTC — совпадает с «Игрой по-крупному».", msk="%02d:00–%02d:00"|format(a, b), utc="%02d:00–%02d:00"|format(ua, ub)) }}</p>
+  {% endfor %}
+  {% if d.tip %}<p class="text-2">💡 {{ _(d.tip) }}</p>{% endif %}
+  {% else %}
+  <h2>⚔️ {{ _("VS сегодня") }} · 😴</h2>
+  <p class="mt0">{{ _(vs_sunday) }}</p>
+  {% endif %}
+  <p class="hint">{{ _(vs_reset) }} {{ _("До конца дня:") }} <b>{{ dur(vs.ends_at - now_ts) }}</b>.
+    {% if vs.tomorrow %}{{ _("Завтра:") }} {{ vs.tomorrow.emoji }} {{ _(vs.tomorrow.theme) }}.{% endif %}</p>
+  <details class="more" data-key="vs-target"><summary>{{ _("Сколько набирать и откуда данные") }}</summary>
+    <p class="text-2">{{ _(vs_target) }}</p>
+    <p class="hint">{{ _("Источники: патч-ноты 2.6.0–2.6.200, LootBar, [Dan]Dangers, DTF (на октябрь 2026). «Спорно» — источники расходятся, сверяйся с заданиями в игре.") }} <a href="/guides/week">{{ _("Неделя: когда что тратить →") }}</a></p>
+  </details>
+</section>

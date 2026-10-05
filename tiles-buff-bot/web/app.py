@@ -18,7 +18,7 @@ from markupsafe import Markup
 
 from core import gamedata
 from core.db import Database
-from core import crm, i18n
+from core import crm, i18n, planner, vs
 from core.i18n import LANGS, SHORT, t
 from core.analytics import benefit, r4_report
 from core.tips import player_tip
@@ -435,7 +435,17 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             updated=local(t, "%H:%M:%S"),
             now_ts=t,
             gap=svc.setting_float("min_gap_hours"),
+            **day_cards(me, t),
         )
+
+    def day_cards(me, t: int) -> dict:
+        """«VS сегодня» и «Мой путь к Электростанции 30» для главной."""
+        level = me["pp_level"]
+        return {
+            "vs": vs.today(t), "vs_sunday": vs.SUNDAY_TIP, "vs_reset": vs.RESET, "vs_target": vs.TARGET,
+            "way": planner.pp_path(level), "advice": planner.advice(level, svc.setting_float("pct")),
+            "show_path": level is None or level < planner.GOAL,
+        }
 
     @app.get("/tip", response_class=HTMLResponse)
     def next_tip(request: Request, step: int = 1):
@@ -893,11 +903,12 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         return go("/me#notify", "✅ Настройки уведомлений сохранены.")
 
     @app.post("/me/pp")
-    def me_pp(request: Request, csrf: str = Form(""), level: str = Form("")):
+    def me_pp(request: Request, csrf: str = Form(""), level: str = Form(""), next: str = Form("/me")):
         me = need_login(request)
         check_csrf(me, csrf)
         svc.set_pp_level(me["id"], int(level) if level.strip().isdigit() else None)
-        return go("/me", "✅ Уровень Электростанции сохранён.")
+        return go(next if next.startswith("/") and not next.startswith("//") else "/me",
+                  t("✅ Уровень Электростанции сохранён."))
 
     @app.post("/me/nick")
     def change_nick(request: Request, csrf: str = Form(""), nick: str = Form("")):

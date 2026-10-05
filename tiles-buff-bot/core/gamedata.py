@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from . import i18n
 from .timeparse import parse_duration
 
 SOURCE = "tilessurvive.net"
@@ -30,6 +31,26 @@ class Item:
     @property
     def title(self) -> str:
         return f"{self.ru} ({self.en})" if self.en and self.en != self.ru else self.ru
+
+    @property
+    def name(self) -> str:
+        """Название на языке игрока: русское, иначе из каталога, иначе английское из игры."""
+        lang = i18n.get_lang()
+        if lang == "ru":
+            return self.ru
+        return i18n.catalog(lang).get(self.ru) or self.en or i18n.translate(self.ru)
+
+    def requires_list(self, level: int) -> list[tuple[str, int]]:
+        """«Лаборатория 1 — 29, Казарма 1 — 29» → [("Лаборатория 1", 29), ("Казарма 1", 29)]."""
+        out = []
+        for part in self.requires.get(level, "").split(","):
+            name, _, lvl = part.rpartition("—")
+            if name.strip() and lvl.strip().isdigit():
+                out.append((name.strip(), int(lvl)))
+        return out
+
+    def requires_text(self, level: int) -> str:
+        return ", ".join(f"{i18n.translate(n)} — {lvl}" for n, lvl in self.requires_list(level)) or "—"
 
     def time_for(self, level: int | None) -> int | None:
         if level is None or level not in self.times:
@@ -142,7 +163,7 @@ def label(code: str | None, level: int | None, note: str | None = None) -> str:
     it = item(code)
     if it is None:
         return note or ""
-    text = it.ru
+    text = it.name
     if level:
         text += f" → {level}"
     if note:

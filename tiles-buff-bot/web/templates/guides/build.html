@@ -47,7 +47,7 @@
   <div class="table-wrap"><table class="pp-table">
     <tr><th class="num">Ур.</th><th class="num">Время</th><th class="num">Еда</th><th class="num">Древесина</th><th class="num">Металл</th><th class="num">Топливо</th><th>Что нужно</th></tr>
     {% for lvl in range(2, 31)|reverse %}{% set c = pp.costs.get(lvl, ("—", "—", "—", "—")) %}
-    <tr{% if lvl < pp_goal %} class="prio"{% endif %}><td class="num"><b>{{ lvl }}</b></td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="num">{{ c[0] }}</td><td class="num">{{ c[1] }}</td><td class="num">{{ c[2] }}</td><td class="num">{{ c[3] }}</td><td class="text-2">{{ pp.requires.get(lvl, "—") }}</td></tr>
+    <tr{% if lvl < pp_goal %} class="prio"{% endif %}><td class="num"><b>{{ lvl }}</b></td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="num">{{ c[0] }}</td><td class="num">{{ c[1] }}</td><td class="num">{{ c[2] }}</td><td class="num">{{ c[3] }}</td><td class="text-2">{{ pp.requires_text(lvl) }}</td></tr>
     {% endfor %}
   </table></div>
   <p class="hint">Чем выше уровень, тем дороже и дольше: 27 → 30 — это 32–42 дня стройки на каждый уровень. Встаньте в очередь на бафы союза сразу после запуска — пока таймер длинный, каждый баф срезает больше всего.</p>
@@ -70,7 +70,7 @@
     <tr><th>Здание</th><th class="num">Ур.</th><th class="num">Обычно</th><th class="num">Записей</th></tr>
     {% for code, lvl, median, count in observed %}
     {% set it = gamedata.item(code) %}
-    <tr><td>{{ it.ru if it else code }}</td><td class="num">{{ lvl }}</td><td class="num">{{ dur(median) }}</td><td class="num">{{ count }}</td></tr>
+    <tr><td>{{ it.name if it else code }}</td><td class="num">{{ lvl }}</td><td class="num">{{ dur(median) }}</td><td class="num">{{ count }}</td></tr>
     {% endfor %}
   </table></div>
   {% endif %}

@@ -27,6 +27,7 @@
 {% endfor %}
 
 {% include "_tip.html" %}
+{% include "_vs.html" %}
 
 <div class="alert alert-info push-banner" data-push data-push-banner hidden>
   <span>🔔 {{ _("<b>Включи уведомления</b> — сайт сам скажет, когда твой баф готов и кому его отдать.") }}</span>
@@ -38,7 +39,7 @@
 <section class="card life-card">
   <h2>🏁 {{ KIND_EMOJI[f.kind] }} {{ _("{what} — закончилось", what=what or (_("Стройка") if f.kind == "build" else _("Исследование"))) }}</h2>
   {% if f.next_level %}
-  <p class="mt0">{{ _("Следующая: <b>{item} → {level}</b>", item=_(f.item.ru), level=f.next_level) }}{% if f.next_reference %} · {{ _("по справочнику {time} без бонусов", time=dur(f.next_reference)) }}{% endif %}. {{ _("Запустил? Встань в очередь — здание и уровень уже выбраны, останется время.") }}</p>
+  <p class="mt0">{{ _("Следующая: <b>{item} → {level}</b>", item=f.item.name, level=f.next_level) }}{% if f.next_reference %} · {{ _("по справочнику {time} без бонусов", time=dur(f.next_reference)) }}{% endif %}. {{ _("Запустил? Встань в очередь — здание и уровень уже выбраны, останется время.") }}</p>
   {% set href = "/join/build?item=" ~ f.item.code ~ "&level=" ~ f.next_level %}
   {% elif f.item %}
   <p class="mt0">{{ _("Запустил следующее? Встань в очередь — здание уже выбрано, останется время.") if f.kind == "build" else _("Запустил следующее? Встань в очередь — ветка уже выбрана, останется время.") }}</p>
@@ -89,6 +90,8 @@
   <a class="btn btn-big btn-block" href="/join">➕ {{ _("Встать в очередь") }}</a>
   <a class="btn btn-primary btn-big btn-block" href="/give">🎁 {{ _("Я отдал баф") }}</a>
 </div>
+
+{% if show_path %}{% include "_pp_path.html" %}{% endif %}
 
 <section class="card explain">
   <h2>{{ _("Как это работает") }}</h2>

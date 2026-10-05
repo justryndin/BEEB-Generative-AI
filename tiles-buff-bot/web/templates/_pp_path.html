@@ -1,0 +1,36 @@
+{# «Мой путь к Электростанции 30». way = core.planner.pp_path(...), advice = core.planner.advice(...) #}
+{% set pp = gamedata.ITEMS["pp"] %}
+<section class="card pp-path" id="pp-path">
+  <div class="card-head">
+    <h2>⚡ {{ _("Мой путь к Электростанции 30") }}</h2>
+    {% if way %}<span class="badge{% if way.current < pp_goal %} badge-accent{% endif %}">{{ _("сейчас {n} ур.", n=way.current) }}</span>{% endif %}
+  </div>
+  {% if not way %}
+  <p class="mt0">{{ _("Укажи уровень Электростанции — сайт посчитает, что строить дальше и сколько ресурсов нужно до 30.") }}</p>
+  <form method="post" action="/me/pp" class="row">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="{{ pp_next or '/' }}#pp-path">
+    <input name="level" type="number" inputmode="numeric" min="1" max="30" placeholder="{{ _("уровень, например 27") }}" aria-label="{{ _("Уровень Электростанции") }}" style="flex:1;min-width:140px">
+    <button class="btn btn-primary" type="submit">{{ _("Сохранить") }}</button>
+  </form>
+  {% elif way.next %}{% set s = way.next %}
+  <p class="mt0"><b>{{ _("Следующий: Электростанция → {level}", level=s.level) }}</b> · {{ dur(s.seconds) }} {{ _("без бонусов") }}</p>
+  <ul class="kv pp-kv">
+    <li><span class="k">{{ _("Сначала подними") }}</span><span class="v">{{ s.requires_text or "—" }}</span></li>
+    <li><span class="k">{{ _("Ресурсы") }}</span><span class="v">{% for name, v in s.cost_text %}{{ _(name) }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</span></li>
+    {% if way.steps|length > 1 %}
+    <li><span class="k">{{ _("Всего до {goal} ({n} ур.)", goal=way.goal, n=way.steps|length) }}</span>
+      <span class="v">≈ {{ dur(way.seconds) }} {{ _("стройки") }} · {% for name, v in way.cost_text %}{{ _(name) }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</span></li>
+    <li><span class="k">{{ _("Что ещё подтянуть по пути") }}</span><span class="v">{{ way.upgrade_text or "—" }}</span></li>
+    {% endif %}
+  </ul>
+  {% if way.current < pp_goal %}<p class="text-2">🚀 {{ _("Пока Электростанция ниже {goal} ур., твои стройки получают бафы союза в приоритете — встань в очередь сразу после запуска.", goal=pp_goal) }}</p>{% endif %}
+  {% else %}
+  <p class="mt0">🏆 {{ _("Электростанция 30 — максимум. Дальше: монументы, золотые статуи и Лаборатория.") }}</p>
+  {% endif %}
+  {% if way and way.next %}
+  <details class="more" data-key="pp-advice"><summary>{{ _("Советы: что качать и как быстрее") }}</summary>
+    <ul class="checks">{% for text, kw in advice %}<li>{{ _(text, **kw) }}</li>{% endfor %}</ul>
+    <p class="hint">{{ _("Время и ресурсы — без бонусов, по таблице Скальда. С твоими бонусами будет быстрее.") }} <a href="/guides/build#pp">{{ _("Вся таблица →") }}</a> · <a href="/me">{{ _("Изменить уровень") }}</a></p>
+  </details>
+  {% endif %}
+</section>

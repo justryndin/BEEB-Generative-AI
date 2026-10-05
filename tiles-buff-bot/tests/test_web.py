@@ -402,3 +402,17 @@ def test_tip_of_day_on_home_and_more(site):
     more = owner.get("/tip?step=1")
     assert more.status_code == 200 and 'data-next-tip="2"' in more.text
     assert "Начни здесь" in owner.get("/guides").text and owner.get("/guides/start").status_code == 200
+
+
+def test_vs_card_and_power_plant_path(site):
+    _, owner, _ = site
+    register(owner, "Иван")
+    home = owner.get("/").text
+    assert "VS сегодня" in home and "UTC" in home
+    assert "Мой путь к Электростанции 30" in home and "Укажи уровень Электростанции" in home
+    r = owner.post("/me/pp", data={"csrf": csrf(home), "level": "24", "next": "/#pp-path"}, follow_redirects=False)
+    assert r.headers["location"] == "/#pp-path"
+    home = owner.get("/").text
+    assert "Электростанция → 25" in home and "Станция связи → 24" in home and "млрд" in home
+    owner.post("/me/pp", data={"csrf": csrf(owner.get("/me").text), "level": "30"})
+    assert "Мой путь к Электростанции 30" not in owner.get("/").text

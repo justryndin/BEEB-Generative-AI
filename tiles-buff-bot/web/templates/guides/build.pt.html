@@ -47,7 +47,7 @@
   <div class="table-wrap"><table class="pp-table">
     <tr><th class="num">Nv.</th><th class="num">Tempo</th><th class="num">Comida</th><th class="num">Madeira</th><th class="num">Metal</th><th class="num">Combustível</th><th>Requisitos</th></tr>
     {% for lvl in range(2, 31)|reverse %}{% set c = pp.costs.get(lvl, ("—", "—", "—", "—")) %}
-    <tr{% if lvl < pp_goal %} class="prio"{% endif %}><td class="num"><b>{{ lvl }}</b></td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="num">{{ c[0] }}</td><td class="num">{{ c[1] }}</td><td class="num">{{ c[2] }}</td><td class="num">{{ c[3] }}</td><td class="text-2">{{ pp.requires.get(lvl, "—") }}</td></tr>
+    <tr{% if lvl < pp_goal %} class="prio"{% endif %}><td class="num"><b>{{ lvl }}</b></td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="num">{{ c[0] }}</td><td class="num">{{ c[1] }}</td><td class="num">{{ c[2] }}</td><td class="num">{{ c[3] }}</td><td class="text-2">{{ pp.requires_text(lvl) }}</td></tr>
     {% endfor %}
   </table></div>
   <p class="hint">Quanto maior o nível, mais caro e mais demorado: 27 → 30 são 32–42 dias de construção por nível. Entre na fila de buffs da aliança logo depois de iniciar — enquanto o cronômetro é longo, cada buff corta mais.</p>
@@ -70,7 +70,7 @@
     <tr><th>Edifício</th><th class="num">Nv.</th><th class="num">Normalmente</th><th class="num">Inscrições</th></tr>
     {% for code, lvl, median, count in observed %}
     {% set it = gamedata.item(code) %}
-    <tr><td>{{ it.ru if it else code }}</td><td class="num">{{ lvl }}</td><td class="num">{{ dur(median) }}</td><td class="num">{{ count }}</td></tr>
+    <tr><td>{{ it.name if it else code }}</td><td class="num">{{ lvl }}</td><td class="num">{{ dur(median) }}</td><td class="num">{{ count }}</td></tr>
     {% endfor %}
   </table></div>
   {% endif %}
