@@ -1,0 +1,70 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<section class="card">
+  <h2>🧭 Regra principal</h2>
+  <p><b>Acumule e gaste conforme os eventos.</b> Os mesmos aceleradores, fragmentos e destroços dão pontos em vários eventos ao mesmo tempo, se gastos na janela certa. Fora dos eventos, não se gastam recursos valiosos.</p>
+  <ul class="checks">
+    <li><b>Duelo de Alianças (VS)</b> — todo dia, exceto domingo; cada dia tem seu tema.</li>
+    <li><b>Power Play (Grande Jogo)</b> — todo dia, o tema muda a cada 4 horas.</li>
+    <li><b>Turbo Turtle (TT)</b> — evento semanal.</li>
+  </ul>
+  <p class="hint">Temas coincidindo = pontos em dobro: 🟢 dois eventos, 🟡 três eventos, 🟠 um evento.</p>
+</section>
+
+{% set W = [
+  ("🏗 Aceleradores de construção", True, [("🟢",3,7),("🟢",3,7),none,("🟢",15,19),("🟢",15,19),("🟠",11,15),("🟠",7,11)]),
+  ("🔬 Aceleradores de pesquisa", True, [("🟢",15,19),("🟠",7,11),("🟠",7,11),none,("🟠",23,3),("🟡",19,23),("🟢",15,19)]),
+  ("🦸 Heróis: recrutamento, livros, fragmentos", False, [none,none,none,("🟢",15,19),none,none,("🟢",3,7)]),
+  ("🛡 Equipamento: destroços, parafusos", False, [("🟡",19,23),("🟠",15,19),none,("🟠",19,23),("🟢",3,7),("🟢",19,23),none]),
+  ("🧬 Titã: células, soros", False, [none,("🟢",15,19),("🟢",15,19),none,("🟠",23,3),none,("🟠",23,3)]),
+  ("📐 Coleção do Chef: projetos, porcas", False, [none,none,none,("🟠",19,23),("🟠",11,15),none,("🟠",11,15)]),
+] %}
+{% set off = tz_offset_min // 60 %}
+<section class="card">
+  <h2>🗓 Quando gastar</h2>
+  <p class="hint mt0">Em cima — {{ tz_label }} ({{ offset_text() }}), embaixo, em letra pequena — UTC (horário do servidor do jogo).</p>
+  <div class="table-wrap"><table class="week">
+    <tr><th>O quê</th><th>Seg</th><th>Ter</th><th>Qua</th><th>Qui</th><th>Sex</th><th>Sáb</th><th>Dom</th></tr>
+    {% for name, hl, cells in W %}
+    <tr{% if hl %} class="hl"{% endif %}><td>{% if hl %}<b>{{ name }}</b>{% else %}{{ name }}{% endif %}</td>
+      {% for c in cells %}<td>{% if c %}{{ c[0] }} {{ "%02d–%02d"|format(c[1], c[2]) }}<small class="utc">{{ "%02d–%02d"|format((c[1] - off) % 24, (c[2] - off) % 24) }} UTC</small>{% else %}—{% endif %}</td>{% endfor %}
+    </tr>
+    {% endfor %}
+    <tr><td>⚔️ Treino de tropas</td><td>TT</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>TT</td></tr>
+    <tr><td>🥫 Stamina, missões de exploração</td><td>VS</td><td>—</td><td>—</td><td>VS</td><td>VS</td><td>—</td><td>TT</td></tr>
+  </table></div>
+  <p class="hint">Programação feita pela aliança [Dan]Dangers (estado 174). Os temas do Duelo podem variar entre servidores — confira no jogo. Novo dia do jogo — 03:00 {{ tz_label }} = 00:00 UTC.</p>
+</section>
+
+<section class="card">
+  <h2>📌 Por dia — resumo</h2>
+  <ul class="rules-list">
+    <li><span class="ico">Seg</span><div>Destroços de equipamento (contam tanto no Duelo quanto no Turbo Turtle). Recursos coletados no domingo à noite contam para segunda. Radar — seg, qua, sex.</div></li>
+    <li><span class="ico">Ter</span><div><b>Dia de construção.</b> O dia de maior gasto de aceleradores de construção. Caminhões — só de classe A, tarefas — S. Desde a 2.6.200, no segundo dia do Duelo há também tarefas de <a href="/guides/pets">pets</a>.</div></li>
+    <li><span class="ico">Qua</span><div>Titã e <b>aceleradores de pesquisa</b> — coincide com o Duelo, maior retorno.</div></li>
+    <li><span class="ico">Qui</span><div><b>Heróis</b>: acumule cartas de recrutamento, fragmentos e livros — gaste na quinta das 15:00 às 19:00. Construções prontas à noite <b>não colete</b> — finalize na sexta.</div></li>
+    <li><span class="ico">Sex</span><div>Construção e pesquisa contam de novo. Cola para o equipamento do chef. No sábado de manhã — resultado do ranking.</div></li>
+    <li><span class="ico">Sáb</span><div>Treino de exército para o Turbo Turtle, aceleradores de pesquisa à noite. <b>Conquista de Arcádia</b>.</div></li>
+    <li><span class="ico">Dom</span><div>Sem Duelo: faça o balanço, acumule para a semana. Uma hora antes da virada do dia, confira sua posição no ranking.</div></li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>🎯 Quanto fazer</h2>
+  <ul class="checks">
+    <li>No Duelo, tente fazer <b>pelo menos 5 M</b> de pontos por dia (melhor 10 M) — para boas recompensas.</li>
+    <li>No Power Play, complete a escala de <b>18 pontos</b> — é a recompensa máxima.</li>
+    <li>Não corra atrás do topo todo dia: se não entra no top 50, é melhor guardar recursos para a próxima semana.</li>
+    <li>Exemplo de retorno: gastando 3 horas de aceleradores na janela certa, dá para recuperar mais de 25 minutos de aceleradores, além de manuais, gemas e medalhas do Duelo.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>🧊 Como isso combina com os buffs da aliança</h2>
+  <ul class="checks">
+    <li>O buff corta o tempo na hora, em qualquer dia — não precisa «guardar» para um evento. Dê assim que o site indicar para quem.</li>
+    <li>Já os <b>aceleradores</b> rendem mais nas janelas da tabela. Depois de gastar — <b>confira o tempo no site</b> (página inicial → «Confira seu tempo» ou «➕ Entrar → Corrigir tempo»), senão a fila vai achar que você ainda precisa de mais buffs.</li>
+    <li>É melhor <b>finalizar</b> uma construção longa no dia de construção — a conclusão também dá pontos.</li>
+  </ul>
+</section>
+{% endblock %}

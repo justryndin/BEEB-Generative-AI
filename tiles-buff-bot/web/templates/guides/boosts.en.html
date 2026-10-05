@@ -1,0 +1,36 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<section class="card">
+  <h2>🧭 What cuts construction and research time</h2>
+  <ul class="rules-list">
+    <li><span class="ico">🧊</span><div><b>Seasonal alliance buff</b> — −{{ pct }}% of the declared time, for both the receiver and the giver. Once every {{ cooldown }}h, separately for construction and for research. Works on all your constructions (or research) at once. The site manages it: who to give it to is on the home page.</div></li>
+    <li><span class="ico">🤝</span><div><b>Alliance help (“taps”)</b> — every ally tap cuts the timer: about 32 sec, and with a leveled-up <b>Artifact Workshop</b> — 45+ sec. Requires a Comms Outpost. Every day; the more active allies, the more you get.</div></li>
+    <li><span class="ico">⏩</span><div><b>Speedups</b> — from events, chests, Infected Hunt. Best spent in event windows — see the <a href="/guides/week">“Week”</a> guide.</div></li>
+    <li><span class="ico">⚡</span><div><b>24-hour base buffs</b> — the arrow button at the top of the screen → the <b>“Development”</b> tab. For example, <b>gathering speed</b>: the max buff for 600 crystals gives <b>+100% gathering for 24 hours</b> — it’s recommended to always take it. Check that tab: it also shows what other speed buffs your base has available.</div></li>
+    <li><span class="ico">🔬</span><div><b>Research</b> — the Development branch in the Lab: a permanent bonus to construction and research speed. See the <a href="/guides/research">“Lab”</a> guide.</div></li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>✅ How to account for it so the queue stays fair</h2>
+  <p>The site only sees alliance buffs marked with the “Gave ✓” button. Taps, speedups and base buffs cut time <b>every day</b> — the site doesn’t know about them.</p>
+  <ol class="steps-list">
+    <li>Once a day and after every buff received, the site asks <b>“Same in the game?”</b> (on the home page and via notification).</li>
+    <li>It matches — tap “Yes”. It doesn’t — enter the time from the timer, one button.</li>
+    <li>The site recalculates how many buffs you’re still owed. If the time is already at the goal, you move to “🎯 reached the goal”, and buffs go to those who need them more.</li>
+  </ol>
+  <div class="example"><b>Example.</b> Joined with 20 days. Over two days, taps and speedups cut another 3 days, while the site thinks 18 are left. Tapped “No, the game shows something else” → entered 15 days → fewer buffs owed, and the extra buff went to someone who needs it more.</div>
+  <p class="hint">The 15% is always counted from the <b>originally entered</b> time — speedups don’t shrink the buff.</p>
+  <p class="hint">Since update 2.6.200, the construction and research window also shows the <b>default time</b> (without bonuses). On the site, enter what the timer shows right now.</p>
+</section>
+
+<section class="card">
+  <h2>💡 How to get the most out of it</h2>
+  <ul class="checks">
+    <li><b>Started a long construction — join the queue right away.</b> While the timer is long, each buff cuts the most.</li>
+    <li><b>Give your buff as soon as it’s ready</b>: hold it longer than {{ hold }}h — you skip your turn.</li>
+    <li>An alliance buff doesn’t need an “event window”: it cuts time immediately. Speedups, on the other hand, should be saved for events.</li>
+    <li>Turn on notifications in your profile — the site will tell you when to give and when to check your time.</li>
+  </ul>
+</section>
+{% endblock %}

@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}Help · {{ site_name }}{% endblock %}
+{% block content %}
+<h1>❓ How it all works</h1>
+<p class="text-2 mt0">A plain-language explanation of how the site works: the queue, buffs, notifications, announcements. If something is unclear, ask an R4 in the alliance chat.</p>
+
+<nav class="toc" aria-label="Contents">
+  <a href="#short">In 30 seconds</a>
+  <a href="#start">First steps</a>
+  <a href="#join">Join the queue</a>
+  <a href="#give">Give a buff</a>
+  <a href="#queue">How the queue moves</a>
+  <a href="#roulette">Roulette</a>
+  <a href="#life">Life of an entry</a>
+  <a href="#notify">Notifications</a>
+  <a href="#alliance">Announcements and events</a>
+  <a href="#mistake">Made a mistake — undo</a>
+  <a href="#faq">FAQ</a>
+  {% if is_admin %}<a href="#r4" class="r4">For R4</a>{% endif %}
+</nav>
+
+<section class="card help" id="short">
+  <h2>⏱ In 30 seconds</h2>
+  <ol class="steps-list">
+    <li><b>Building or researching something long?</b> Tap “➕ Join”, choose what’s running and enter the time from the in-game timer.</li>
+    <li><b>Your buff is ready?</b> Open the home page — it says <b>exactly who</b> to give it to. Give it in the game and tap “Gave ✓”.</li>
+    <li><b>That’s it.</b> The site does the rest: works out the queue, reminds you who to give to and sends notifications.</li>
+  </ol>
+  <p class="hint">One buff cuts <b>{{ pct }}%</b> of the time and works <b>for both the receiver and the giver</b>. Giving pays off for everyone.</p>
+</section>
+
+<section class="card help" id="start">
+  <h2>🚀 First steps</h2>
+  <ol class="steps-list">
+    <li><b>Sign up.</b> Nickname — <b>exactly as in the game</b>, so people can find you. PIN — 4 digits, used to log in. The alliance code is given by R4 in chat.</li>
+    <li><b>Terms.</b> Read and accept the <a href="/rules">queue terms</a> — you can’t join the queue without it.</li>
+    <li><b>Notifications.</b> <a href="/me#notify">Profile → Notifications → “Enable”</a>. Then the site will tell you when to give your buff and to whom. More <a href="#notify">below</a>.</li>
+    <li><b>Power Plant level.</b> Set it in your <a href="/me">profile</a> — it’s needed for the <a href="#roulette">roulette</a>.</li>
+    <li><b>Site as an app.</b> On your phone: browser menu → “Add to Home Screen”. You’ll get an icon just like a regular app.</li>
+  </ol>
+</section>
+
+<section class="card help" id="join">
+  <h2>➕ Join the queue</h2>
+  <p>Tap <b>“➕ Join”</b> → choose <b>construction</b> or <b>research</b>:</p>
+  <ul class="checks">
+    <li><b>Construction:</b> building → the level you’re building <b>to</b> → time from the timer.</li>
+    <li><b>Research:</b> branch → time from the timer.</li>
+  </ul>
+  <p>Enter the time <b>as shown on the in-game timer</b>: “21d 05:30:00” → 21 days, 5 hours, 30 minutes. The site will immediately tell you how many buffs you’re owed.</p>
+  <div class="example"><b>Example.</b> A 12-day construction. Each buff cuts {{ pct }}% of 12 days ≈ 1d 19h. We buff until about {{ build_target }} is left — so you’re owed several buffs, and that number shows in the line “got 0 of N”.</div>
+  <details class="more"><summary>Two constructions running at once — which one do I enter?</summary>
+    <p>The <b>longest</b> one. A buff in the game cuts the time of all your constructions at once, and the queue counts by the longest one.</p></details>
+  <details class="more"><summary>Join once — and that’s it?</summary>
+    <p>Yes. No need to re-join after every buff. Your entry lives as long as that construction or research is running. More in <a href="#life">“Life of an entry”</a>.</p></details>
+</section>
+
+<section class="card help" id="give">
+  <h2>🎁 Give a buff</h2>
+  <ol class="steps-list">
+    <li>Open the <b>home page</b>. The “🎁 Buff ready? Give it now” card says <b>who</b> to give it to: separately for research and for construction.</li>
+    <li>Give the buff to that player <b>in the game</b>.</li>
+    <li>Come back to the site and tap <b>“Gave ✓”</b> → choose the player you gave it to (the first one in the list is the one it’s owed to).</li>
+  </ol>
+  <p>The site immediately cuts the time for the receiver and for you, and everyone’s queue updates within a few seconds.</p>
+  <p class="hint">A buff recharges in {{ cooldown }}h, separately for construction and research. The site knows when yours is ready again — from your check-ins.</p>
+  <details class="more"><summary>Couldn’t find that player in the game, or they’re offline</summary>
+    <p>Give it to the <b>next one</b> on the list and mark exactly the player you gave it to. The queue will recalculate on its own.</p></details>
+</section>
+
+<section class="card help" id="queue">
+  <h2>📊 How the queue moves</h2>
+  {% if order == "share" %}
+  <p class="lead"><b>The main rule: whoever has the shorter bar goes next.</b></p>
+  <p>Everyone in the queue has a “got X of Y” bar: how many buffs they’ve already received out of what they’re owed. The next buff goes to whoever has the least-filled bar. This way help is split <b>evenly by share</b>: small and large constructions reach their goal at roughly the same time.</p>
+  <div class="example"><b>Example.</b> Anya got 1 of 5 (20%), Boris — 2 of 4 (50%), Vika — 0 of 3 (0%).<br>Next will be <b>Vika</b> (0%), then <b>Anya</b> (20%), then Boris.</div>
+  {% else %}
+  <p>The “fair round + cycle” mode is on right now: first everyone gets one buff, then a second one; within a round, buffs alternate between the big timers and those who have received the least.</p>
+  {% endif %}
+  <p>A few simple adjustments work on top of the main rule. Every player in the queue has <b>a plain-words note on why they’re in their spot</b>.</p>
+  <ul class="rules-list">
+    <li><span class="ico">⏸</span><div><b>{{ gap }}h pause.</b> Got a buff — the next one comes no sooner than {{ gap }}h later. During the pause, others get the buffs.</div></li>
+    {% if fire %}<li><span class="ico">⏰</span><div><b>“Expiring”.</b> If the timer will reach the goal <b>on its own</b> in less than {{ fire }}h, the player goes first — otherwise the buff they’re owed is simply lost.</div></li>{% endif %}
+    {% if prio %}<li><span class="ico">⚡</span><div><b>Priority: {{ prio }}</b> These constructions matter more to the alliance: their bar grows {{ prio_weight|string|replace(".0", "") }} times slower, so they get buffs more often. The queue doesn’t abandon the others.</div></li>{% endif %}
+    {% if hold %}<li><span class="ico">⏳</span><div><b>Reciprocity.</b> Holding a ready buff longer than {{ hold }}h without giving it — you skip your turn. Give it — and you’re right back in your spot.</div></li>{% endif %}
+    <li><span class="ico">🔥</span><div><b>“Urgent”.</b> R4 can mark a player as urgent — they go first (but still with the pause).</div></li>
+    <li><span class="ico">🎯</span><div><b>Goal.</b> We buff until this is left: construction — <b>{{ build_target }}</b>, research — <b>{{ research_target }}</b> No extra buffs: if less than the goal would be left after a buff, it isn’t assigned.</div></li>
+  </ul>
+  <details class="more"><summary>Why this way — is it fair?</summary>
+    <p>If you give “in order of who joined first”, the first ones take everything and the rest wait for weeks. If you give “equal count” — a small construction finishes fast, while a big one waits till the end. “By share” — we help everyone equally relative to what they need. We tested it on a model of a 50-player alliance: this way the first buff arrives fastest, and with the “expiring” rule almost no buff is lost.</p></details>
+</section>
+
+<section class="card help" id="roulette">
+  <h2>🎲 Roulette — when the queue is empty</h2>
+  {% if roulette_build or roulette_research %}
+  <p>If nobody is in the {{ "construction" if roulette_build }}{{ " and " if roulette_build and roulette_research }}{{ "research" if roulette_research }} queue, the buff <b>isn’t lost</b>: the site itself picks who to give it to among active alliance players (visited the site in the last {{ roulette_days }} days, are in the queue or have given buffs).</p>
+  <ol class="steps-list">
+    <li><b>First</b> — those who <b>haven’t built Power Plant {{ pp_goal }}</b> yet.</li>
+    <li>Then — those whose level isn’t set, then — those who have already built it.</li>
+    <li>Within a group — whoever got roulette buffs less often this week. On a tie — a random draw.</li>
+    <li>Whoever just got a buff waits out the {{ gap }}h pause.</li>
+  </ol>
+  <p>The home page and the “I gave” page show <b>who it landed on</b> (🎲). The draw changes only after each roulette buff, so everyone sees the same player on screen.</p>
+  <p class="hint">As soon as someone joins the queue, the roulette turns off and the buff goes to them. Set your Power Plant level in your <a href="/me">profile</a>; the site also learns it by itself when you join the queue with a Power Plant construction.</p>
+  {% else %}
+  <p>The roulette is off right now: if the queue is empty, better hold on to the buff.</p>
+  {% endif %}
+</section>
+
+<section class="card help" id="life">
+  <h2>🔁 Life of an entry: what happens after you join</h2>
+  <div class="lifeline">
+    <div><b>1. Waiting</b><small>you’re in the queue, your spot and the reason are shown</small></div>
+    <div><b>2. Got a buff</b><small>time cut, “got” +1</small></div>
+    <div><b>3. {{ gap }}h pause</b><small>then back in the queue</small></div>
+    <div><b>4. 🎯 At goal</b><small>got everything you’re owed</small></div>
+    <div><b>5. 🏁 Finished</b><small>the site will suggest the next one</small></div>
+  </div>
+  <ul class="checks">
+    <li><b>You don’t get kicked out of the queue.</b> Got a buff → pause → waiting again. No need to re-join.</li>
+    <li><b>Got everything you’re owed</b> → “🎯 reached the goal”. No more buffs needed, but the entry stays and the timer runs on its own.</li>
+    <li><b>Time check.</b> The site can’t see the game. After every buff received{% if check %} and every {{ check }}h{% endif %} it asks: “Same in the game?” — tap “Yes” or enter the correct time.</li>
+    <li><b>Sped up on your own</b> (speedups, alliance help) — tap “No, the game shows a different time” or “➕ Join → Fix time”. The site will recalculate how many buffs you’re still owed.</li>
+    <li><b>Construction finished</b> — the home page will show “Join with the next one”: the building and next level are already filled in, you just enter the time.</li>
+    <li><b>Finished early</b> or gave up — “➕ Join → 🏁 Done”, so buffs don’t go to waste.</li>
+  </ul>
+</section>
+
+<section class="card help" id="notify">
+  <h2>🔔 Phone notifications</h2>
+  <p>The site messages your phone by itself — no need to keep watching it. No app to install.</p>
+  <ul class="checks">
+    <li><b>Android:</b> <a href="/me#notify">Profile → Notifications → “Enable on this device”</a> → “Allow”.</li>
+    <li><b>iPhone:</b> open the site in <b>Safari</b> → “Share” button → <b>“Add to Home Screen”</b>. Open the site from the home screen icon and tap “Enable” there.</li>
+  </ul>
+  <p>What you’ll get:</p>
+  <ul class="checks">
+    <li>🎁 your buff is ready — <b>who to give it to</b>;</li>
+    <li>⏳ you’ve been holding a ready buff too long;</li>
+    <li>🎁 someone gave you a buff — check your time;</li>
+    <li>👉 you’re next in the queue;</li>
+    <li>🏁 a construction or research has finished;</li>
+    <li>📣 important R4 announcements and 📅 alliance event reminders.</li>
+  </ul>
+  <p class="hint">From {{ "%02d:00" % quiet[0] }} to {{ "%02d:00" % quiet[1] }} it stays quiet — anything important arrives in the morning. Any type of notification can be turned off in your profile.</p>
+</section>
+
+<section class="card help" id="alliance">
+  <h2>📣 Announcements and 📅 alliance events</h2>
+  <ul class="checks">
+    <li><b>Announcements</b> — the “📣 Alliance” tab. Pinned ones show on the home page. Some can be answered “✅ I’ll be there / ✖️ Can’t make it” — R4 will see who’s coming.</li>
+    <li><b>Events</b> — the weekly schedule in MSK (Moscow, UTC+3) and UTC: Alliance Duel by day, Infected Siege, Arcadian Conquest and more. You’ll get a reminder before the start.</li>
+    <li>A new game day starts at 03:00 MSK = 00:00 UTC (game server time). MSK and UTC clocks are at the top of every page.</li>
+  </ul>
+</section>
+
+<section class="card help" id="mistake">
+  <h2>↩️ Made a mistake — how to fix it</h2>
+  <ul class="checks">
+    <li><b>Marked the wrong player or tapped by accident</b> — the home page will immediately show “Mistake? ↩️ Undo”. You can undo it yourself within {{ self_undo }} minutes.</li>
+    <li><b>Later</b> — message an R4: they can undo the entry in the “Buff log” at any time.</li>
+    <li>After an undo, everything goes back the way it was: time for both players, “got”, pause, queue. The entry stays crossed out in the log — you can see who fixed it and when.</li>
+    <li><b>Gave it in the game but forgot to mark it</b> — mark it now or ask an R4.</li>
+  </ul>
+</section>
+
+<section class="card help" id="faq">
+  <h2>💬 FAQ</h2>
+  <details class="more"><summary>Why are they ahead of me?</summary>
+    <p>Under every nickname it says why: a smaller share received, “expiring”, priority or “urgent”. If you’re on a pause or holding a ready buff, that’s shown for you too.</p></details>
+  <details class="more"><summary>Why am I not getting buffs anymore?</summary>
+    <p>Most likely you’ve reached the goal: {{ build_target }} left on construction or {{ research_target }} on research. One more buff would drop the time below the goal — those aren’t assigned. If you sped up and the time is different, fix it.</p></details>
+  <details class="more"><summary>How long do I have to wait?</summary>
+    <p>Check your spot (#) and your bar. The speed depends on how fast the alliance gives buffs: the more people turn on notifications and give right away, the faster the queue moves for everyone.</p></details>
+  <details class="more"><summary>Someone gave me a buff, but the site doesn’t know</summary>
+    <p>The giver has to mark it. Ask them to tap “I gave”, or message an R4 — they’ll mark it for them.</p></details>
+  <details class="more"><summary>Forgot my PIN</summary>
+    <p>Message an R4 — they’ll reset your PIN, and you sign up again under your nickname. All your entries are kept.</p></details>
+  <details class="more"><summary>Changed my nickname in the game</summary>
+    <p>Profile → “Change nickname”. Your entries and buffs stay yours.</p></details>
+</section>
+
+{% if is_admin %}
+<h2 class="section-title" id="r4">⭐ For R4</h2>
+
+<section class="card help">
+  <h2>🧭 The essentials</h2>
+  <p>The site runs itself: picks the receiver, sends reminders, recalculates the queue, prompts for time checks. <b>R4 are only needed for exceptions</b>: fix a mistake, mark someone urgent, help someone who can’t log in, and look at the analytics once a day.</p>
+  <div class="example"><b>5 minutes a day:</b> “⚙️ Manage → 📈 Analytics” → the “What to do now” block. It already lists who’s holding buffs, who stopped visiting and how many people have notifications on.</div>
+</section>
+
+<section class="card help">
+  <h2>⚙️ Managing players</h2>
+  <ul class="checks">
+    <li><b>Player card</b> (Manage → player): their timers, buffs, log, R4 note and tags, Power Plant level.</li>
+    <li><b>🔥 Urgent</b> — the player goes first. Use it for special cases (war, an important level).</li>
+    <li><b>Add a construction for a player</b> — for those without access to the site. <b>“➕ Add player”</b> creates such a player; if they later sign up with that nickname, it all becomes theirs.</li>
+    <li><b>🎁 Mark: they gave a buff</b> — if a player gave it in the game but can’t mark it.</li>
+    <li><b>Close entry</b> — the player abandoned the construction or left. <b>Delete</b> — left the alliance.</li>
+    <li><b>Reset PIN</b> — the player forgot their PIN and signs up again. <b>Make admin</b> — grant R4 rights.</li>
+    <li><b>Note and tags</b> are visible to R4 only: “active, R3, online in the evening”.</li>
+  </ul>
+</section>
+
+<section class="card help">
+  <h2>📜 Log and undo</h2>
+  <p>“Manage → 📜 Buff log” — all entries, newest first, with nickname search. “↩️ Undo” rolls an entry back completely: the time of the receiver and the giver, “got”, the pause, buff readiness. An undone entry stays crossed out with a note of who undid it and when.</p>
+  <p class="hint">Everything on the site is calculated from this log: whatever is undone disappears everywhere at once.</p>
+</section>
+
+<section class="card help">
+  <h2>📈 Analytics — what the numbers mean</h2>
+  <ul class="checks">
+    <li><b>Alliance buffs used</b> — what share of possible buffs was actually given. Each active player can give 2 buffs every {{ cooldown }}h. The closer to 100%, the better.</li>
+    <li><b>Ready buff sits before being given</b> — how long it usually takes from a buff being ready to being given. This is <b>the main loss</b>: every day of delay means less help for the alliance.</li>
+    <li><b>Waiting for first buff</b> — how long it takes from joining to the first buff.</li>
+    <li><b>Buffs still owed to the queue</b> and “≈ N days” — how long it’ll take to clear the queue at the current pace.</li>
+    <li><b>Notifications</b> — how many of those in the queue have turned them on. With notifications, people give faster.</li>
+    <li><b>What to do now</b> — a ready-made list: who’s holding buffs, who hasn’t visited for 3+ days.</li>
+  </ul>
+</section>
+
+<section class="card help">
+  <h2>📣 Announcements and events</h2>
+  <ul class="checks">
+    <li><b>Announcement:</b> “📣 Alliance” → text → “📌 Pin” (shows on the home page), “🔔 Important” (pushed to everyone’s phone), “Ask I’ll be there / Can’t make it”. You can see how many have read it.</li>
+    <li><b>Events:</b> “📣 Alliance → 📅 Events”. The starting schedule was taken from guides, and sources disagree — <b>check against the game</b>, fix the time and set “✅ verified”. Enter times in MSK; the site converts them to server time itself.</li>
+    <li>Reminder: how long before the start to notify players. “The evening before” works well for Duel days.</li>
+  </ul>
+</section>
+
+<section class="card help">
+  <h2>🛠 Queue settings — what does what</h2>
+  <ul class="checks">
+    <li><b>Queue order:</b> “by share” (recommended) or “round + cycle” with a choice of cycle 1:1, 1:2, 2:1…</li>
+    <li><b>Thresholds</b> for construction and research — down to what remainder we buff.</li>
+    <li><b>Buff cuts, %</b> and <b>of what</b> (of the declared time — as in the game).</li>
+    <li><b>Pause after a buff</b>, <b>“Expiring”</b>, <b>“Holding a ready buff”</b> — in hours; 0 turns the rule off.</li>
+    <li><b>Priority construction</b>, level and “how much faster” — currently: {{ prio or "no priority" }}.</li>
+    <li><b>Roulette</b> for construction and research, and the “activity” window.</li>
+    <li><b>Time check</b> — how often to ask players to check their timer.</li>
+    <li><b>Alliance code</b> — you can’t sign up without it. Share it in chat.</li>
+  </ul>
+</section>
+
+<section class="card help">
+  <h2>💬 Ready-made texts for the game chat</h2>
+  <p class="hint mt0">Tap “Copy” and paste it into the alliance chat.</p>
+  {% set t1 = "Alliance buffs are now on the site: " ~ site_url ~ " — sign up (nickname as in the game), join the queue with your construction or research, and when your buff is ready the site will tell you who to give it to. Turn on notifications in your profile!" %}
+  {% set t2 = "How it works: everyone is owed as many buffs as they need to reach the goal. Next is whoever has the shorter “got X of Y” bar. Got a buff — " ~ gap ~ "h pause. Hold a ready buff longer than " ~ hold ~ "h — you skip your turn. Details: " ~ site_url ~ "/help" %}
+  {% set t3 = "Set your Power Plant level in your profile on the site (" ~ site_url ~ "/me): when the queue is empty, construction buffs go by roulette, and first to those who haven’t built Power Plant " ~ pp_goal ~ "." %}
+  {% for t in [t1, t2, t3] %}
+  <div class="chat-text"><p>{{ t }}</p><button class="btn btn-sm" type="button" data-copy="{{ t }}">📋 Copy</button></div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<p class="center"><a href="/rules">📜 Queue terms</a> · <a href="/guides">📚 Game guides</a></p>
+{% endblock %}

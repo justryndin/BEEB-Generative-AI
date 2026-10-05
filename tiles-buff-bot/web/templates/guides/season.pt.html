@@ -1,0 +1,45 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<section class="card">
+  <h2>❄️ O que é</h2>
+  <p>A «Era da Nevasca» é a quarta temporada. Ela começa <b>não para todos ao mesmo tempo</b>, mas de acordo com o progresso da temporada no seu estado. Novos monstros, locais, companheiros e mecânicas.</p>
+</section>
+
+<section class="card">
+  <h2>🧊 Principais mecânicas</h2>
+  <ul class="rules-list">
+    <li><span class="ico">🔥</span><div><b>Fornalha do Juízo Final (Doomsday Furnace)</b> — o edifício central da temporada. Ela é melhorada para aumentar a <b>Resistência ao frio</b> e não deixar o assentamento congelar.</div></li>
+    <li><span class="ico">🏯</span><div><b>Bastiões e Cidades</b> — as alianças os conquistam no mapa. Na «Batalha pelos Bastiões» (Bastion Clash), a página do evento mostra o horário (UTC) em que cada aliança tomou seu bastião mais alto. Na «Disputa pelas Cidades» (City Contest), desde a 2.6.100 os monstros nas cidades de nv. 4–6 ficaram mais fracos.</div></li>
+    <li><span class="ico">⛽</span><div><b>Gás natural</b> — novo recurso no mapa, necessário para conquistar bastiões e cidades.</div></li>
+    <li><span class="ico">🧌</span><div><b>Gigante de Gelo (Frost Giant)</b> — uma criatura especial que pode ser criada.</div></li>
+    <li><span class="ico">🛡</span><div><b>Equipamento de superliga</b> — o equipamento de liga de nível e estrelas máximos pode ser melhorado para superliga: nível e estrelas maiores, bônus adicionais.</div></li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>📈 Pontos de progresso da temporada</h2>
+  <p>Desde a versão 2.6.0 foram adicionadas três novas fontes de pontos:</p>
+  <ol class="steps-list">
+    <li><b>Resgate gelado</b> — resgatar animais presos no gelo.</li>
+    <li><b>Doomsday Express</b> — entregas.</li>
+    <li><b>Limpeza de gelo da aliança</b> — ajudar os aliados a limpar o gelo. <b>Ajudem uns aos outros</b>: é vantajoso para você e para a aliança.</li>
+  </ol>
+  <p class="hint">Se na «Disputa de Estados» o seu estado ganhou um passe no pareamento, a tarefa semanal da temporada de abater tropas é contada automaticamente.</p>
+</section>
+
+<section class="card">
+  <h2>📌 Bom saber</h2>
+  <ul class="checks">
+    <li>Depois de sair da aliança, é preciso esperar <b>48 horas</b> antes de participar da «Batalha de Gelo e Fogo» (Clash of Frost and Fire), da «Batalha da Luz e da Noite» (Clash of Light and Night) e da «Batalha pela Ilha do Dragão» (Dragon Isle Clash) (desde a 2.6.100).</li>
+    <li>Na «Disputa Comercial», só dá para explorar e atacar postos comerciais dentro do seu grupo de temporada.</li>
+    <li>O monumento da temporada agora não fica no assentamento, e sim no «Salão da Glória».</li>
+    <li>«Casa de jogos» na lista de tarefas dos eventos: minijogos e loja de troca de fichas.</li>
+    <li>Antes de gastar recursos raros e aceleradores, confira quanto falta para o fim do evento da temporada.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>🧊 Buffs da aliança na temporada</h2>
+  <p>O buff da aliança da temporada corta <b>{{ pct }}%</b> do tempo informado de construção ou pesquisa — na hora, para quem recebe e para quem deu. Recarrega em {{ cooldown }} h, separado para construção e pesquisa. Para quem dar, a página inicial do site mostra. Detalhes — guia <a href="/guides/boosts">«Buffs e aceleradores»</a> e <a href="/help#queue">ajuda</a>.</p>
+</section>
+{% endblock %}

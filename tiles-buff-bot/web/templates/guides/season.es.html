@@ -1,0 +1,45 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<section class="card">
+  <h2>❄️ Qué es</h2>
+  <p>«La Era de la Ventisca» es la cuarta temporada. <b>No empieza para todos a la vez</b>, sino según el progreso de la temporada en tu estado. Nuevos monstruos, ubicaciones, compañeros y mecánicas.</p>
+</section>
+
+<section class="card">
+  <h2>🧊 Mecánicas principales</h2>
+  <ul class="rules-list">
+    <li><span class="ico">🔥</span><div><b>Horno del Juicio Final (Doomsday Furnace)</b>: el edificio central de la temporada. Se mejora para aumentar la <b>resistencia al frío</b> y evitar que el asentamiento se congele.</div></li>
+    <li><span class="ico">🏯</span><div><b>Bastiones y Ciudades</b>: las alianzas los capturan en el mapa. En el «Choque de bastiones» (Bastion Clash), la página del evento muestra la hora (UTC) en que cada alianza ocupó su bastión más alto. En el «Concurso de ciudades» (City Contest), desde la 2.6.100 los monstruos de las ciudades de nivel 4–6 son más débiles.</div></li>
+    <li><span class="ico">⛽</span><div><b>Gas natural</b>: un nuevo recurso en el mapa, necesario para capturar bastiones y ciudades.</div></li>
+    <li><span class="ico">🧌</span><div><b>Gigante de hielo (Frost Giant)</b>: una criatura especial que se puede criar.</div></li>
+    <li><span class="ico">🛡</span><div><b>Equipo de superaleación</b>: el equipo de aleación de nivel y estrellas máximos se puede mejorar a superaleación: más nivel y estrellas, bonificaciones adicionales.</div></li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>📈 Puntos de progreso de temporada</h2>
+  <p>Desde la versión 2.6.0 hay tres nuevas fuentes de puntos:</p>
+  <ol class="steps-list">
+    <li><b>Rescate helado</b>: rescatar animales atrapados en el hielo.</li>
+    <li><b>Doomsday Express</b>: entregas.</li>
+    <li><b>Limpieza de hielo de la alianza</b>: ayudar a los aliados a limpiar el hielo. <b>Ayúdense entre ustedes</b>: les conviene a ustedes y a la alianza.</li>
+  </ol>
+  <p class="hint">Si en el «Concurso de estados» tu estado recibió un pase en el emparejamiento, la tarea semanal de temporada de eliminar tropas se cuenta automáticamente.</p>
+</section>
+
+<section class="card">
+  <h2>📌 Bueno saber</h2>
+  <ul class="checks">
+    <li>Después de salir de una alianza hay que esperar <b>48 horas</b> antes de participar en el «Choque de Hielo y Fuego» (Clash of Frost and Fire), el «Choque de Luz y Noche» (Clash of Light and Night) y el «Choque de la Isla del Dragón» (Dragon Isle Clash) (desde la 2.6.100).</li>
+    <li>En el «Concurso comercial», solo puedes explorar y atacar puestos comerciales dentro de tu grupo de temporada.</li>
+    <li>El monumento de temporada ya no está en el asentamiento, sino en el «Salón de la Gloria».</li>
+    <li>La «Casita de juegos» en la lista de tareas de eventos: minijuegos y tienda de canje de fichas.</li>
+    <li>Antes de gastar recursos raros y aceleradores, comprueba cuánto falta para el final del evento de temporada.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>🧊 Buffs de la alianza en la temporada</h2>
+  <p>El buff de temporada recorta un <b>{{ pct }}%</b> del tiempo declarado de construcción o investigación, al instante, tanto a quien lo recibe como a quien lo da. Se recupera en {{ cooldown }} h, por separado para construcción e investigación. A quién dárselo te lo muestra la página principal del sitio. Más detalles en la guía <a href="/guides/boosts">«Buffs y aceleradores»</a> y en la <a href="/help#queue">ayuda</a>.</p>
+</section>
+{% endblock %}

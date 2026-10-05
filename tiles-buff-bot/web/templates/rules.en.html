@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Terms · {{ site_name }}{% endblock %}
+{% block content %}
+<h1>📜 Queue terms</h1>
+<p class="hint mt0">A detailed plain-language explanation of the whole site is in the <a href="/help">help</a>.</p>
+{% if need %}<div class="alert alert-warn">To join the queue and give buffs, accept the terms at the bottom of the page.</div>{% endif %}
+
+<section class="card">
+  <h2>🧠 Our algorithm — simply</h2>
+  <div class="stack">
+    <div class="tip"><span class="ico">1️⃣</span><div><b>How many you’re owed.</b> One buff cuts {{ pct|round(0)|int }}% of the time you entered. We buff until {{ target_text("build") }} (construction) or {{ target_text("research") }} (research) is left. From this the site calculates the exact number of buffs and shows it: “N more owed”.</div></div>
+    <div class="tip"><span class="ico">📐</span><div><b>Example.</b> A <b>30-day</b> research: each buff −4.5 days → 30 → 25.5 → 21 → 16.5 → 12 → <b>7.5</b>. You’re owed <b>5 buffs</b>; a sixth isn’t needed — it would go to waste.</div></div>
+    <div class="tip"><span class="ico">2️⃣</span><div><b>Who’s next.</b> {% if order == "share" %}Everyone in the queue has a bar: how much they’ve received out of what they’re owed. <b>Whoever has the shorter bar goes next.</b> This way we help everyone equally: small and large constructions reach their goal at roughly the same time.{% else %}The site builds the queue by the rules below.{% endif %} The first in the block (👉 next) is the one to give a buff to right now. Everyone has a note on why they’re in their spot.</div></div>
+    <div class="tip"><span class="ico">🔁</span><div><b>Life of an entry.</b> Join once — and you stay as long as your construction or research is running. Got a buff → pause → back in the queue. Got everything you’re owed → “🎯 reached the goal”: the entry stays, the timer runs on its own. Timer finished → the site will suggest “join with the next one”. Sped up on your own → fix the time (the site will also ask after every buff).</div></div>
+    <div class="tip"><span class="ico">3️⃣</span><div><b>What happens when a buff is marked.</b> The receiver’s timer drops immediately, “got” +1, “still owed” −1, and a {{ gap|int }}h pause starts. The giver’s timer drops too (in the game the buff works for both). Everyone’s queue recalculates within a few seconds.</div></div>
+    <div class="tip"><span class="ico">✅</span><div><b>What’s guaranteed.</b> The order is the same for everyone and visible to everyone — each player has a note on why they’re in their spot. {% if order == "share" %}Whoever has received a smaller share of what they’re owed always goes before someone with a larger share (except for “expiring”, “urgent” and the pause).{% else %}Until you get your next buff, nobody will get more than one buff more than you.{% endif %} Exactly when your buff arrives depends on how fast the alliance gives buffs; you can see it from your spot in the queue.</div></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>🤝 What I promise</h2>
+  <ul class="checks">
+    <li>I enter the <b>exact</b> time from the in-game timer. If I speed up on my own, I fix it right away (“🔧 Fix time”).</li>
+    <li>I give my buff <b>in queue order</b> — to the one marked first 👉. If I can’t find them in the game, I give it to the next one on the list.</li>
+    <li>Right after giving, I tap “🎁 I gave a buff” and mark <b>who</b> I gave it to.</li>
+    <li>When my construction or research is finished, I tap “🏁 Done”, so buffs don’t go to waste.</li>
+    <li>I don’t sign up twice and don’t enter more time than there really is.</li>
+  </ul>
+  <p class="text-2">The site can’t check the game — it all relies on honesty. Violations are visible in the buff history, and alliance leadership can remove a player from the queue.</p>
+</section>
+
+<section class="card">
+  <h2>⚙️ How buffs are distributed</h2>
+  <div class="stack">
+    <div class="tip"><span class="ico">✂️</span><div>One buff cuts <b>{{ pct|round(0)|int }}%</b> of the declared time and also works <b>for the giver</b>.</div></div>
+    <div class="tip"><span class="ico">🎯</span><div>We buff down to a remainder of: construction — <b>{{ target_text("build") }}</b>, research — <b>{{ target_text("research") }}</b> A buff isn’t assigned if less than the lower limit would be left after it — so no buff burns to waste.</div></div>
+    <div class="tip"><span class="ico">⏸</span><div><b>Pause after a buff — {{ gap|int }}h.</b> Got a buff — the next one comes no sooner than {{ gap|int }}h later. During the pause, others get the buffs. This applies to everyone, “urgent” players too.</div></div>
+    {% if order == "share" %}
+    <div class="tip"><span class="ico">📊</span><div><b>By share of what’s owed.</b> Next is whoever has the smaller share: got 1 of 5 (20%) goes before 2 of 4 (50%). On a tie — whoever has waited longer.</div></div>
+    {% if fire_hours %}<div class="tip"><span class="ico">⏰</span><div><b>“Expiring”.</b> If the timer will reach the goal on its own in less than {{ fire_hours|int }}h, the player goes first — otherwise the buff they’re owed is lost.</div></div>{% endif %}
+    {% if prio %}<div class="tip"><span class="ico">⚡</span><div><b>Priority: {{ prio }}</b> These constructions matter more to the alliance, their help grows {{ prio_weight|string }} times faster. We don’t forget the others — they also get buffs in turn.</div></div>{% endif %}
+    {% if hold_hours %}<div class="tip"><span class="ico">⏳</span><div><b>Reciprocity.</b> Holding a ready buff longer than {{ hold_hours|int }}h — you skip your turn until you give it. Give it — and you’re right back in your spot.</div></div>{% endif %}
+    {% else %}
+    <div class="tip"><span class="ico">⚖️</span><div>{% if fair %}<b>Fair round:</b> first everyone in the queue gets one buff, then a second one, and so on. Nobody gets more than one buff ahead.{% else %}The fair round is off.{% endif %}</div></div>
+    <div class="tip"><span class="ico">🔄</span><div>Within a round — the <b>{{ pattern_text(pattern) }}</b> cycle. “Big” — those with the most time left (a buff saves more days there), “received less” — those who got the least and have waited longest.</div></div>
+    {% endif %}
+    {% if roulette_build or roulette_research %}<div class="tip"><span class="ico">🎲</span><div><b>Roulette.</b> If nobody is in the {{ "construction" if roulette_build else "" }}{{ " and " if roulette_build and roulette_research }}{{ "research" if roulette_research else "" }} queue, the buff isn’t lost: the site picks an active alliance player. First — those who haven’t built Power Plant {{ pp_goal }}, then — those who received less often, on a tie — a random draw. Anyone who joined the queue always goes before the roulette.</div></div>{% endif %}
+    <div class="tip"><span class="ico">🔥</span><div>“Urgent” is set by leadership — such players go first, but they also observe the pause.</div></div>
+    <div class="tip"><span class="ico">♻️</span><div>If everyone who needs a buff is on a pause right now, the buff goes to whoever’s pause started earliest. No buff is lost.</div></div>
+    <div class="tip"><span class="ico">⏳</span><div>A buff recharges in <b>{{ cooldown|int }}h</b>.</div></div>
+    <div class="tip"><span class="ico">🟢</span><div>The queue on the home page updates in real time: as soon as someone marks a buff, the order changes for everyone.</div></div>
+  </div>
+</section>
+
+{% if me %}
+<section class="card">
+  {% if me.agreed_at %}
+  <p class="mb0">✅ You accepted the terms on {{ local(me.agreed_at, "%d.%m.%Y") }}. Thank you!</p>
+  {% else %}
+  <form method="post" action="/rules/agree">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn btn-primary btn-big btn-block" type="submit">✅ I agree to the terms</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

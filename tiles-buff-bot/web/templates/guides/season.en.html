@@ -1,0 +1,45 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<section class="card">
+  <h2>❄️ What it is</h2>
+  <p>“Era of Blizzard” is the fourth season. It does <b>not start for everyone at once</b>, but according to season progress in your state. New monsters, locations, companions and mechanics.</p>
+</section>
+
+<section class="card">
+  <h2>🧊 Main mechanics</h2>
+  <ul class="rules-list">
+    <li><span class="ico">🔥</span><div><b>Doomsday Furnace</b> — the season’s central building. You upgrade it to raise <b>Cold Resistance</b> and keep your settlement from freezing.</div></li>
+    <li><span class="ico">🏯</span><div><b>Bastions and Cities</b> — alliances capture them on the map. In Bastion Clash, the event page shows the time (UTC) when each alliance took its highest bastion. In City Contest, since 2.6.100, monsters in level 4–6 cities have become weaker.</div></li>
+    <li><span class="ico">⛽</span><div><b>Natural Gas</b> — a new resource on the map, needed to capture bastions and cities.</div></li>
+    <li><span class="ico">🧌</span><div><b>Frost Giant</b> — a special creature you can raise.</div></li>
+    <li><span class="ico">🛡</span><div><b>Super-alloy gear</b> — alloy gear at max level and stars can be upgraded to super-alloy: higher level and stars, extra bonuses.</div></li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>📈 Season progress points</h2>
+  <p>Since version 2.6.0 there are three new sources of points:</p>
+  <ol class="steps-list">
+    <li><b>Chilling Rescue</b> — rescuing animals trapped in ice.</li>
+    <li><b>Doomsday Express</b> — deliveries.</li>
+    <li><b>Alliance Ice Clearing</b> — helping allies clear ice. <b>Help each other</b>: it pays off for both you and the alliance.</li>
+  </ol>
+  <p class="hint">If your state got a bye in State Contest matchmaking, the weekly seasonal task for killing troops counts automatically.</p>
+</section>
+
+<section class="card">
+  <h2>📌 Good to know</h2>
+  <ul class="checks">
+    <li>After leaving an alliance you have to wait <b>48 hours</b> before taking part in Clash of Frost and Fire, Clash of Light and Night and Dragon Isle Clash (since 2.6.100).</li>
+    <li>In Trade Contest, you can only scout and attack trading posts within your season group.</li>
+    <li>The season monument is no longer in the settlement but in the Hall of Glory.</li>
+    <li>“Game House” in the event task list: mini-games and a token exchange shop.</li>
+    <li>Before spending rare resources and speedups, check how much time is left until the seasonal event ends.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>🧊 Alliance buffs during the season</h2>
+  <p>The seasonal buff cuts <b>{{ pct }}%</b> of the declared construction or research time — for both the receiver and the giver at once. It recharges in {{ cooldown }}h, separately for construction and research. The site’s home page shows who to give it to. Details in the <a href="/guides/boosts">“Buffs and speedups”</a> guide and the <a href="/help#queue">help</a>.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}Ajuda · {{ site_name }}{% endblock %}
+{% block content %}
+<h1>❓ Como tudo funciona</h1>
+<p class="text-2 mt0">Aqui explicamos de forma simples como o site funciona: fila, buffs, notificações, anúncios. Se algo não ficar claro, pergunte aos R4 no chat da aliança.</p>
+
+<nav class="toc" aria-label="Sumário">
+  <a href="#short">Em 30 segundos</a>
+  <a href="#start">Primeiros passos</a>
+  <a href="#join">Entrar na fila</a>
+  <a href="#give">Dar um buff</a>
+  <a href="#queue">Como a fila anda</a>
+  <a href="#roulette">Roleta</a>
+  <a href="#life">Ciclo da inscrição</a>
+  <a href="#notify">Notificações</a>
+  <a href="#alliance">Anúncios e eventos</a>
+  <a href="#mistake">Errou — desfazer</a>
+  <a href="#faq">Perguntas frequentes</a>
+  {% if is_admin %}<a href="#r4" class="r4">Para R4</a>{% endif %}
+</nav>
+
+<section class="card help" id="short">
+  <h2>⏱ Em 30 segundos</h2>
+  <ol class="steps-list">
+    <li><b>Está construindo ou pesquisando algo longo?</b> Toque em «➕ Entrar», escolha o que está em andamento e digite o tempo do cronômetro do jogo.</li>
+    <li><b>Seu buff está pronto?</b> Abra a página inicial — lá diz <b>para quem exatamente</b> dar. Dê no jogo e toque em «Dei ✓».</li>
+    <li><b>Pronto.</b> O resto o site faz sozinho: calcula a fila, lembra para quem dar e envia notificações.</li>
+  </ol>
+  <p class="hint">Um buff corta <b>{{ pct }}%</b> do tempo e vale <b>tanto para quem recebe quanto para quem dá</b>. Dar compensa para todo mundo.</p>
+</section>
+
+<section class="card help" id="start">
+  <h2>🚀 Primeiros passos</h2>
+  <ol class="steps-list">
+    <li><b>Cadastro.</b> Nick — <b>exatamente como no jogo</b>, para que te encontrem. PIN — 4 dígitos, usado para entrar. O código da aliança é passado pelos R4 no chat.</li>
+    <li><b>Regras.</b> Leia e aceite as <a href="/rules">regras da fila</a> — sem isso não dá para entrar na fila.</li>
+    <li><b>Notificações.</b> <a href="/me#notify">Perfil → Notificações → «Ativar»</a>. Assim o site avisa quando e para quem dar o buff. Mais detalhes — <a href="#notify">abaixo</a>.</li>
+    <li><b>Nível da Power Plant (Usina).</b> Informe no <a href="/me">perfil</a> — ele é usado pela <a href="#roulette">roleta</a>.</li>
+    <li><b>Site como app.</b> No celular: menu do navegador → «Adicionar à tela inicial». O ícone fica igual ao de um app comum.</li>
+  </ol>
+</section>
+
+<section class="card help" id="join">
+  <h2>➕ Entrar na fila</h2>
+  <p>Toque em <b>«➕ Entrar»</b> → escolha <b>construção</b> ou <b>pesquisa</b>:</p>
+  <ul class="checks">
+    <li><b>Construção:</b> edifício → nível <b>para o qual</b> está construindo → tempo do cronômetro.</li>
+    <li><b>Pesquisa:</b> ramo → tempo do cronômetro.</li>
+  </ul>
+  <p>Digite o tempo <b>como no cronômetro do jogo</b>: «21d 05:30:00» → 21 dias, 5 horas, 30 minutos. O site já mostra a quantos buffs você tem direito.</p>
+  <div class="example"><b>Exemplo.</b> Construção de 12 dias. Cada buff corta {{ pct }}% de 12 dias ≈ 1d 19h. Damos buffs até restar cerca de {{ build_target }} — ou seja, você tem direito a alguns buffs, e esse número aparece na linha «recebeu 0 de N».</div>
+  <details class="more"><summary>Tenho duas construções ao mesmo tempo — qual informar?</summary>
+    <p>A <b>mais longa</b>. O buff no jogo corta o tempo de todas as suas construções de uma vez, e a fila conta pela mais demorada.</p></details>
+  <details class="more"><summary>Entrei uma vez — e é só isso?</summary>
+    <p>Sim. Não precisa se inscrever de novo depois de cada buff. A inscrição vale enquanto durar essa construção ou pesquisa. Mais detalhes na seção <a href="#life">«Ciclo da inscrição»</a>.</p></details>
+</section>
+
+<section class="card help" id="give">
+  <h2>🎁 Dar um buff</h2>
+  <ol class="steps-list">
+    <li>Abra a <b>página inicial</b>. No cartão «🎁 Buff pronto? Dê agora» diz <b>para quem</b> dar: separado para pesquisa e para construção.</li>
+    <li>Dê o buff a esse jogador <b>no jogo</b>.</li>
+    <li>Volte ao site e toque em <b>«Dei ✓»</b> → escolha o jogador para quem deu (o primeiro da lista é quem tem direito).</li>
+  </ol>
+  <p>O site corta o tempo na hora, do recebedor e o seu, e a fila de todos se atualiza em poucos segundos.</p>
+  <p class="hint">O buff recarrega em {{ cooldown }} h, separado para construção e pesquisa. O site sabe quando ele fica pronto de novo — pelas suas marcações.</p>
+  <details class="more"><summary>Não achei esse jogador no jogo ou ele está offline</summary>
+    <p>Dê ao <b>próximo</b> da lista e marque exatamente quem recebeu. A fila se recalcula sozinha.</p></details>
+</section>
+
+<section class="card help" id="queue">
+  <h2>📊 Como a fila anda</h2>
+  {% if order == "share" %}
+  <p class="lead"><b>Regra principal: quem tem a barra mais curta é o próximo.</b></p>
+  <p>Cada um na fila tem a barra «recebeu X de Y»: quantos buffs já recebeu dos que tem direito. O próximo buff vai para quem tem a barra menos preenchida. Assim a ajuda é dividida <b>igualmente por proporção</b>: construções pequenas e grandes chegam à meta mais ou menos ao mesmo tempo.</p>
+  <div class="example"><b>Exemplo.</b> Anya recebeu 1 de 5 (20%), Boris — 2 de 4 (50%), Vika — 0 de 3 (0%).<br>A próxima será <b>Vika</b> (0%), depois <b>Anya</b> (20%), depois Boris.</div>
+  {% else %}
+  <p>Agora está ativo o modo «rodada justa + ciclo»: primeiro todos recebem um buff, depois o segundo; dentro da rodada os buffs alternam entre os cronômetros grandes e quem recebeu menos.</p>
+  {% endif %}
+  <p>Sobre a regra principal valem alguns ajustes simples. Para cada jogador na fila <b>está escrito por que ele está naquela posição</b>.</p>
+  <ul class="rules-list">
+    <li><span class="ico">⏸</span><div><b>Pausa de {{ gap }} h.</b> Recebeu um buff — o próximo só depois de {{ gap }} h. Durante a pausa, os buffs vão para os outros.</div></li>
+    {% if fire %}<li><span class="ico">⏰</span><div><b>«Prestes a expirar».</b> Se o cronômetro <b>sozinho</b> chegar à meta em menos de {{ fire }} h, o jogador vai primeiro — senão o buff a que ele tem direito simplesmente se perde.</div></li>{% endif %}
+    {% if prio %}<li><span class="ico">⚡</span><div><b>Prioridade: {{ prio }}</b> Essas construções são mais importantes para a aliança: a barra delas cresce {{ prio_weight|string|replace(".0", "")|replace(".", ",") }} vezes mais devagar, então recebem buffs com mais frequência. Os outros não são abandonados pela fila.</div></li>{% endif %}
+    {% if hold %}<li><span class="ico">⏳</span><div><b>Reciprocidade.</b> Segurou um buff pronto por mais de {{ hold }} h sem dar — perde a sua vez. Deu — volta na hora para o seu lugar.</div></li>{% endif %}
+    <li><span class="ico">🔥</span><div><b>«Urgente».</b> Os R4 podem marcar um jogador como urgente — ele vai primeiro (mas também com pausa).</div></li>
+    <li><span class="ico">🎯</span><div><b>Meta.</b> Damos buffs até restar: construção — <b>{{ build_target }}</b>, pesquisa — <b>{{ research_target }}</b> Não há buffs a mais: se depois do buff restasse menos que a meta, ele não é atribuído.</div></li>
+  </ul>
+  <details class="more"><summary>Por que assim — isso é justo?</summary>
+    <p>Se dermos «por ordem de chegada», os primeiros levam tudo e os outros esperam semanas. Se for «a mesma quantidade para todos», a construção pequena termina rápido e a grande espera até o fim. «Por proporção» — ajudamos cada um na mesma medida do que ele precisa. Testamos num modelo de aliança com 50 jogadores: assim o primeiro buff chega mais rápido, e com a regra «prestes a expirar» quase nenhum buff se perde.</p></details>
+</section>
+
+<section class="card help" id="roulette">
+  <h2>🎲 Roleta — quando não há ninguém na fila</h2>
+  {% if roulette_build or roulette_research %}
+  <p>Se não houver ninguém na fila de {{ "construção" if roulette_build }}{{ " e " if roulette_build and roulette_research }}{{ "pesquisa" if roulette_research }}, o buff <b>não se perde</b>: o site escolhe sozinho para quem dar, entre os jogadores ativos da aliança (entraram no site nos últimos {{ roulette_days }} dias, estão na fila ou deram buffs).</p>
+  <ol class="steps-list">
+    <li><b>Primeiro</b> — quem ainda <b>não construiu a Power Plant {{ pp_goal }}</b>.</li>
+    <li>Depois — quem não informou o nível, e então — quem já construiu.</li>
+    <li>Dentro do grupo — quem recebeu menos pela roleta na semana. Em caso de empate — sorteio.</li>
+    <li>Quem acabou de receber um buff espera a pausa de {{ gap }} h.</li>
+  </ol>
+  <p>Na página inicial e na página «Eu dei» aparece <b>quem foi sorteado</b> (🎲). O sorteio só muda depois de cada buff pela roleta, então todos veem o mesmo jogador na tela.</p>
+  <p class="hint">Assim que alguém entra na fila, a roleta desliga e o buff vai para essa pessoa. Informe o nível da Power Plant no <a href="/me">perfil</a>; o site também descobre sozinho quando você entra na fila com a construção da Power Plant.</p>
+  {% else %}
+  <p>A roleta está desligada agora: se não houver ninguém na fila, é melhor segurar o buff.</p>
+  {% endif %}
+</section>
+
+<section class="card help" id="life">
+  <h2>🔁 Ciclo da inscrição: o que acontece depois que você entra</h2>
+  <div class="lifeline">
+    <div><b>1. Esperando</b><small>você está na fila, vê a posição e o motivo</small></div>
+    <div><b>2. Recebeu buff</b><small>tempo cortado, «recebeu» +1</small></div>
+    <div><b>3. Pausa de {{ gap }} h</b><small>depois volta para a fila</small></div>
+    <div><b>4. 🎯 Na meta</b><small>recebeu tudo a que tinha direito</small></div>
+    <div><b>5. 🏁 Terminou</b><small>o site sugere a próxima</small></div>
+  </div>
+  <ul class="checks">
+    <li><b>Ninguém é tirado da fila.</b> Recebeu buff → pausa → espera de novo. Não precisa se inscrever outra vez.</li>
+    <li><b>Recebeu todos a que tinha direito</b> → «🎯 chegou à meta». Não precisa de mais buffs, mas a inscrição continua e o cronômetro corre sozinho.</li>
+    <li><b>Conferência do tempo.</b> O site não vê o jogo. Depois de cada buff recebido{% if check %} e a cada {{ check }} h{% endif %} ele pergunta: «No jogo está igual?» — toque em «Sim» ou digite o tempo certo.</li>
+    <li><b>Acelerou por conta própria</b> (aceleradores, ajuda da aliança) — toque em «Não, no jogo o tempo é outro» ou «➕ Entrar → Corrigir tempo». O site recalcula a quantos buffs você ainda tem direito.</li>
+    <li><b>A construção terminou</b> — na página inicial aparece «Entrar com a próxima»: edifício e próximo nível já preenchidos, só falta digitar o tempo.</li>
+    <li><b>Terminou antes</b> ou desistiu — «➕ Entrar → 🏁 Pronto», para que os buffs não sejam desperdiçados.</li>
+  </ul>
+</section>
+
+<section class="card help" id="notify">
+  <h2>🔔 Notificações no celular</h2>
+  <p>O site avisa no celular sozinho — não precisa ficar de olho. Não é preciso instalar app.</p>
+  <ul class="checks">
+    <li><b>Android:</b> <a href="/me#notify">Perfil → Notificações → «Ativar neste dispositivo»</a> → «Permitir».</li>
+    <li><b>iPhone:</b> abra o site no <b>Safari</b> → botão «Compartilhar» → <b>«Adicionar à Tela de Início»</b>. Abra o site pelo ícone na tela e só então toque em «Ativar».</li>
+  </ul>
+  <p>O que chega:</p>
+  <ul class="checks">
+    <li>🎁 seu buff está pronto — <b>para quem dar</b>;</li>
+    <li>⏳ você está segurando um buff pronto há tempo demais;</li>
+    <li>🎁 te deram um buff — confira o tempo;</li>
+    <li>👉 você é o próximo da fila;</li>
+    <li>🏁 a construção ou pesquisa terminou;</li>
+    <li>📣 anúncios importantes dos R4 e 📅 lembretes de eventos da aliança.</li>
+  </ul>
+  <p class="hint">Das {{ "%02d:00" % quiet[0] }} às {{ "%02d:00" % quiet[1] }} é silêncio — o que for importante chega de manhã. Qualquer tipo de notificação pode ser desativado no perfil.</p>
+</section>
+
+<section class="card help" id="alliance">
+  <h2>📣 Anúncios e 📅 eventos da aliança</h2>
+  <ul class="checks">
+    <li><b>Anúncios</b> — aba «📣 Aliança». Os fixados aparecem na página inicial. Em alguns dá para responder «✅ Vou / ✖️ Não posso» — os R4 veem quem vai.</li>
+    <li><b>Eventos</b> — a programação da semana em MSK (Moscou, UTC+3) e UTC: Duelo de Alianças (VS) por dia, Cerco dos Infectados (Infected Siege), Conquista de Arcádia e outros. Antes do início chega um lembrete.</li>
+    <li>O novo dia do jogo começa às 03:00 MSK = 00:00 UTC (horário do servidor do jogo). Os relógios MSK e UTC ficam no topo de cada página.</li>
+  </ul>
+</section>
+
+<section class="card help" id="mistake">
+  <h2>↩️ Errou — como corrigir</h2>
+  <ul class="checks">
+    <li><b>Marcou a pessoa errada ou tocou sem querer</b> — na página inicial aparece na hora «Errou? ↩️ Desfazer». Você mesmo pode desfazer em até {{ self_undo }} minutos.</li>
+    <li><b>Depois disso</b> — fale com os R4: eles desfazem o registro no «Registro de buffs» a qualquer momento.</li>
+    <li>Depois de desfazer, tudo volta ao que era: o tempo dos dois, «recebeu», pausa, fila. No registro, a entrada fica riscada — dá para ver quem corrigiu e quando.</li>
+    <li><b>Deu no jogo, mas esqueceu de marcar</b> — marque agora ou peça aos R4.</li>
+  </ul>
+</section>
+
+<section class="card help" id="faq">
+  <h2>💬 Perguntas frequentes</h2>
+  <details class="more"><summary>Por que ele está na minha frente?</summary>
+    <p>Embaixo de cada nick está escrito o motivo: menor proporção recebida, «prestes a expirar», prioridade ou «urgente». Se você está em pausa ou segurando um buff pronto — isso também aparece para você.</p></details>
+  <details class="more"><summary>Por que não me dão mais buffs?</summary>
+    <p>Provavelmente você chegou à meta: restam {{ build_target }} na construção ou {{ research_target }} na pesquisa. Mais um buff deixaria o tempo abaixo da meta — esses não são atribuídos. Se você acelerou e o tempo está diferente — corrija.</p></details>
+  <details class="more"><summary>Quanto tempo vou esperar?</summary>
+    <p>Veja sua posição (nº) e a barra. A velocidade depende de quão rápido a aliança dá os buffs: quanto mais gente ativa as notificações e dá na hora, mais rápido a fila anda para todos.</p></details>
+  <details class="more"><summary>Me deram um buff, mas o site não sabe</summary>
+    <p>Quem deu é que deve marcar. Peça para a pessoa tocar em «Eu dei» ou fale com os R4 — eles marcam por ela.</p></details>
+  <details class="more"><summary>Esqueci o PIN</summary>
+    <p>Fale com os R4 — eles resetam o PIN, e você se cadastra de novo com o seu nick. Todas as suas inscrições continuam.</p></details>
+  <details class="more"><summary>Mudei de nick no jogo</summary>
+    <p>Perfil → «Mudar nick». As inscrições e os buffs continuam seus.</p></details>
+</section>
+
+{% if is_admin %}
+<h2 class="section-title" id="r4">⭐ Para R4</h2>
+
+<section class="card help">
+  <h2>🧭 O principal</h2>
+  <p>O site funciona sozinho: escolhe quem recebe, lembra, recalcula a fila, sugere o tempo. <b>Os R4 só são necessários para exceções</b>: corrigir um erro, marcar alguém como urgente, ajudar quem não consegue entrar e dar uma olhada nas estatísticas uma vez por dia.</p>
+  <div class="example"><b>5 minutos por dia:</b> «⚙️ Gerenciar → 📈 Estatísticas» → bloco «O que fazer agora». Lá já está reunido quem está segurando buffs, quem parou de entrar e quantas pessoas ativaram as notificações.</div>
+</section>
+
+<section class="card help">
+  <h2>⚙️ Gerenciar jogadores</h2>
+  <ul class="checks">
+    <li><b>Ficha do jogador</b> (Gerenciar → jogador): cronômetros, buffs, registro, nota dos R4 e etiquetas, nível da Power Plant.</li>
+    <li><b>🔥 Urgente</b> — o jogador vai primeiro. Use para casos especiais (guerra, nível importante).</li>
+    <li><b>Registrar construção pelo jogador</b> — para quem não tem acesso ao site. <b>«➕ Adicionar jogador»</b> cria esse jogador; se ele depois se cadastrar com esse nick — tudo passa a ser dele.</li>
+    <li><b>🎁 Marcar: ele deu o buff</b> — se o jogador deu no jogo, mas não consegue marcar.</li>
+    <li><b>Fechar inscrição</b> — o jogador desistiu da construção ou saiu. <b>Excluir</b> — saiu da aliança.</li>
+    <li><b>Resetar PIN</b> — o jogador esqueceu o PIN e vai se cadastrar de novo. <b>Tornar admin</b> — dar permissões de R4.</li>
+    <li><b>Nota e etiquetas</b> só os R4 veem: «ativo, R3, online à noite».</li>
+  </ul>
+</section>
+
+<section class="card help">
+  <h2>📜 Registro e desfazer</h2>
+  <p>«Gerenciar → 📜 Registro de buffs» — todas as entradas, as mais novas no topo, com busca por nick. «↩️ Desfazer» reverte a entrada por completo: o tempo de quem recebeu e de quem deu, «recebeu», pausa, prontidão do buff. A entrada desfeita fica riscada, com a indicação de quem desfez e quando.</p>
+  <p class="hint">Tudo no site é calculado a partir desse registro: o que for desfeito some de todo lugar na hora.</p>
+</section>
+
+<section class="card help">
+  <h2>📈 Estatísticas — o que significam os números</h2>
+  <ul class="checks">
+    <li><b>Buffs da aliança usados</b> — que parte dos buffs possíveis foi de fato dada. Cada jogador ativo pode dar 2 buffs a cada {{ cooldown }} h. Quanto mais perto de 100%, melhor.</li>
+    <li><b>Buff pronto parado até ser dado</b> — quanto tempo costuma passar entre o buff ficar pronto e ser dado. Essa é a <b>maior perda</b>: cada dia de atraso é ajuda a menos para a aliança.</li>
+    <li><b>Esperando o primeiro buff</b> — quanto tempo passa da inscrição até o primeiro buff.</li>
+    <li><b>Buffs ainda devidos à fila</b> e «≈ N dias» — em quanto tempo a fila se esvazia na velocidade atual.</li>
+    <li><b>Notificações</b> — quantos dos que estão na fila as ativaram. Com notificações, dão mais rápido.</li>
+    <li><b>O que fazer agora</b> — lista pronta: quem está segurando buffs, quem não entra há 3+ dias.</li>
+  </ul>
+</section>
+
+<section class="card help">
+  <h2>📣 Anúncios e eventos</h2>
+  <ul class="checks">
+    <li><b>Anúncio:</b> «📣 Aliança» → texto → «📌 Fixar» (aparece na página inicial), «🔔 Importante» (chega no celular de todos), «Perguntar Vou / Não posso». Dá para ver quantos leram.</li>
+    <li><b>Eventos:</b> «📣 Aliança → 📅 Eventos». A programação inicial foi tirada de guias, e as fontes divergem — <b>confiram com o jogo</b>, corrijam o horário e marquem «✅ conferido». O horário é informado em MSK, o site converte sozinho para o horário do servidor.</li>
+    <li>Lembrete: com quanta antecedência avisar os jogadores. «Na noite anterior» é prático para os dias do Duelo.</li>
+  </ul>
+</section>
+
+<section class="card help">
+  <h2>🛠 Configurações da fila — o que faz cada uma</h2>
+  <ul class="checks">
+    <li><b>Ordem da fila:</b> «por proporção» (recomendado) ou «rodada + ciclo», com escolha do ciclo 1:1, 1:2, 2:1…</li>
+    <li><b>Limites</b> de construção e pesquisa — até que tempo restante damos buffs.</li>
+    <li><b>Buff corta, %</b> e <b>de quê</b> (do tempo informado — como no jogo).</li>
+    <li><b>Pausa depois do buff</b>, <b>«Prestes a expirar»</b>, <b>«Segura buff pronto»</b> — em horas; 0 desativa a regra.</li>
+    <li><b>Construção prioritária</b>, nível e «quanto mais rápido» — agora: {{ prio or "sem prioridade" }}.</li>
+    <li><b>Roleta</b> para construção e pesquisas e o prazo de «atividade».</li>
+    <li><b>Conferência do tempo</b> — com que frequência pedir aos jogadores que confiram o cronômetro.</li>
+    <li><b>Código da aliança</b> — sem ele não dá para se cadastrar. Passem no chat.</li>
+  </ul>
+</section>
+
+<section class="card help">
+  <h2>💬 Textos prontos para o chat do jogo</h2>
+  <p class="hint mt0">Toque em «Copiar» e cole no chat da aliança.</p>
+  {% set t1 = "Os buffs da aliança agora estão no site: " ~ site_url ~ " — cadastrem-se (nick igual ao do jogo), entrem na fila com a construção ou pesquisa, e quando o buff estiver pronto o site diz para quem dar. Ativem as notificações no perfil!" %}
+  {% set t2 = "Como funciona: cada um tem direito a quantos buffs precisar até a meta. O próximo é quem tem a barra «recebeu X de Y» mais curta. Recebeu buff — pausa de " ~ gap ~ " h. Segurou buff pronto por mais de " ~ hold ~ " h — perde a vez. Detalhes: " ~ site_url ~ "/help" %}
+  {% set t3 = "Informem o nível da Power Plant no perfil do site (" ~ site_url ~ "/me): quando a fila está vazia, os buffs de construção vão pela roleta, primeiro para quem não construiu a Power Plant " ~ pp_goal ~ "." %}
+  {% for t in [t1, t2, t3] %}
+  <div class="chat-text"><p>{{ t }}</p><button class="btn btn-sm" type="button" data-copy="{{ t }}">📋 Copiar</button></div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<p class="center"><a href="/rules">📜 Regras da fila</a> · <a href="/guides">📚 Guias do jogo</a></p>
+{% endblock %}

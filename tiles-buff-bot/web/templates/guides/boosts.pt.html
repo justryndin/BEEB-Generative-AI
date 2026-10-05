@@ -1,0 +1,36 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<section class="card">
+  <h2>🧭 O que reduz o tempo de construção e pesquisa</h2>
+  <ul class="rules-list">
+    <li><span class="ico">🧊</span><div><b>Buff da aliança da temporada</b> — −{{ pct }}% do tempo informado, tanto para quem recebe quanto para quem dá. Uma vez a cada {{ cooldown }} h, separado para construção e para pesquisa. Vale para todas as suas construções (ou pesquisas) de uma vez. Quem gerencia é o site: para quem dar — na página inicial.</div></li>
+    <li><span class="ico">🤝</span><div><b>Ajuda da aliança («toques»)</b> — cada toque de um aliado corta o cronômetro: cerca de 32 s, e com a <b>Oficina de artefatos</b> evoluída — 45+ s. É preciso ter a Estação de comunicações (Comms). Todo dia; quanto mais aliados ativos, mais ajuda.</div></li>
+    <li><span class="ico">⏩</span><div><b>Aceleradores</b> — de eventos, baús, caça aos infectados. Rendem mais nas janelas dos eventos — guia <a href="/guides/week">«Semana»</a>.</div></li>
+    <li><span class="ico">⚡</span><div><b>Buffs da base por 24 horas</b> — botão com a seta no topo da tela → aba <b>«Desenvolvimento»</b>. Por exemplo, <b>velocidade de coleta</b>: o buff máximo por 600 cristais dá <b>+100% de coleta por 24 horas</b> — a recomendação é pegar sempre. Dê uma olhada nessa aba: lá também dá para ver que outros buffs de velocidade estão disponíveis para a sua base.</div></li>
+    <li><span class="ico">🔬</span><div><b>Pesquisa</b> — o ramo «Desenvolvimento» no Laboratório: bônus permanente na velocidade de construção e pesquisa. Guia <a href="/guides/research">«Laboratório»</a>.</div></li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>✅ Como levar isso em conta para a fila ser justa</h2>
+  <p>O site só vê os buffs da aliança marcados com o botão «Dei ✓». Toques, aceleradores e buffs da base cortam tempo <b>todo dia</b> — o site não sabe disso.</p>
+  <ol class="steps-list">
+    <li>Uma vez por dia e depois de cada buff recebido, o site pergunta <b>«No jogo está igual?»</b> (na página inicial e por notificação).</li>
+    <li>Está igual — toque em «Sim». Não está — digite o tempo do cronômetro, um botão só.</li>
+    <li>O site recalcula a quantos buffs você ainda tem direito. Se o tempo já está na meta — você passa para «🎯 chegou à meta», e os buffs vão para quem precisa mais.</li>
+  </ol>
+  <div class="example"><b>Exemplo.</b> Entrou com 20 dias. Em dois dias, toques e aceleradores cortaram mais 3 dias, mas o site acha que restam 18. Tocou em «Não, no jogo é outro» → digitou 15 dias → o direito diminuiu, e o buff a mais foi para quem precisa mais.</div>
+  <p class="hint">Os 15% são sempre calculados sobre o tempo <b>registrado inicialmente</b> — os aceleradores não reduzem o tamanho do buff.</p>
+  <p class="hint">Desde a atualização 2.6.200, na janela de construção e pesquisa o jogo mostra também o <b>tempo padrão</b> (sem bônus). No site, digite o que está correndo no cronômetro agora.</p>
+</section>
+
+<section class="card">
+  <h2>💡 Como tirar o máximo</h2>
+  <ul class="checks">
+    <li><b>Iniciou uma construção longa — entre na fila na hora.</b> Enquanto o cronômetro é longo, cada buff corta mais.</li>
+    <li><b>Dê o buff assim que</b> ficar pronto: se segurar por mais de {{ hold }} h — perde a sua vez.</li>
+    <li>O buff da aliança não precisa de «janela de evento»: ele corta o tempo na hora. Já os aceleradores, acumule para os eventos.</li>
+    <li>Ative as notificações no perfil — o site avisa sozinho quando dar e quando conferir o tempo.</li>
+  </ul>
+</section>
+{% endblock %}

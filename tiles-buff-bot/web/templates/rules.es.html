@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Condiciones · {{ site_name }}{% endblock %}
+{% block content %}
+<h1>📜 Condiciones de la cola</h1>
+<p class="hint mt0">La explicación detallada de todo el sitio, en palabras sencillas, está en la <a href="/help">ayuda</a>.</p>
+{% if need %}<div class="alert alert-warn">Para apuntarte a la cola y dar buffs, acepta las condiciones al final de la página.</div>{% endif %}
+
+<section class="card">
+  <h2>🧠 Nuestro algoritmo, sencillo</h2>
+  <div class="stack">
+    <div class="tip"><span class="ico">1️⃣</span><div><b>Cuántos te corresponden.</b> Un buff recorta un {{ pct|round(0)|int }}% del tiempo que registraste. Damos buffs hasta que queden {{ target_text("build") }} (construcción) o {{ target_text("research") }} (investigación). Con eso, el sitio calcula el número exacto de buffs y lo muestra: «te corresponden N más».</div></div>
+    <div class="tip"><span class="ico">📐</span><div><b>Ejemplo.</b> Investigación de <b>30 días</b>: cada buff −4,5 d → 30 → 25,5 → 21 → 16,5 → 12 → <b>7,5</b>. Te corresponden <b>5 buffs</b>; el sexto ya no hace falta, se desperdiciaría.</div></div>
+    <div class="tip"><span class="ico">2️⃣</span><div><b>Quién es el siguiente.</b> {% if order == "share" %}Cada uno en la cola tiene una barra: cuánto ha recibido de lo que le corresponde. <b>El que tenga la barra más corta es el siguiente.</b> Así ayudamos a todos por igual: las construcciones pequeñas y las grandes llegan a la meta más o menos a la vez.{% else %}El sitio ordena la cola según las reglas de abajo.{% endif %} El primero del bloque (👉 siguiente) es a quien hay que dar el buff ahora. Junto a cada uno se indica por qué está en su lugar.</div></div>
+    <div class="tip"><span class="ico">🔁</span><div><b>Vida del registro.</b> Te apuntas una vez y sigues en la cola mientras dure tu construcción o investigación. Recibes un buff → pausa → otra vez en la cola. Recibiste todos los que te corresponden → «🎯 llegó al objetivo»: el registro se mantiene y el temporizador sigue solo. Se acabó el temporizador → el sitio te propondrá «apuntarte con el siguiente». ¿Aceleraste por tu cuenta? Corrige el tiempo (el sitio también te lo preguntará después de cada buff).</div></div>
+    <div class="tip"><span class="ico">3️⃣</span><div><b>Qué pasa cuando se marca un buff.</b> Al que lo recibe se le reduce el temporizador al instante, «recibió» +1, «le corresponden» −1, y se activa una pausa de {{ gap|int }} h. Al que lo dio también se le reduce el temporizador (en el juego el buff afecta a ambos). La cola de todos se recalcula en unos segundos.</div></div>
+    <div class="tip"><span class="ico">✅</span><div><b>Qué está garantizado.</b> El orden es el mismo para todos y todos pueden verlo: junto a cada uno se indica por qué está en su lugar. {% if order == "share" %}Quien recibió una parte menor de lo que le corresponde siempre va antes que quien tiene una parte mayor (salvo «a punto de expirar», «urgente» y la pausa).{% else %}Mientras no hayas recibido tu siguiente buff, nadie recibirá más de un buff por encima de ti.{% endif %} Cuándo llegará exactamente tu buff depende de lo rápido que la alianza dé los buffs; se ve por tu puesto en la cola.</div></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>🤝 Lo que prometo</h2>
+  <ul class="checks">
+    <li>Escribo el tiempo <b>exacto</b> del temporizador del juego. Si acelero por mi cuenta, lo corrijo enseguida («🔧 Corregir tiempo»).</li>
+    <li>Doy el buff <b>por turno</b>, a quien está primero 👉. Si no lo encuentro en el juego, se lo doy al siguiente de la lista.</li>
+    <li>Justo después de darlo, pulso «🎁 Di el buff» y marco <b>a quién</b> se lo di.</li>
+    <li>Cuando termino la construcción o investigación, pulso «🏁 Listo» para que los buffs no se desperdicien.</li>
+    <li>No me apunto dos veces ni escribo más tiempo del real.</li>
+  </ul>
+  <p class="text-2">El sitio no puede verificar el juego: todo se basa en la honestidad. Las infracciones se ven en el historial de buffs, y los líderes de la alianza pueden sacar a un jugador de la cola.</p>
+</section>
+
+<section class="card">
+  <h2>⚙️ Cómo se reparten los buffs</h2>
+  <div class="stack">
+    <div class="tip"><span class="ico">✂️</span><div>Un buff recorta un <b>{{ pct|round(0)|int }}%</b> del tiempo declarado y afecta <b>también a quien lo da</b>.</div></div>
+    <div class="tip"><span class="ico">🎯</span><div>Damos buffs hasta que quede: construcción, <b>{{ target_text("build") }}</b>; investigación, <b>{{ target_text("research") }}</b> No se asigna un buff si después quedaría menos del límite inferior: así ningún buff se desperdicia.</div></div>
+    <div class="tip"><span class="ico">⏸</span><div><b>Pausa tras el buff: {{ gap|int }} h.</b> Si recibes un buff, el siguiente no llega antes de {{ gap|int }} h. Durante la pausa, los buffs van a otros. Esto vale para todos, también para los «urgentes».</div></div>
+    {% if order == "share" %}
+    <div class="tip"><span class="ico">📊</span><div><b>Según la parte de lo que corresponde.</b> El siguiente es quien tiene la parte menor: quien recibió 1 de 5 (20%) va antes que quien recibió 2 de 4 (50%). En caso de empate, quien lleva más tiempo esperando.</div></div>
+    {% if fire_hours %}<div class="tip"><span class="ico">⏰</span><div><b>«A punto de expirar».</b> Si el temporizador va a llegar solo al objetivo en menos de {{ fire_hours|int }} h, el jugador va primero; si no, el buff que le corresponde se perdería.</div></div>{% endif %}
+    {% if prio %}<div class="tip"><span class="ico">⚡</span><div><b>Prioridad: {{ prio }}</b> Estas construcciones son más importantes para la alianza; su ayuda crece {{ prio_weight|string|replace(".", ",") }} veces más rápido. No nos olvidamos de los demás: también reciben por turno.</div></div>{% endif %}
+    {% if hold_hours %}<div class="tip"><span class="ico">⏳</span><div><b>Reciprocidad.</b> Si guardas un buff listo más de {{ hold_hours|int }} h, pierdes tu turno hasta que lo des. Lo das y vuelves enseguida a tu lugar.</div></div>{% endif %}
+    {% else %}
+    <div class="tip"><span class="ico">⚖️</span><div>{% if fair %}<b>Ronda justa:</b> primero todos en la cola reciben un buff, luego un segundo, y así sucesivamente. Nadie se adelanta más de un buff.{% else %}La ronda justa está desactivada.{% endif %}</div></div>
+    <div class="tip"><span class="ico">🔄</span><div>Dentro de la ronda, el ciclo <b>{{ pattern_text(pattern) }}</b>. Los «grandes» son quienes tienen más tiempo restante (ahí el buff ahorra más días); los «que menos recibieron», quienes menos han recibido y llevan más tiempo esperando.</div></div>
+    {% endif %}
+    {% if roulette_build or roulette_research %}<div class="tip"><span class="ico">🎲</span><div><b>Ruleta.</b> Si no hay nadie en la cola de {{ "construcción" if roulette_build else "" }}{{ " e " if roulette_build and roulette_research }}{{ "investigación" if roulette_research else "" }}, el buff no se pierde: el sitio elige a un jugador activo de la alianza. Primero, quienes no han construido la Power Plant (Central eléctrica) {{ pp_goal }}; luego, quienes recibieron menos veces; en caso de empate, sorteo. Quien está apuntado en la cola siempre va antes que la ruleta.</div></div>{% endif %}
+    <div class="tip"><span class="ico">🔥</span><div>«Urgente» lo marcan los líderes: esos jugadores van primero, pero también respetan la pausa.</div></div>
+    <div class="tip"><span class="ico">♻️</span><div>Si ahora mismo todos los que necesitan un buff están en pausa, el buff lo recibe aquel cuya pausa empezó antes. Ningún buff se pierde.</div></div>
+    <div class="tip"><span class="ico">⏳</span><div>El buff se recupera en <b>{{ cooldown|int }} h</b>.</div></div>
+    <div class="tip"><span class="ico">🟢</span><div>La cola de la página principal se actualiza en tiempo real: en cuanto alguien marca un buff, el orden cambia para todos.</div></div>
+  </div>
+</section>
+
+{% if me %}
+<section class="card">
+  {% if me.agreed_at %}
+  <p class="mb0">✅ Aceptaste las condiciones el {{ local(me.agreed_at, "%d.%m.%Y") }}. ¡Gracias!</p>
+  {% else %}
+  <form method="post" action="/rules/agree">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn btn-primary btn-big btn-block" type="submit">✅ Acepto las condiciones</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<section class="card">
+  <h2>🧭 Lo principal</h2>
+  <p>Cuando el equipo de un héroe alcanza el número necesario de estrellas, se desbloquea una ranura de atributos especiales que se puede <b>reforjar</b>. Primero decide <b>qué rol tiene el héroe</b>: tanque, combatiente o apoyo; su facción (Stalwart, Aeronaut, Mariner, Rover) y su tipo de tropa (Guard, Gunner, Marksman). Un atributo acorde al rol funciona mucho mejor.</p>
+  <p class="hint">Los atributos reforjados funcionan en todos los combates: tanto en las marchas como en la exploración del mapa.</p>
+</section>
+
+<section class="card">
+  <h2>📋 Atributos generales (casco, armadura, grebas)</h2>
+  <ul class="checks">
+    <li><b>Bonificación de daño</b>: la mejor opción para combatientes. <b>Reducción de daño</b>: la mejor opción para la supervivencia. Son los mejores atributos legendarios.</li>
+    <li>Bonificación de curación; daño y defensa contra ataques normales; daño y defensa contra habilidades activas.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>🎯 Según la ranura</h2>
+  <ul class="checks">
+    <li><b>Casco, ataque:</b> ataque del héroe, ataque de tropas del tipo adecuado, ataque de héroes de la facción. Especial: <b>bonificación de crítico</b> (muy buena para Rover con habilidades de crítico).</li>
+    <li><b>Armadura, defensa:</b> defensa del héroe, de las tropas, de la facción. Especial: <b>−15% al enfriamiento de la habilidad activa</b>, se acumula si tienes varias iguales. Para héroes que viven de sus habilidades.</li>
+    <li><b>Grebas, salud:</b> salud del héroe, de las tropas, de la facción. Especial: <b>todos los atributos a los héroes aliados en combate</b>: apoyo para todo el equipo.</li>
+  </ul>
+  <p class="hint">Los atributos «de tropa» y «de facción» solo funcionan si coinciden con el héroe.</p>
+</section>
+
+<section class="card">
+  <h2>🧩 Qué elegir</h2>
+  <ul class="rules-list">
+    <li><span class="ico">🛡</span><div><b>Tanque:</b> reducción de daño, defensa en la armadura, salud en las grebas, defensa contra habilidades activas.</div></li>
+    <li><span class="ico">⚔️</span><div><b>Combatiente:</b> bonificación de daño, ataque en el casco, daño de habilidades activas o bonificación de crítico.</div></li>
+    <li><span class="ico">💚</span><div><b>Apoyo:</b> bonificación de curación más atributos de supervivencia.</div></li>
+  </ul>
+  <p><b>Regla de oro:</b> la coincidencia importa más que la rareza. Un atributo acorde a la facción o las tropas del héroe puede ser más útil que uno legendario «ajeno».</p>
+</section>
+{% endblock %}

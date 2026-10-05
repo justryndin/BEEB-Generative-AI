@@ -1,0 +1,36 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<section class="card">
+  <h2>🧭 O principal</h2>
+  <p>Quando o equipamento do herói atinge o número necessário de estrelas, abre-se o espaço de atributos especiais — ele pode ser <b>reforjado</b>. Primeiro decida <b>qual é a função do herói</b>: tanque, atacante ou suporte; a facção dele (Stalwart, Aeronaut, Mariner, Rover) e o tipo de tropa (Guard, Gunner, Marksman). Um atributo adequado à função funciona muito melhor.</p>
+  <p class="hint">Os atributos reforjados valem em todas as batalhas — tanto nas marchas quanto na exploração do mapa.</p>
+</section>
+
+<section class="card">
+  <h2>📋 Atributos gerais (capacete, armadura, caneleiras)</h2>
+  <ul class="checks">
+    <li><b>Bônus de dano</b> — a melhor escolha para atacantes. <b>Redução de dano</b> — a melhor escolha para resistência. São os atributos lendários de topo.</li>
+    <li>Bônus de cura; dano e defesa contra ataques normais; dano e defesa contra habilidades ativas.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>🎯 Para cada espaço</h2>
+  <ul class="checks">
+    <li><b>Capacete — ataque:</b> ataque do herói, ataque das tropas do tipo certo, ataque dos heróis da facção. Especial — <b>bônus de crítico</b> (muito bom para Rover com habilidades de crítico).</li>
+    <li><b>Armadura — defesa:</b> defesa do herói, das tropas, da facção. Especial — <b>−15% de recarga da habilidade ativa</b>, acumula com vários iguais. Para heróis que vivem de habilidades.</li>
+    <li><b>Caneleiras — vida:</b> vida do herói, das tropas, da facção. Especial — <b>todos os atributos para os heróis aliados na batalha</b>: suporte para toda a equipe.</li>
+  </ul>
+  <p class="hint">Os atributos «de tropa» e «de facção» só funcionam se coincidirem com os do herói.</p>
+</section>
+
+<section class="card">
+  <h2>🧩 O que escolher</h2>
+  <ul class="rules-list">
+    <li><span class="ico">🛡</span><div><b>Tanque:</b> redução de dano, defesa na armadura, vida nas caneleiras, defesa contra habilidades ativas.</div></li>
+    <li><span class="ico">⚔️</span><div><b>Atacante:</b> bônus de dano, ataque no capacete, dano de habilidades ativas ou bônus de crítico.</div></li>
+    <li><span class="ico">💚</span><div><b>Suporte:</b> bônus de cura mais atributos de sobrevivência.</div></li>
+  </ul>
+  <p><b>Regra de ouro:</b> a compatibilidade importa mais que a raridade. Um atributo da facção ou da tropa do herói pode ser mais útil que um lendário «de outro».</p>
+</section>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<section class="card">
+  <h2>🧭 Qué reduce el tiempo de construcción e investigación</h2>
+  <ul class="rules-list">
+    <li><span class="ico">🧊</span><div><b>Buff de temporada de la alianza</b>: −{{ pct }}% del tiempo declarado, tanto a quien lo recibe como a quien lo da. Una vez cada {{ cooldown }} h, por separado para construcción e investigación. Afecta a todas tus construcciones (o investigaciones) a la vez. Lo gestiona el sitio: a quién dárselo, en la página principal.</div></li>
+    <li><span class="ico">🤝</span><div><b>Ayuda de la alianza («toques»)</b>: cada toque de un aliado recorta el temporizador: unos 32 s, y con el <b>Taller de artefactos</b> mejorado, 45+ s. Requiere la Estación de comunicaciones. Cada día; cuantos más aliados activos, más.</div></li>
+    <li><span class="ico">⏩</span><div><b>Aceleradores</b>: de eventos, cofres, caza de infectados. Conviene gastarlos en las ventanas de los eventos: guía <a href="/guides/week">«Semana»</a>.</div></li>
+    <li><span class="ico">⚡</span><div><b>Buffs de la base de 24 horas</b>: botón con la flecha arriba de la pantalla → pestaña <b>«Desarrollo»</b>. Por ejemplo, <b>velocidad de recolección</b>: el buff máximo por 600 cristales da <b>+100% de recolección durante 24 horas</b>; se recomienda tomarlo siempre. Echa un vistazo a esa pestaña: ahí mismo verás qué otros buffs de velocidad tiene disponibles tu base.</div></li>
+    <li><span class="ico">🔬</span><div><b>Ciencia</b>: la rama «Desarrollo» del Laboratorio: bonificación permanente a la velocidad de construcción e investigación. Guía <a href="/guides/research">«Laboratorio»</a>.</div></li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>✅ Cómo tenerlo en cuenta para que la cola sea justa</h2>
+  <p>El sitio solo ve los buffs de la alianza marcados con el botón «Di ✓». Los toques, los aceleradores y los buffs de la base recortan tiempo <b>cada día</b>, y el sitio no lo sabe.</p>
+  <ol class="steps-list">
+    <li>Una vez al día y después de cada buff recibido, el sitio pregunta <b>«¿Es igual en el juego?»</b> (en la página principal y con una notificación).</li>
+    <li>¿Coincide? Pulsa «Sí». ¿No coincide? Escribe el tiempo del temporizador: un solo botón.</li>
+    <li>El sitio recalculará cuántos buffs te corresponden todavía. Si el tiempo ya llegó al objetivo, pasas a «🎯 llegó al objetivo», y los buffs van a quien más los necesita.</li>
+  </ol>
+  <div class="example"><b>Ejemplo.</b> Te apuntaste con 20 días. En dos días, los toques y aceleradores recortaron otros 3 días, pero el sitio cree que quedan 18. Pulsaste «No, en el juego es distinto» → escribiste 15 días → te corresponden menos, y el buff sobrante fue a quien más lo necesitaba.</div>
+  <p class="hint">El 15% siempre se calcula sobre el tiempo <b>registrado inicialmente</b>: los aceleradores no reducen el tamaño del buff.</p>
+  <p class="hint">Desde la actualización 2.6.200, en la ventana de construcción e investigación el juego también muestra el <b>tiempo predeterminado</b> (sin bonificaciones). En el sitio escribe lo que marca el temporizador ahora.</p>
+</section>
+
+<section class="card">
+  <h2>💡 Cómo sacarle el máximo</h2>
+  <ul class="checks">
+    <li><b>¿Iniciaste una construcción larga? Apúntate a la cola enseguida.</b> Mientras el temporizador es largo, cada buff recorta lo máximo.</li>
+    <li><b>Da el buff en cuanto esté listo</b>: si lo guardas más de {{ hold }} h, pierdes tu turno.</li>
+    <li>El buff de la alianza no necesita una «ventana de evento»: recorta el tiempo al instante. Los aceleradores, en cambio, guárdalos para los eventos.</li>
+    <li>Activa las notificaciones en tu perfil: el sitio te escribirá cuándo dar el buff y cuándo comprobar tu tiempo.</li>
+  </ul>
+</section>
+{% endblock %}

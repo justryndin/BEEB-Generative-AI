@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}Ayuda · {{ site_name }}{% endblock %}
+{% block content %}
+<h1>❓ Cómo funciona todo</h1>
+<p class="text-2 mt0">Aquí se explica en palabras sencillas cómo funciona el sitio: la cola, los buffs, las notificaciones, los anuncios. Si algo no queda claro, pregunta a un R4 en el chat de la alianza.</p>
+
+<nav class="toc" aria-label="Contenido">
+  <a href="#short">En 30 segundos</a>
+  <a href="#start">Primeros pasos</a>
+  <a href="#join">Unirse a la cola</a>
+  <a href="#give">Dar un buff</a>
+  <a href="#queue">Cómo avanza la cola</a>
+  <a href="#roulette">Ruleta</a>
+  <a href="#life">Vida del registro</a>
+  <a href="#notify">Notificaciones</a>
+  <a href="#alliance">Anuncios y eventos</a>
+  <a href="#mistake">Me equivoqué: deshacer</a>
+  <a href="#faq">Preguntas frecuentes</a>
+  {% if is_admin %}<a href="#r4" class="r4">Para R4</a>{% endif %}
+</nav>
+
+<section class="card help" id="short">
+  <h2>⏱ En 30 segundos</h2>
+  <ol class="steps-list">
+    <li><b>¿Estás construyendo o investigando algo largo?</b> Pulsa «➕ Unirme», elige qué está en curso y escribe el tiempo del temporizador del juego.</li>
+    <li><b>¿Tu buff está listo?</b> Abre la página principal: ahí dice <b>a quién exactamente</b> dárselo. Dalo en el juego y pulsa «Di ✓».</li>
+    <li><b>Y ya.</b> Lo demás lo hace el sitio: calcula la cola, te recuerda a quién dar y envía notificaciones.</li>
+  </ol>
+  <p class="hint">Un buff recorta un <b>{{ pct }}%</b> del tiempo y afecta <b>tanto a quien lo recibe como a quien lo da</b>. Dar conviene a todos.</p>
+</section>
+
+<section class="card help" id="start">
+  <h2>🚀 Primeros pasos</h2>
+  <ol class="steps-list">
+    <li><b>Registro.</b> Nick: <b>exactamente como en el juego</b>, para que te encuentren. PIN: 4 dígitos, sirve para iniciar sesión. El código de la alianza te lo da un R4 en el chat.</li>
+    <li><b>Condiciones.</b> Lee y acepta las <a href="/rules">condiciones de la cola</a>: sin eso no puedes apuntarte a la cola.</li>
+    <li><b>Notificaciones.</b> <a href="/me#notify">Perfil → Notificaciones → «Activar»</a>. Así el sitio te escribirá cuándo dar el buff y a quién. Más detalles <a href="#notify">abajo</a>.</li>
+    <li><b>Nivel de la Power Plant (Central eléctrica).</b> Indícalo en tu <a href="/me">perfil</a>: se necesita para la <a href="#roulette">ruleta</a>.</li>
+    <li><b>El sitio como app.</b> En el teléfono: menú del navegador → «Añadir a la pantalla de inicio». El icono será como el de una app normal.</li>
+  </ol>
+</section>
+
+<section class="card help" id="join">
+  <h2>➕ Unirse a la cola</h2>
+  <p>Pulsa <b>«➕ Unirme»</b> → elige <b>construcción</b> o <b>investigación</b>:</p>
+  <ul class="checks">
+    <li><b>Construcción:</b> edificio → nivel <b>al que</b> construyes → tiempo del temporizador.</li>
+    <li><b>Investigación:</b> rama → tiempo del temporizador.</li>
+  </ul>
+  <p>Escribe el tiempo <b>como en el temporizador del juego</b>: «21d 05:30:00» → 21 días, 5 horas, 30 minutos. El sitio te dirá al instante cuántos buffs te corresponden.</p>
+  <div class="example"><b>Ejemplo.</b> Construcción de 12 días. Cada buff recorta un {{ pct }}% de 12 días ≈ 1 d 19 h. Damos buffs hasta que queden unos {{ build_target }}; es decir, te corresponden varios buffs, y ese número se ve en la línea «recibió 0 de N».</div>
+  <details class="more"><summary>Tengo dos construcciones a la vez: ¿cuál escribo?</summary>
+    <p>La más <b>larga</b>. En el juego, el buff recorta el tiempo de todas tus construcciones a la vez, y la cola cuenta según la más larga.</p></details>
+  <details class="more"><summary>¿Me apunto una vez y ya está?</summary>
+    <p>Sí. No hace falta volver a apuntarse después de cada buff. El registro dura mientras siga esa construcción o investigación. Más detalles en la sección <a href="#life">«Vida del registro»</a>.</p></details>
+</section>
+
+<section class="card help" id="give">
+  <h2>🎁 Dar un buff</h2>
+  <ol class="steps-list">
+    <li>Abre la <b>página principal</b>. En la tarjeta «🎁 ¿Buff listo? Dalo ahora» dice <b>a quién</b> dárselo: por separado para investigación y para construcción.</li>
+    <li>Dale el buff a ese jugador <b>en el juego</b>.</li>
+    <li>Vuelve al sitio y pulsa <b>«Di ✓»</b> → elige al jugador al que se lo diste (el primero de la lista es a quien le corresponde).</li>
+  </ol>
+  <p>El sitio recortará al instante el tiempo del que lo recibe y el tuyo, y la cola de todos se actualizará en unos segundos.</p>
+  <p class="hint">El buff se recupera en {{ cooldown }} h, por separado para construcción e investigación. El sitio sabe cuándo vuelve a estar listo gracias a lo que marcas.</p>
+  <details class="more"><summary>No encontré a ese jugador en el juego o no está conectado</summary>
+    <p>Dáselo al <b>siguiente</b> de la lista y marca exactamente a quien se lo diste. La cola se recalculará sola.</p></details>
+</section>
+
+<section class="card help" id="queue">
+  <h2>📊 Cómo avanza la cola</h2>
+  {% if order == "share" %}
+  <p class="lead"><b>Regla principal: el que tenga la barra más corta es el siguiente.</b></p>
+  <p>Cada uno en la cola tiene una barra «recibió X de Y»: cuántos buffs ha recibido ya de los que le corresponden. El siguiente buff lo recibe quien tenga la barra menos llena. Así la ayuda se reparte <b>por igual según la proporción</b>: las construcciones pequeñas y las grandes llegan a la meta más o menos a la vez.</p>
+  <div class="example"><b>Ejemplo.</b> Anya recibió 1 de 5 (20%), Boris 2 de 4 (50%), Vika 0 de 3 (0%).<br>La siguiente será <b>Vika</b> (0%), luego <b>Anya</b> (20%), luego Boris.</div>
+  {% else %}
+  <p>Ahora está activado el modo «ronda justa + ciclo»: primero todos reciben un buff, luego un segundo; dentro de la ronda, los buffs se alternan entre los temporizadores grandes y quienes menos han recibido.</p>
+  {% endif %}
+  <p>Sobre la regla principal funcionan unos pocos ajustes sencillos. Junto a cada jugador en la cola <b>se explica con palabras por qué está en su lugar</b>.</p>
+  <ul class="rules-list">
+    <li><span class="ico">⏸</span><div><b>Pausa de {{ gap }} h.</b> Si recibes un buff, el siguiente no llega antes de {{ gap }} h. Durante la pausa, los buffs van a otros.</div></li>
+    {% if fire %}<li><span class="ico">⏰</span><div><b>«A punto de expirar».</b> Si el temporizador va a llegar <b>solo</b> al objetivo en menos de {{ fire }} h, el jugador va primero; si no, el buff que le corresponde simplemente se perdería.</div></li>{% endif %}
+    {% if prio %}<li><span class="ico">⚡</span><div><b>Prioridad: {{ prio }}</b> Estas construcciones son más importantes para la alianza: su barra crece {{ prio_weight|string|replace(".0", "")|replace(".", ",") }} veces más despacio, por eso reciben buffs más a menudo. La cola no abandona a los demás.</div></li>{% endif %}
+    {% if hold %}<li><span class="ico">⏳</span><div><b>Reciprocidad.</b> Si guardas un buff listo más de {{ hold }} h y no lo das, pierdes tu turno. Lo das y vuelves enseguida a tu lugar.</div></li>{% endif %}
+    <li><span class="ico">🔥</span><div><b>«Urgente».</b> Un R4 puede marcar a un jugador como urgente: va primero (pero también con pausa).</div></li>
+    <li><span class="ico">🎯</span><div><b>Objetivo.</b> Damos buffs hasta que quede: construcción, <b>{{ build_target }}</b>; investigación, <b>{{ research_target }}</b> No hay buffs de más: si después del buff quedara menos que el objetivo, no se asigna.</div></li>
+  </ul>
+  <details class="more"><summary>¿Por qué así? ¿Es justo?</summary>
+    <p>Si se da «por turno, según quién se apuntó primero», los primeros se lo llevan todo y los demás esperan semanas. Si se da «la misma cantidad a cada uno», una construcción pequeña se cierra rápido y una grande espera hasta el final. «Por proporción»: ayudamos a cada uno por igual según lo que necesita. Lo probamos con un modelo de alianza de 50 jugadores: así el primer buff llega lo más rápido posible, y con la regla «a punto de expirar» casi ningún buff se pierde.</p></details>
+</section>
+
+<section class="card help" id="roulette">
+  <h2>🎲 Ruleta: cuando no hay nadie en la cola</h2>
+  {% if roulette_build or roulette_research %}
+  <p>Si no hay nadie en la cola de {{ "construcción" if roulette_build }}{{ " e " if roulette_build and roulette_research }}{{ "investigación" if roulette_research }}, el buff <b>no se pierde</b>: el sitio elige solo a quién dárselo entre los jugadores activos de la alianza (entraron al sitio en los últimos {{ roulette_days }} días, están en la cola o han dado buffs).</p>
+  <ol class="steps-list">
+    <li><b>Primero</b>, quienes aún <b>no han construido la Power Plant {{ pp_goal }}</b>.</li>
+    <li>Luego, quienes no han indicado su nivel, y después, quienes ya la construyeron.</li>
+    <li>Dentro de cada grupo, quien menos veces recibió por ruleta en la semana. En caso de empate, sorteo.</li>
+    <li>Quien acaba de recibir un buff espera la pausa de {{ gap }} h.</li>
+  </ol>
+  <p>En la página principal y en la página «Lo di» se ve <b>a quién le tocó</b> (🎲). El sorteo solo cambia después de cada buff por ruleta, así que todos ven en pantalla al mismo jugador.</p>
+  <p class="hint">En cuanto alguien se apunta a la cola, la ruleta se desactiva y el buff va para esa persona. Indica el nivel de tu Power Plant en tu <a href="/me">perfil</a>; el sitio también lo detecta solo cuando te apuntas a la cola con una construcción de la Power Plant.</p>
+  {% else %}
+  <p>Ahora la ruleta está desactivada: si no hay nadie en la cola, mejor guarda el buff.</p>
+  {% endif %}
+</section>
+
+<section class="card help" id="life">
+  <h2>🔁 Vida del registro: qué pasa después de apuntarte</h2>
+  <div class="lifeline">
+    <div><b>1. Esperas</b><small>estás en la cola; se ve tu puesto y por qué</small></div>
+    <div><b>2. Recibiste un buff</b><small>tiempo recortado, «recibió» +1</small></div>
+    <div><b>3. Pausa de {{ gap }} h</b><small>luego, otra vez en la cola</small></div>
+    <div><b>4. 🎯 En el objetivo</b><small>recibiste todo lo que te corresponde</small></div>
+    <div><b>5. 🏁 Terminado</b><small>el sitio te propondrá lo siguiente</small></div>
+  </div>
+  <ul class="checks">
+    <li><b>No te saca de la cola.</b> Recibes un buff → pausa → vuelves a esperar. No hace falta volver a apuntarse.</li>
+    <li><b>Recibiste todos los que te corresponden</b> → «🎯 llegó al objetivo». Ya no necesitas buffs, pero el registro se mantiene y el temporizador sigue solo.</li>
+    <li><b>Comprobación del tiempo.</b> El sitio no ve el juego. Después de cada buff recibido{% if check %} y cada {{ check }} h{% endif %} pregunta: «¿Es igual en el juego?»: pulsa «Sí» o escribe el tiempo correcto.</li>
+    <li><b>¿Aceleraste por tu cuenta?</b> (aceleradores, ayuda de la alianza): pulsa «No, en el juego el tiempo es otro» o «➕ Unirme → Corregir tiempo». El sitio recalculará cuántos te corresponden todavía.</li>
+    <li><b>Terminó la construcción</b>: en la página principal aparecerá «Unirme con la siguiente»: el edificio y el siguiente nivel ya vienen puestos; solo falta escribir el tiempo.</li>
+    <li><b>Terminaste antes</b> o lo abandonaste: «➕ Unirme → 🏁 Listo», para que los buffs no se desperdicien.</li>
+  </ul>
+</section>
+
+<section class="card help" id="notify">
+  <h2>🔔 Notificaciones en el teléfono</h2>
+  <p>El sitio te escribe al teléfono por sí solo: no hace falta estar pendiente. No hay que instalar ninguna app.</p>
+  <ul class="checks">
+    <li><b>Android:</b> <a href="/me#notify">Perfil → Notificaciones → «Activar en este dispositivo»</a> → «Permitir».</li>
+    <li><b>iPhone:</b> abre el sitio en <b>Safari</b> → botón «Compartir» → <b>«Agregar a inicio»</b>. Abre el sitio desde el icono de la pantalla y ahí pulsa «Activar».</li>
+  </ul>
+  <p>Qué te llega:</p>
+  <ul class="checks">
+    <li>🎁 tu buff está listo: <b>a quién dárselo</b>;</li>
+    <li>⏳ llevas demasiado tiempo guardando un buff listo;</li>
+    <li>🎁 te dieron un buff: comprueba tu tiempo;</li>
+    <li>👉 eres el siguiente en la cola;</li>
+    <li>🏁 terminó una construcción o investigación;</li>
+    <li>📣 anuncios importantes de los R4 y 📅 recordatorios de eventos de la alianza.</li>
+  </ul>
+  <p class="hint">De {{ "%02d:00" % quiet[0] }} a {{ "%02d:00" % quiet[1] }}, silencio: todo lo importante llegará por la mañana. Cualquier tipo de notificación se puede desactivar en tu perfil.</p>
+</section>
+
+<section class="card help" id="alliance">
+  <h2>📣 Anuncios y 📅 eventos de la alianza</h2>
+  <ul class="checks">
+    <li><b>Anuncios</b>: pestaña «📣 Alianza». Los fijados se ven en la página principal. A algunos se puede responder «✅ Iré / ✖️ No podré»: los R4 verán quién vendrá.</li>
+    <li><b>Eventos</b>: el calendario de la semana en MSK (Moscú, UTC+3) y UTC: Duelo de alianzas por días, Asedio de infectados (Infected Siege), Conquista de Arcadia y otros. Antes del inicio llegará un recordatorio.</li>
+    <li>El nuevo día de juego empieza a las 03:00 MSK = 00:00 UTC (hora del servidor del juego). Los relojes MSK y UTC están arriba en cada página.</li>
+  </ul>
+</section>
+
+<section class="card help" id="mistake">
+  <h2>↩️ Me equivoqué: cómo corregirlo</h2>
+  <ul class="checks">
+    <li><b>Marcaste a la persona equivocada o pulsaste sin querer</b>: en la página principal aparecerá enseguida «¿Te equivocaste? ↩️ Deshacer». Tú mismo puedes deshacerlo durante {{ self_undo }} minutos.</li>
+    <li><b>Más tarde</b>: escribe a un R4; pueden anular el registro en el «Registro de buffs» en cualquier momento.</li>
+    <li>Tras deshacer, todo vuelve a como estaba: el tiempo de ambos, «recibió», la pausa, la cola. En el registro la entrada queda tachada: se ve quién la corrigió y cuándo.</li>
+    <li><b>Lo diste en el juego pero olvidaste marcarlo</b>: márcalo ahora o pídeselo a un R4.</li>
+  </ul>
+</section>
+
+<section class="card help" id="faq">
+  <h2>💬 Preguntas frecuentes</h2>
+  <details class="more"><summary>¿Por qué está delante de mí?</summary>
+    <p>Debajo de cada nick se indica por qué: menor proporción recibida, «a punto de expirar», prioridad o «urgente». Si estás en pausa o guardas un buff listo, eso también aparece junto a ti.</p></details>
+  <details class="more"><summary>¿Por qué ya no me dan buffs?</summary>
+    <p>Lo más probable es que hayas llegado al objetivo: quedan {{ build_target }} en la construcción o {{ research_target }} en la investigación. Un buff más bajaría el tiempo por debajo del objetivo, y esos no se asignan. Si aceleraste y el tiempo es otro, corrígelo.</p></details>
+  <details class="more"><summary>¿Cuánto tengo que esperar?</summary>
+    <p>Mira tu puesto (n.º) y tu barra. La velocidad depende de lo rápido que la alianza dé los buffs: cuantas más personas activen las notificaciones y den el buff enseguida, más rápido avanza la cola para todos.</p></details>
+  <details class="more"><summary>Me dieron un buff y el sitio no lo sabe</summary>
+    <p>Debe marcarlo quien lo dio. Pídele que pulse «Lo di» o escribe a un R4: lo marcarán por él.</p></details>
+  <details class="more"><summary>Olvidé mi PIN</summary>
+    <p>Escribe a un R4: restablecerán tu PIN y volverás a registrarte con tu nick. Todos tus registros se conservarán.</p></details>
+  <details class="more"><summary>Cambié de nick en el juego</summary>
+    <p>Perfil → «Cambiar nick». Tus registros y buffs seguirán siendo tuyos.</p></details>
+</section>
+
+{% if is_admin %}
+<h2 class="section-title" id="r4">⭐ Para R4</h2>
+
+<section class="card help">
+  <h2>🧭 Lo principal</h2>
+  <p>El sitio funciona solo: elige a quién dar, recuerda, recalcula la cola, sugiere el tiempo. <b>Los R4 solo hacen falta para las excepciones</b>: corregir un error, marcar a alguien como urgente, ayudar a quien no puede entrar y echar un vistazo a las estadísticas una vez al día.</p>
+  <div class="example"><b>5 minutos al día:</b> «⚙️ Gestión → 📈 Estadísticas» → bloque «Qué hacer ahora». Ahí ya está reunido quién guarda buffs, quién dejó de entrar y cuántas personas activaron las notificaciones.</div>
+</section>
+
+<section class="card help">
+  <h2>⚙️ Gestión de jugadores</h2>
+  <ul class="checks">
+    <li><b>Ficha del jugador</b> (Gestión → jugador): sus temporizadores, buffs, registro, nota de R4 y etiquetas, nivel de la Power Plant.</li>
+    <li><b>🔥 Urgente</b>: el jugador va primero. Úsalo para casos especiales (guerra, nivel importante).</li>
+    <li><b>Registrar una construcción por un jugador</b>: para quienes no tienen acceso al sitio. <b>«➕ Añadir jugador»</b> crea a ese jugador; si después se registra con ese nick, todo pasará a ser suyo.</li>
+    <li><b>🎁 Marcar: él dio el buff</b>: si el jugador lo dio en el juego pero no puede marcarlo.</li>
+    <li><b>Cerrar registro</b>: el jugador abandonó la construcción o se fue. <b>Eliminar</b>: se fue de la alianza.</li>
+    <li><b>Restablecer PIN</b>: el jugador olvidó su PIN y se registra de nuevo. <b>Hacer admin</b>: darle permisos de R4.</li>
+    <li><b>La nota y las etiquetas</b> solo las ven los R4: «activo, R3, en línea por la noche».</li>
+  </ul>
+</section>
+
+<section class="card help">
+  <h2>📜 Registro y deshacer</h2>
+  <p>«Gestión → 📜 Registro de buffs»: todas las entradas, las nuevas arriba, con búsqueda por nick. «↩️ Deshacer» revierte la entrada por completo: el tiempo de quien recibió y de quien dio, «recibió», la pausa, la disponibilidad del buff. La entrada anulada queda tachada, con la marca de quién la anuló y cuándo.</p>
+  <p class="hint">Todo en el sitio se calcula a partir de este registro: lo que se anula desaparece de todas partes al instante.</p>
+</section>
+
+<section class="card help">
+  <h2>📈 Estadísticas: qué significan los números</h2>
+  <ul class="checks">
+    <li><b>Buffs de la alianza usados</b>: qué proporción de los buffs posibles se dio realmente. Cada jugador activo puede dar 2 buffs cada {{ cooldown }} h. Cuanto más cerca del 100%, mejor.</li>
+    <li><b>Buff listo sin dar</b>: cuánto tiempo suele pasar desde que el buff está listo hasta que se da. Es la <b>principal pérdida</b>: cada día de retraso es ayuda que la alianza deja de recibir.</li>
+    <li><b>Esperan el primer buff</b>: cuánto pasa desde que se apuntan hasta el primer buff.</li>
+    <li><b>Buffs que aún corresponden a la cola</b> y «≈ N días»: en cuánto tiempo se vaciará la cola al ritmo actual.</li>
+    <li><b>Notificaciones</b>: cuántos de los que están en la cola las activaron. Con notificaciones se da más rápido.</li>
+    <li><b>Qué hacer ahora</b>: una lista lista para usar: quién guarda buffs, quién no entra desde hace 3+ días.</li>
+  </ul>
+</section>
+
+<section class="card help">
+  <h2>📣 Anuncios y eventos</h2>
+  <ul class="checks">
+    <li><b>Anuncio:</b> «📣 Alianza» → texto → «📌 Fijar» (se ve en la página principal), «🔔 Importante» (llega a todos al teléfono), «Preguntar Iré / No podré». Se ve cuántos lo leyeron.</li>
+    <li><b>Eventos:</b> «📣 Alianza → 📅 Eventos». El calendario inicial se tomó de las guías y las fuentes no coinciden: <b>compruébalo con el juego</b>, corrige la hora y marca «✅ comprobado». La hora se escribe en MSK; el sitio la convierte solo a la del servidor.</li>
+    <li>Recordatorio: con cuánta antelación enviarlo a los jugadores. «La noche anterior» va bien para los días del Duelo.</li>
+  </ul>
+</section>
+
+<section class="card help">
+  <h2>🛠 Ajustes de la cola: qué hace cada uno</h2>
+  <ul class="checks">
+    <li><b>Orden de la cola:</b> «por proporción» (recomendado) o «ronda + ciclo», eligiendo el ciclo 1:1, 1:2, 2:1…</li>
+    <li><b>Límites</b> de construcción e investigación: hasta qué tiempo restante damos buffs.</li>
+    <li><b>El buff recorta, %</b> y <b>sobre qué</b> (sobre el tiempo declarado, como en el juego).</li>
+    <li><b>Pausa tras el buff</b>, <b>«A punto de expirar»</b>, <b>«Guarda un buff listo»</b>: en horas; 0 desactiva la regla.</li>
+    <li><b>Construcción prioritaria</b>, nivel y «cuánto más rápido»: ahora: {{ prio or "sin prioridad" }}.</li>
+    <li><b>Ruleta</b> para construcción e investigación, y el plazo de «actividad».</li>
+    <li><b>Comprobación del tiempo</b>: con qué frecuencia pedir a los jugadores que comprueben su temporizador.</li>
+    <li><b>Código de la alianza</b>: sin él no es posible registrarse. Compártelo en el chat.</li>
+  </ul>
+</section>
+
+<section class="card help">
+  <h2>💬 Textos listos para el chat del juego</h2>
+  <p class="hint mt0">Pulsa «Copiar» y pégalo en el chat de la alianza.</p>
+  {% set t1 = "Los buffs de la alianza ahora están en el sitio: " ~ site_url ~ " — regístrense (nick como en el juego), apúntense a la cola con su construcción o investigación, y cuando su buff esté listo, el sitio les dirá a quién dárselo. ¡Activen las notificaciones en el perfil!" %}
+  {% set t2 = "Cómo funciona: a cada uno le corresponden tantos buffs como necesite hasta el objetivo. El siguiente es quien tenga más corta la barra «recibió X de Y». Si recibes un buff, pausa de " ~ gap ~ " h. Si guardas un buff listo más de " ~ hold ~ " h, pierdes tu turno. Detalles: " ~ site_url ~ "/help" %}
+  {% set t3 = "Indiquen el nivel de su Power Plant en el perfil del sitio (" ~ site_url ~ "/me): cuando la cola está vacía, los buffs de construcción van por ruleta, y primero a quienes no han construido la Power Plant " ~ pp_goal ~ "." %}
+  {% for t in [t1, t2, t3] %}
+  <div class="chat-text"><p>{{ t }}</p><button class="btn btn-sm" type="button" data-copy="{{ t }}">📋 Copiar</button></div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<p class="center"><a href="/rules">📜 Condiciones de la cola</a> · <a href="/guides">📚 Guías del juego</a></p>
+{% endblock %}

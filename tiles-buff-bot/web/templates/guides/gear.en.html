@@ -1,0 +1,36 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<section class="card">
+  <h2>🧭 The essentials</h2>
+  <p>When a hero’s gear reaches the required number of stars, a special stats slot unlocks — and it can be <b>reforged</b>. First decide <b>what role the hero has</b>: tank, damage dealer or support; their faction (Stalwart, Aeronaut, Mariner, Rover) and troop type (Guard, Gunner, Marksman). A stat that fits the role works much better.</p>
+  <p class="hint">Reforged stats apply in all fights — both in marches and in map exploration.</p>
+</section>
+
+<section class="card">
+  <h2>📋 General stats (helmet, armor, greaves)</h2>
+  <ul class="checks">
+    <li><b>Damage bonus</b> — the best pick for damage dealers. <b>Damage reduction</b> — the best pick for survivability. These are the top legendary stats.</li>
+    <li>Healing bonus; damage and defense vs. basic attacks; damage and defense vs. active skills.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>🎯 For a specific slot</h2>
+  <ul class="checks">
+    <li><b>Helmet — attack:</b> hero attack, attack of the matching troop type, faction hero attack. Special — <b>crit bonus</b> (very good for Rover heroes with crit skills).</li>
+    <li><b>Armor — defense:</b> hero, troop, faction defense. Special — <b>−15% active skill cooldown</b>, stacks with several of the same. For heroes who live off their skills.</li>
+    <li><b>Greaves — health:</b> hero, troop, faction health. Special — <b>all stats for allied heroes in battle</b>: support for the whole team.</li>
+  </ul>
+  <p class="hint">“Troop” and “faction” stats only work if they match the hero.</p>
+</section>
+
+<section class="card">
+  <h2>🧩 What to pick</h2>
+  <ul class="rules-list">
+    <li><span class="ico">🛡</span><div><b>Tank:</b> damage reduction, defense on armor, health on greaves, defense vs. active skills.</div></li>
+    <li><span class="ico">⚔️</span><div><b>Damage dealer:</b> damage bonus, attack on helmet, active skill damage or crit bonus.</div></li>
+    <li><span class="ico">💚</span><div><b>Support:</b> healing bonus plus survival stats.</div></li>
+  </ul>
+  <p><b>Golden rule:</b> a match beats rarity. A stat that fits the hero’s faction or troops can be more useful than an “off-fit” legendary one.</p>
+</section>
+{% endblock %}

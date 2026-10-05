@@ -1,0 +1,78 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<nav class="toc">
+  <a href="#order">O que construir primeiro</a>
+  <a href="#roles">Para que serve cada edifício</a>
+  <a href="#pp">Power Plant: tempo</a>
+  <a href="#barracks">Quartéis: tempo</a>
+</nav>
+
+<section class="card" id="order">
+  <h2>🥇 O que construir primeiro</h2>
+  <p><b>A meta principal é subir a Power Plant (Usina).</b> É o edifício principal (máximo — nv. 30); dela dependem o progresso geral e os níveis dos outros edifícios.</p>
+  <ol class="steps-list">
+    <li><b>Power Plant</b></li>
+    <li><b>Laboratório</b> — bônus percentuais em tudo: velocidade de construção, hospital, limite de treino.</li>
+    <li><b>Hospital</b> — quantos feridos podem ser salvos.</li>
+    <li><b>Guarnição (Garrison)</b> — quantas tropas a base comporta.</li>
+    <li>Os demais edifícios.</li>
+  </ol>
+  <p class="hint">Outro ciclo que funciona, segundo jogadores experientes: Power Plant → Estação de comunicações (Comms) → Laboratório, e de novo; suba a Guarnição conforme o exército cresce. Não evolua os edifícios de recursos no início — os tiles de recursos rendem muito mais.</p>
+  <div class="example"><b>Na nossa aliança:</b> construções da Power Plant abaixo do nv. {{ pp_goal }} recebem buffs da aliança com prioridade e, com a fila vazia, são as primeiras na roleta. Informe seu nível no <a href="/me">perfil</a>.</div>
+</section>
+
+<section class="card" id="roles">
+  <h2>🏢 Para que serve cada edifício</h2>
+  <ul class="rules-list">
+    <li><span class="ico">⚡</span><div><b>Power Plant</b> — o edifício principal. Dica: não abra os presentes de construção na hora — espere o evento certo.</div></li>
+    <li><span class="ico">🔬</span><div><b>Laboratório</b> — bônus percentuais para o jogo todo. Detalhes — guia <a href="/guides/research">«Laboratório»</a>. O segundo laboratório permite pesquisar em paralelo.</div></li>
+    <li><span class="ico">🏥</span><div><b>Hospital</b> — capacidade de feridos. Exemplo: com 471 mil tropas e capacidade de 222 mil, só 222 mil serão curadas.</div></li>
+    <li><span class="ico">🪖</span><div><b>Guarnição</b> — máximo de tropas; no nv. 30 — até 1,9 M de soldados.</div></li>
+    <li><span class="ico">📡</span><div><b>Estação de comunicações</b> — ajuda dos aliados («toques»). Fundamental para jogar em aliança.</div></li>
+    <li><span class="ico">🛠</span><div><b>Oficina de artefatos</b> — reforça a ajuda dos aliados: sem ela, um toque corta 32 s do cronômetro, com ela — 45+ s. Também reduz o tempo de construção.</div></li>
+    <li><span class="ico">🎓</span><div><b>Academia de heróis</b> — fluxo de livros de talento.</div></li>
+    <li><span class="ico">📯</span><div><b>Posto de alistamento (Enlistment Office)</b> — devolve parte das tropas mortas permanentemente.</div></li>
+    <li><span class="ico">🗿</span><div><b>Monumentos</b>: vale a pena subir o «Guardian of Life» e o «Monumento Warbringer»; os outros são secundários (mansões, fortaleza gelada) e dão bônus pequenos.</div></li>
+    <li><span class="ico">🏆</span><div><b>Golden Aegis (estátuas douradas)</b> — aumentam muito o ataque, a defesa e a vida de <b>todos os heróis nos esquadrões</b> (sobe o «Poder de combate do esquadrão»), ou seja — arena e batalhas contra jogadores. Consomem muitos recursos: suba conforme puder; o ganho perceptível vem por volta do nv. 10–15.</div></li>
+    <li><span class="ico">🏠</span><div><b>Casas</b> — até o nv. 10. <b>Cozinha</b> — a pizza de tomate aumenta a saciedade.</div></li>
+    <li><span class="ico">👷</span><div><b>Segundo construtor</b> — duas construções ao mesmo tempo. Um dos investimentos mais úteis para quem gasta pouco.</div></li>
+  </ul>
+  <p class="hint">Qualquer construção pode ser movida: mantenha o dedo pressionado sobre ela.</p>
+</section>
+
+<section class="card" id="pp">
+  <h2>⚡ Power Plant: tempo, recursos, requisitos</h2>
+  <p class="hint mt0">Tempo sem bônus de velocidade — segundo dados de {{ gamedata.ITEMS["pp"].source }}. Com os seus bônus será mais rápido. O nível na tabela é aquele <b>para o qual</b> você constrói.</p>
+  {% set pp = gamedata.ITEMS["pp"] %}
+  <div class="table-wrap"><table class="pp-table">
+    <tr><th class="num">Nv.</th><th class="num">Tempo</th><th class="num">Comida</th><th class="num">Madeira</th><th class="num">Metal</th><th class="num">Combustível</th><th>Requisitos</th></tr>
+    {% for lvl in range(2, 31)|reverse %}{% set c = pp.costs.get(lvl, ("—", "—", "—", "—")) %}
+    <tr{% if lvl < pp_goal %} class="prio"{% endif %}><td class="num"><b>{{ lvl }}</b></td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="num">{{ c[0] }}</td><td class="num">{{ c[1] }}</td><td class="num">{{ c[2] }}</td><td class="num">{{ c[3] }}</td><td class="text-2">{{ pp.requires.get(lvl, "—") }}</td></tr>
+    {% endfor %}
+  </table></div>
+  <p class="hint">Quanto maior o nível, mais caro e mais demorado: 27 → 30 são 32–42 dias de construção por nível. Entre na fila de buffs da aliança logo depois de iniciar — enquanto o cronômetro é longo, cada buff corta mais.</p>
+</section>
+
+<section class="card" id="barracks">
+  <h2>🪖 Quartéis (Barracks): tempo de melhoria</h2>
+  <p class="hint mt0">≈ Dados imprecisos (às vezes um nível mais alto é construído mais rápido) — é uma referência, não um valor exato.</p>
+  {% set b1 = gamedata.ITEMS["bar1"] %}{% set b2 = gamedata.ITEMS["bar23"] %}
+  <div class="table-wrap"><table>
+    <tr><th class="num">Nv.</th><th class="num">Quartel 1</th><th class="num">Quartel 2/3</th></tr>
+    {% for lvl in range(15, 31) %}
+    <tr><td class="num">{{ lvl }}</td><td class="num">{{ dur(b1.time_for(lvl)) }}</td><td class="num">{{ dur(b2.time_for(lvl)) }}</td></tr>
+    {% endfor %}
+  </table></div>
+  {% if observed %}
+  <h3 style="margin-top:16px">👥 Tempos reais na nossa aliança</h3>
+  <p class="hint mt0">Quanto os jogadores informam ao entrar na fila (mediana).</p>
+  <div class="table-wrap"><table>
+    <tr><th>Edifício</th><th class="num">Nv.</th><th class="num">Normalmente</th><th class="num">Inscrições</th></tr>
+    {% for code, lvl, median, count in observed %}
+    {% set it = gamedata.item(code) %}
+    <tr><td>{{ it.ru if it else code }}</td><td class="num">{{ lvl }}</td><td class="num">{{ dur(median) }}</td><td class="num">{{ count }}</td></tr>
+    {% endfor %}
+  </table></div>
+  {% endif %}
+</section>
+{% endblock %}

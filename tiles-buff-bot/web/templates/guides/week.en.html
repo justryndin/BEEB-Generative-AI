@@ -1,0 +1,70 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<section class="card">
+  <h2>🧭 The main rule</h2>
+  <p><b>Save up and spend for events.</b> The same speedups, shards and gear scraps score points in several events at once if you spend them in the right window. Outside events, valuable resources aren’t spent.</p>
+  <ul class="checks">
+    <li><b>Alliance Duel (VS)</b> — every day except Sunday, each day has its own theme.</li>
+    <li><b>Power Play (Big Game) (PP)</b> — every day, the theme changes every 4 hours.</li>
+    <li><b>Turbo Turtle (TT)</b> — a weekly event.</li>
+  </ul>
+  <p class="hint">Matching themes = double points: 🟢 two events, 🟡 three events, 🟠 one event.</p>
+</section>
+
+{% set W = [
+  ("🏗 Construction speedups", True, [("🟢",3,7),("🟢",3,7),none,("🟢",15,19),("🟢",15,19),("🟠",11,15),("🟠",7,11)]),
+  ("🔬 Research speedups", True, [("🟢",15,19),("🟠",7,11),("🟠",7,11),none,("🟠",23,3),("🟡",19,23),("🟢",15,19)]),
+  ("🦸 Heroes: recruitment, books, shards", False, [none,none,none,("🟢",15,19),none,none,("🟢",3,7)]),
+  ("🛡 Gear: scraps, bolts", False, [("🟡",19,23),("🟠",15,19),none,("🟠",19,23),("🟢",3,7),("🟢",19,23),none]),
+  ("🧬 Titan: cells, serums", False, [none,("🟢",15,19),("🟢",15,19),none,("🟠",23,3),none,("🟠",23,3)]),
+  ("📐 Chief collection: blueprints, nuts", False, [none,none,none,("🟠",19,23),("🟠",11,15),none,("🟠",11,15)]),
+] %}
+{% set off = tz_offset_min // 60 %}
+<section class="card">
+  <h2>🗓 When to spend</h2>
+  <p class="hint mt0">On top — {{ tz_label }} ({{ offset_text() }}), small text below — UTC (game server time).</p>
+  <div class="table-wrap"><table class="week">
+    <tr><th>What</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>
+    {% for name, hl, cells in W %}
+    <tr{% if hl %} class="hl"{% endif %}><td>{% if hl %}<b>{{ name }}</b>{% else %}{{ name }}{% endif %}</td>
+      {% for c in cells %}<td>{% if c %}{{ c[0] }} {{ "%02d–%02d"|format(c[1], c[2]) }}<small class="utc">{{ "%02d–%02d"|format((c[1] - off) % 24, (c[2] - off) % 24) }} UTC</small>{% else %}—{% endif %}</td>{% endfor %}
+    </tr>
+    {% endfor %}
+    <tr><td>⚔️ Troop training</td><td>TT</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>TT</td></tr>
+    <tr><td>🥫 Stamina, intel missions</td><td>VS</td><td>—</td><td>—</td><td>VS</td><td>VS</td><td>—</td><td>TT</td></tr>
+  </table></div>
+  <p class="hint">Schedule compiled by the [Dan]Dangers alliance (state 174). Duel themes may differ between servers — check against the game. A new game day starts at 03:00 {{ tz_label }} = 00:00 UTC.</p>
+</section>
+
+<section class="card">
+  <h2>📌 Day by day — in short</h2>
+  <ul class="rules-list">
+    <li><span class="ico">Mon</span><div>Gear scraps (count in both the Duel and the Turtle). Resources gathered on Sunday evening count toward Monday. Radar — Mon, Wed, Fri.</div></li>
+    <li><span class="ico">Tue</span><div><b>Construction day.</b> The heaviest spending of construction speedups. Trucks — A-class only, tasks — S. Since 2.6.200 the second Duel day also has <a href="/guides/pets">pet</a> tasks.</div></li>
+    <li><span class="ico">Wed</span><div>Titan and <b>research speedups</b> — matches the Duel, the best return.</div></li>
+    <li><span class="ico">Thu</span><div><b>Heroes</b>: save recruitment cards, shards and books — spend them on Thursday 15:00–19:00. <b>Don’t collect</b> finished buildings in the evening — complete them on Friday.</div></li>
+    <li><span class="ico">Fri</span><div>Construction and research count again. Glue for Chief gear. Saturday morning — ranking results.</div></li>
+    <li><span class="ico">Sat</span><div>Army training for the Turtle, research speedups in the evening. <b>Arcadian Conquest</b>.</div></li>
+    <li><span class="ico">Sun</span><div>No Duel: review the results, save up for the week. An hour before the day changes, check your ranking spot.</div></li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>🎯 How much to score</h2>
+  <ul class="checks">
+    <li>In the Duel, aim for <b>at least 5M</b> points a day (better 10M) — for good rewards.</li>
+    <li>In Power Play (Big Game), fill the bar to <b>18 points</b> — that’s the maximum reward.</li>
+    <li>Don’t chase the top every day: if you’re not making the top 50, it’s better to save resources for next week.</li>
+    <li>A payback example: spend 3 hours of speedups in the right window and you can get back more than 25 minutes of speedups, plus manuals, gems and Duel medals.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>🧊 How this fits with alliance buffs</h2>
+  <ul class="checks">
+    <li>A buff cuts time immediately, on any day — no need to “save” it for an event. Give it as soon as the site tells you who to.</li>
+    <li>But <b>speedups</b> pay off more in the windows from the table. After spending them — <b>check your time on the site</b> (home → “Check your time” or “➕ Join → Fix time”), otherwise the queue will think you still need more buffs.</li>
+    <li>A long construction is best <b>finished</b> on construction day — completion also scores points.</li>
+  </ul>
+</section>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<nav class="toc">
+  <a href="#order">What to build first</a>
+  <a href="#roles">What each building is for</a>
+  <a href="#pp">Power Plant: time</a>
+  <a href="#barracks">Barracks: time</a>
+</nav>
+
+<section class="card" id="order">
+  <h2>🥇 What to build first</h2>
+  <p><b>The main goal is to level up the Power Plant.</b> It’s the main building (max level 30); overall progress and the levels of other buildings depend on it.</p>
+  <ol class="steps-list">
+    <li><b>Power Plant</b></li>
+    <li><b>Lab</b> — bonuses to everything: construction speed, hospital, training limit.</li>
+    <li><b>Hospital</b> — how many wounded can be saved.</li>
+    <li><b>Garrison</b> — how many troops the base holds.</li>
+    <li>Other buildings.</li>
+  </ol>
+  <p class="hint">Another working cycle from experienced players: Power Plant → Comms Outpost → Lab, and around again; bring the Garrison up as your army grows. Don’t level resource buildings early on — resource tiles give much more.</p>
+  <div class="example"><b>In our alliance:</b> Power Plant constructions below level {{ pp_goal }} get alliance buffs with priority, and when the queue is empty — first by roulette. Set your level in your <a href="/me">profile</a>.</div>
+</section>
+
+<section class="card" id="roles">
+  <h2>🏢 What each building is for</h2>
+  <ul class="rules-list">
+    <li><span class="ico">⚡</span><div><b>Power Plant</b> — the main building. Tip: don’t open construction gifts right away — wait for a suitable event.</div></li>
+    <li><span class="ico">🔬</span><div><b>Lab</b> — percentage bonuses for the whole game. Details in the <a href="/guides/research">“Lab”</a> guide. A second lab lets you research in parallel.</div></li>
+    <li><span class="ico">🏥</span><div><b>Hospital</b> — wounded capacity. Example: with 471K troops and a capacity of 222K, only 222K will be healed.</div></li>
+    <li><span class="ico">🪖</span><div><b>Garrison</b> — max troops; at level 30 — up to 1.9M soldiers.</div></li>
+    <li><span class="ico">📡</span><div><b>Comms Outpost</b> — help from allies (“taps”). Critical for playing in an alliance.</div></li>
+    <li><span class="ico">🛠</span><div><b>Artifact Workshop</b> — boosts ally help: without it a tap cuts the timer by 32 sec, with it — by 45+ sec. It also cuts construction time.</div></li>
+    <li><span class="ico">🎓</span><div><b>Hero Academy</b> — a steady flow of talent books.</div></li>
+    <li><span class="ico">📯</span><div><b>Enlistment Office</b> — partially returns troops lost permanently.</div></li>
+    <li><span class="ico">🗿</span><div><b>Monuments</b>: “Guardian of Life” and “Warbringer Monument” are worth leveling; the other minor ones (mansions, frost fortress) give small bonuses.</div></li>
+    <li><span class="ico">🏆</span><div><b>Golden statues</b> — greatly boost the attack, defense and health of <b>all heroes in squads</b> (“Squad Power” goes up), which means arena and PvP fights. They eat a lot of resources: level them as you can, a noticeable gain starts around level 10–15.</div></li>
+    <li><span class="ico">🏠</span><div><b>Houses</b> — up to level 10. <b>Kitchen</b> — tomato pizza increases satiety.</div></li>
+    <li><span class="ico">👷</span><div><b>Second builder</b> — two constructions at once. One of the most useful investments for minimal spenders.</div></li>
+  </ul>
+  <p class="hint">Any building can be moved: press and hold on it.</p>
+</section>
+
+<section class="card" id="pp">
+  <h2>⚡ Power Plant: time, resources, requirements</h2>
+  <p class="hint mt0">Time without speed bonuses — per data from {{ gamedata.ITEMS["pp"].source }}. With your bonuses it’ll be faster. The level in the table is the one you’re building <b>to</b>.</p>
+  {% set pp = gamedata.ITEMS["pp"] %}
+  <div class="table-wrap"><table class="pp-table">
+    <tr><th class="num">Lv.</th><th class="num">Time</th><th class="num">Food</th><th class="num">Wood</th><th class="num">Metal</th><th class="num">Fuel</th><th>Requires</th></tr>
+    {% for lvl in range(2, 31)|reverse %}{% set c = pp.costs.get(lvl, ("—", "—", "—", "—")) %}
+    <tr{% if lvl < pp_goal %} class="prio"{% endif %}><td class="num"><b>{{ lvl }}</b></td><td class="num">{{ dur(pp.time_for(lvl)) }}</td><td class="num">{{ c[0] }}</td><td class="num">{{ c[1] }}</td><td class="num">{{ c[2] }}</td><td class="num">{{ c[3] }}</td><td class="text-2">{{ pp.requires.get(lvl, "—") }}</td></tr>
+    {% endfor %}
+  </table></div>
+  <p class="hint">The higher the level, the more expensive and longer: 27 → 30 means 32–42 days of construction per level. Join the alliance buff queue right after starting — while the timer is long, each buff cuts the most.</p>
+</section>
+
+<section class="card" id="barracks">
+  <h2>🪖 Barracks: upgrade time</h2>
+  <p class="hint mt0">≈ The data is imprecise (in places a higher level builds faster) — a guideline, not an exact value.</p>
+  {% set b1 = gamedata.ITEMS["bar1"] %}{% set b2 = gamedata.ITEMS["bar23"] %}
+  <div class="table-wrap"><table>
+    <tr><th class="num">Lv.</th><th class="num">Barracks 1</th><th class="num">Barracks 2/3</th></tr>
+    {% for lvl in range(15, 31) %}
+    <tr><td class="num">{{ lvl }}</td><td class="num">{{ dur(b1.time_for(lvl)) }}</td><td class="num">{{ dur(b2.time_for(lvl)) }}</td></tr>
+    {% endfor %}
+  </table></div>
+  {% if observed %}
+  <h3 style="margin-top:16px">👥 Real times in our alliance</h3>
+  <p class="hint mt0">What players enter when joining the queue (median).</p>
+  <div class="table-wrap"><table>
+    <tr><th>Building</th><th class="num">Lv.</th><th class="num">Typical</th><th class="num">Entries</th></tr>
+    {% for code, lvl, median, count in observed %}
+    {% set it = gamedata.item(code) %}
+    <tr><td>{{ it.ru if it else code }}</td><td class="num">{{ lvl }}</td><td class="num">{{ dur(median) }}</td><td class="num">{{ count }}</td></tr>
+    {% endfor %}
+  </table></div>
+  {% endif %}
+</section>
+{% endblock %}
