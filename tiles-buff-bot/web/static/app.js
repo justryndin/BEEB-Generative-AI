@@ -1,5 +1,11 @@
 // Немного удобства поверх обычных форм. Сайт работает и без JavaScript.
 (function () {
+  // Перевод: base.html кладёт в window.I18N {русский текст: перевод}; {имя} заменяется из vars.
+  function T(key, vars) {
+    var text = (window.I18N && window.I18N[key]) || key;
+    return text.replace(/\{(\w+)\}/g, function (m, name) { return vars && name in vars ? vars[name] : m; });
+  }
+
   function bind(root) {
     // Кнопки «−» и «+» у полей дней/часов/минут.
     root.querySelectorAll("[data-step]").forEach(function (btn) {
@@ -18,11 +24,11 @@
       var chips = box.querySelectorAll("[data-big]");
       function update() {
         var b = +big.value, w = +wait.value, wf = first.value === "wait";
-        if (!b && !w) text.textContent = "нужно хотя бы 1 баф в цикле";
-        else if (!w) text.textContent = "только большим таймерам";
-        else if (!b) text.textContent = "только тем, кому досталось меньше всех";
-        else if (wf) text.textContent = b + " : " + w + " — сначала " + w + " меньше получившим, потом " + b + " большим";
-        else text.textContent = b + " : " + w + " — сначала " + b + " большим, потом " + w + " меньше получившим";
+        if (!b && !w) text.textContent = T("нужно хотя бы 1 баф в цикле");
+        else if (!w) text.textContent = T("только большим таймерам");
+        else if (!b) text.textContent = T("только тем, кому досталось меньше всех");
+        else if (wf) text.textContent = T("{big} : {wait} — сначала {wait} меньше получившим, потом {big} большим", {big: b, wait: w});
+        else text.textContent = T("{big} : {wait} — сначала {big} большим, потом {wait} меньше получившим", {big: b, wait: w});
         chips.forEach(function (c) {
           c.setAttribute("aria-pressed", String(+c.dataset.big === b && +c.dataset.wait === w));
         });
@@ -63,7 +69,7 @@
       btn.addEventListener("click", function () {
         var done = function () {
           var old = btn.textContent;
-          btn.textContent = "✅ Скопировано";
+          btn.textContent = T("✅ Скопировано");
           setTimeout(function () { btn.textContent = old; }, 1500);
         };
         if (navigator.clipboard) navigator.clipboard.writeText(btn.dataset.copy).then(done, function () {});
@@ -133,7 +139,7 @@
     }
     function state(on) {
       show("[data-push-on]", !on); show("[data-push-off]", on); show("[data-push-banner]", !on);
-      if (on) status("✅ Включено на этом устройстве.");
+      if (on) status(T("✅ Включено на этом устройстве."));
     }
     if (!supported) {
       if (ios && !standalone) {
@@ -141,7 +147,7 @@
         all("[data-push-banner] [data-push-on]", function (b) { b.addEventListener("click", function () { location.href = "/me#notify"; }); });
         all("#notify [data-push-on]", function (b) { b.hidden = true; });
       } else {
-        status("Этот браузер не умеет уведомления. На Android открой сайт в Chrome, на iPhone — добавь на экран «Домой».");
+        status(T("Этот браузер не умеет уведомления. На Android открой сайт в Chrome, на iPhone — добавь на экран «Домой»."));
         show("[data-push-on]", false);
       }
       return;
@@ -166,7 +172,7 @@
           if (!r.ok) throw new Error("server");
           state(true); show("[data-push-denied]", false);
         }).catch(function (e) {
-          if (e.message !== "denied") status("Не получилось включить. Обнови страницу и попробуй ещё раз.");
+          if (e.message !== "denied") status(T("Не получилось включить. Обнови страницу и попробуй ещё раз."));
         }).then(function () { btn.disabled = false; });
       });
     });
@@ -175,7 +181,7 @@
         regPromise.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
           if (!sub) return;
           return post("/push/unsubscribe", { endpoint: sub.endpoint }).then(function () { return sub.unsubscribe(); });
-        }).then(function () { state(false); status("Выключено на этом устройстве."); });
+        }).then(function () { state(false); status(T("Выключено на этом устройстве.")); });
       });
     });
   }

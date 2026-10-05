@@ -61,6 +61,7 @@
 </nav>
 {% endif %}
 <p class="footer"><a href="/help">❓ {{ _("Справка") }}</a> · <a href="/stats">📊 {{ _("Статистика") }}</a> · <a href="/guides">📚 {{ _("Гайды") }}</a> · <a href="/rules">📜 {{ _("Условия") }}</a>{% if me and is_admin %} · <a href="/me">👤 {{ _("Профиль") }}</a>{% endif %}<br>© {{ _(site_name) }} · Tiles Survive · {{ _("сезон «Эра метели»") }}</p>
-<script src="/static/app.js?v=8" defer></script>
+<script>window.I18N = {{ js_strings()|tojson }};</script>
+<script src="/static/app.js?v=9" defer></script>
 </body>
 </html>

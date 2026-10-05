@@ -161,7 +161,21 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             return tr("{big} : {wait} — сначала {wait} меньше получившим, потом {big} большим", big=big, wait=wait)
         return tr("{big} : {wait} — сначала {big} большим, потом {wait} меньше получившим", big=big, wait=wait)
 
+    js_keys = [
+        "нужно хотя бы 1 баф в цикле", "только большим таймерам", "только тем, кому досталось меньше всех",
+        "{big} : {wait} — сначала {wait} меньше получившим, потом {big} большим",
+        "{big} : {wait} — сначала {big} большим, потом {wait} меньше получившим",
+        "✅ Скопировано", "✅ Включено на этом устройстве.",
+        "Этот браузер не умеет уведомления. На Android открой сайт в Chrome, на iPhone — добавь на экран «Домой».",
+        "Не получилось включить. Обнови страницу и попробуй ещё раз.", "Выключено на этом устройстве.",
+    ]
+
+    def js_strings() -> dict:
+        """Переводы для app.js: {русский ключ: текст на языке игрока}."""
+        return {k: i18n.translate(k) for k in js_keys} if i18n.get_lang() != "ru" else {}
+
     templates.env.globals.update(
+        js_strings=js_strings,
         dur=format_duration,
         local=local,
         both=both,
