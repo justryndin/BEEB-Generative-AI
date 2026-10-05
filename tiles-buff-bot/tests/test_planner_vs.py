@@ -36,5 +36,18 @@ def test_vs_days_follow_utc():
     sunday = vs.today(monday + 6 * DAY)
     assert sunday.day is None and sunday.tomorrow.num == 1
     tue = vs.today(monday + DAY)
-    assert tue.windows() == [("Ускорения стройки", 3, 7, 0, 4)]
-    assert tue.ends_at == monday + 2 * DAY
+    assert tue.windows() == [] and tue.ends_at == monday + 2 * DAY  # темы стройки в «Игре по-крупному» нет
+    wed = vs.today(monday + 2 * DAY)
+    assert [(w.theme.code, w.msk, w.utc) for w in wed.windows()] == [
+        ("tech", "03:00–07:00", "00:00–04:00"), ("titan", "11:00–15:00", "08:00–12:00")]
+
+
+def test_power_play_calendar_matches_game():
+    from core import powerplay
+    monday = 4 * DAY
+    cur, nxt = powerplay.now_and_next(monday + 8 * 3600 + 1800)  # пн 11:30 МСК — как на скриншоте
+    assert cur.theme.code == "tech" and cur.msk == "11:00–15:00" and nxt.theme.code == "gear"
+    assert powerplay.slot_at(monday + 6 * DAY + 20 * 3600).theme.code == "chef"  # вс 23:00 МСК
+    assert all(len(set(day)) == 6 for day in powerplay.CALENDAR.values())
+    rows = powerplay.week_table()
+    assert rows[0][0] == "03:00" and rows[-1][0] == "23:00" and len(rows[0][1]) == 7

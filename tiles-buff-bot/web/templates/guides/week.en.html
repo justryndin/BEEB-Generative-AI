@@ -8,33 +8,9 @@
     <li><b>Power Play (Big Game) (PP)</b> — every day, the theme changes every 4 hours.</li>
     <li><b>Turbo Turtle (TT)</b> — a weekly event.</li>
   </ul>
-  <p class="hint">Matching themes = double points: 🟢 two events, 🟡 three events, 🟠 one event.</p>
 </section>
 
-{% set W = [
-  ("🏗 Construction speedups", True, [("🟢",3,7),("🟢",3,7),none,("🟢",15,19),("🟢",15,19),("🟠",11,15),("🟠",7,11)]),
-  ("🔬 Research speedups", True, [("🟢",15,19),("🟠",7,11),("🟠",7,11),none,("🟠",23,3),("🟡",19,23),("🟢",15,19)]),
-  ("🦸 Heroes: recruitment, books, shards", False, [none,none,none,("🟢",15,19),none,none,("🟢",3,7)]),
-  ("🛡 Gear: scraps, bolts", False, [("🟡",19,23),("🟠",15,19),none,("🟠",19,23),("🟢",3,7),("🟢",19,23),none]),
-  ("🧬 Titan: cells, serums", False, [none,("🟢",15,19),("🟢",15,19),none,("🟠",23,3),none,("🟠",23,3)]),
-  ("📐 Chief collection: blueprints, nuts", False, [none,none,none,("🟠",19,23),("🟠",11,15),none,("🟠",11,15)]),
-] %}
-{% set off = tz_offset_min // 60 %}
-<section class="card">
-  <h2>🗓 When to spend</h2>
-  <p class="hint mt0">On top — {{ tz_label }} ({{ offset_text() }}), small text below — UTC (game server time).</p>
-  <div class="table-wrap"><table class="week">
-    <tr><th>What</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>
-    {% for name, hl, cells in W %}
-    <tr{% if hl %} class="hl"{% endif %}><td>{% if hl %}<b>{{ name }}</b>{% else %}{{ name }}{% endif %}</td>
-      {% for c in cells %}<td>{% if c %}{{ c[0] }} {{ "%02d–%02d"|format(c[1], c[2]) }}<small class="utc">{{ "%02d–%02d"|format((c[1] - off) % 24, (c[2] - off) % 24) }} UTC</small>{% else %}—{% endif %}</td>{% endfor %}
-    </tr>
-    {% endfor %}
-    <tr><td>⚔️ Troop training</td><td>TT</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>TT</td></tr>
-    <tr><td>🥫 Stamina, intel missions</td><td>VS</td><td>—</td><td>—</td><td>VS</td><td>VS</td><td>—</td><td>TT</td></tr>
-  </table></div>
-  <p class="hint">Schedule compiled by the [Dan]Dangers alliance (state 174). Duel themes may differ between servers — check against the game. A new game day starts at 03:00 {{ tz_label }} = 00:00 UTC.</p>
-</section>
+{% include "guides/_pp_calendar.html" %}
 
 <section class="card">
   <h2>📌 Day by day — in short</h2>

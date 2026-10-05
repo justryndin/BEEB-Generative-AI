@@ -545,6 +545,11 @@ table.week td, table.week th { white-space: nowrap; padding: 8px 6px; }
 table.week td:first-child { white-space: normal; min-width: 150px; }
 table.week tr.hl td { background: var(--accent-soft); }
 table.week small.utc { display: block; color: var(--muted); font-size: .72rem; }
+table.pp-cal td:first-child { min-width: 64px; }
+table.pp-cal td { text-align: center; white-space: normal; min-width: 72px; vertical-align: top; }
+table.pp-cal td small { display: block; font-size: .7rem; line-height: 1.2; color: var(--text-2); }
+table.pp-cal td.duel { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); border-radius: 8px; }
+.pp-now { margin: 10px 0 0; }
 table.pp-table { font-size: .84rem; }
 table.pp-table td, table.pp-table th { white-space: nowrap; padding: 7px 6px; }
 table.pp-table td:last-child { white-space: normal; min-width: 300px; }

@@ -8,14 +8,17 @@
   <ul class="checks">
     {% for task in d.tasks %}<li>{{ _(task.text) }}{% if task.disputed %} <span class="badge badge-warn" title="{{ _("Источники расходятся — сверь с заданиями в игре") }}">{{ _("спорно") }}</span>{% endif %}</li>{% endfor %}
   </ul>
-  {% for what, a, b, ua, ub in vs.windows() %}
-  <p class="mt0">⏰ <b>{{ _(what) }}</b>: {{ _("лучшее окно {msk} МСК · {utc} UTC — совпадает с «Игрой по-крупному».", msk="%02d:00–%02d:00"|format(a, b), utc="%02d:00–%02d:00"|format(ua, ub)) }}</p>
+  {% for w in vs.windows() %}
+  <p class="mt0">⏰ {{ _("<b>{theme}</b>: лучшее окно {msk} МСК · {utc} UTC — тема «Игры по-крупному» совпадает с Дуэлью.", theme=_(w.theme.name), msk=w.msk, utc=w.utc) }}</p>
   {% endfor %}
   {% if d.tip %}<p class="text-2">💡 {{ _(d.tip) }}</p>{% endif %}
   {% else %}
   <h2>⚔️ {{ _("VS сегодня") }} · 😴</h2>
   <p class="mt0">{{ _(vs_sunday) }}</p>
   {% endif %}
+  {% set pp_now, pp_next = vs.power_play() %}
+  <p class="pp-now">🎲 {{ _("«Игра по-крупному» сейчас: <b>{theme}</b> до {end} МСК ({end_utc} UTC) — трать {spend}.", theme=_(pp_now.theme.name), end=pp_now.msk[-5:], end_utc=pp_now.utc[-5:], spend=_(pp_now.theme.spend)) }}
+    {{ _("Дальше: {emoji} {theme}.", emoji=pp_next.theme.emoji, theme=_(pp_next.theme.name)) }} <a href="/guides/week#pp">{{ _("Календарь →") }}</a></p>
   <p class="hint">{{ _(vs_reset) }} {{ _("До конца дня:") }} <b>{{ dur(vs.ends_at - now_ts) }}</b>.
     {% if vs.tomorrow %}{{ _("Завтра:") }} {{ vs.tomorrow.emoji }} {{ _(vs.tomorrow.theme) }}.{% endif %}</p>
   <details class="more" data-key="vs-target"><summary>{{ _("Сколько набирать и откуда данные") }}</summary>

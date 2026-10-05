@@ -137,13 +137,14 @@ RESEARCH: list[Item] = [
     Item("dev", "research", "Развитие", "Development"),
     Item("eco", "research", "Экономика", "Economy"),
     Item("hero", "research", "Герои", "Hero"),
-    Item("troop", "research", "Войска", "Troop"),
+    Item("troop", "research", "Отряды", "Troop"),
     Item("intel", "research", "Пост разведки", "Intel Outpost"),
     Item("duel", "research", "Дуэль альянсов", "Alliance Duel"),
     Item("sf", "research", "Спецназ", "Special Forces"),
     Item("hunt", "research", "Охота на заражённых", "Infected Hunt"),
     Item("doom", "research", "Экспресс Судного дня", "Doomsday Express"),
     Item("ocean", "research", "Мощь океана", "Might of the Ocean"),
+    Item("warfare", "research", "Военное дело", "Warfare"),
     Item("rother", "research", "Другое исследование", ""),
 ]
 

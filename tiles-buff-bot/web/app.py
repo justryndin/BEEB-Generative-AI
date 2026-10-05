@@ -18,7 +18,7 @@ from markupsafe import Markup
 
 from core import gamedata
 from core.db import Database
-from core import crm, i18n, planner, vs
+from core import crm, i18n, planner, powerplay, vs
 from core.i18n import LANGS, SHORT, t as tr
 from core.analytics import benefit, r4_report
 from core.tips import player_tip
@@ -176,6 +176,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
 
     templates.env.globals.update(
         js_strings=js_strings,
+        powerplay=powerplay,
+        WEEKDAYS=crm.WEEKDAYS,
         amount=lambda text: text if text in ("—", "") else planner.fmt_amount(planner.parse_amount(text)),
         dur=format_duration,
         local=local,

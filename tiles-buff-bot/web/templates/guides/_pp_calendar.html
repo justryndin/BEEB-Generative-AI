@@ -1,0 +1,21 @@
+{# Календарь «Игры по-крупному» из core.powerplay — общий для всех языков. #}
+<section class="card" id="pp">
+  <h2>🎲 {{ _("«Игра по-крупному»: календарь недели") }}</h2>
+  <p class="hint mt0">{{ _("Из игры, неделя с 5 октября 2026. Шесть тем по 4 часа. Сверху — МСК, снизу мелко — UTC (время сервера). Рамкой выделены окна, где тема совпадает с днём Дуэли — очки сразу в двух событиях.") }}</p>
+  <div class="table-wrap"><table class="week pp-cal">
+    <tr><th>{{ _("МСК") }}</th>{% for d in WEEKDAYS %}<th>{{ _(d)|capitalize }}</th>{% endfor %}</tr>
+    {% for msk, themes in powerplay.week_table() %}{% set h = msk[:2]|int %}
+    <tr><td><b>{{ msk }}</b><small class="utc">{{ "%02d:00"|format((h - 3) % 24) }} UTC</small></td>
+      {% for th in themes %}{% set duel = th.code in powerplay.DUEL_MATCH.get(loop.index0, ()) %}
+      <td{% if duel %} class="duel"{% endif %} title="{{ _(th.name) }}">{{ th.emoji }}<small>{{ _(th.name) }}</small></td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </table></div>
+  <ul class="rules-list">
+    {% for th in powerplay.THEMES.values() %}
+    <li><span class="ico">{{ th.emoji }}</span><div><b>{{ _(th.name) }}</b> — {{ _(th.spend) }}.</div></li>
+    {% endfor %}
+  </ul>
+  <p class="hint">{{ _("Темы стройки в календаре больше нет: ускорения стройки трать во вторник — день стройки в Дуэли — и на этапах гонки, где они засчитываются.") }}</p>
+</section>

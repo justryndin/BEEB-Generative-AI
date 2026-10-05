@@ -8,33 +8,9 @@
     <li><b>Power Play / Gran Juego (PP)</b>: todos los días, el tema cambia cada 4 horas.</li>
     <li><b>Turbo Turtle (TT)</b>: evento semanal.</li>
   </ul>
-  <p class="hint">Coincidencia de temas = puntos dobles: 🟢 dos eventos, 🟡 tres eventos, 🟠 un evento.</p>
 </section>
 
-{% set W = [
-  ("🏗 Aceleradores de construcción", True, [("🟢",3,7),("🟢",3,7),none,("🟢",15,19),("🟢",15,19),("🟠",11,15),("🟠",7,11)]),
-  ("🔬 Aceleradores de investigación", True, [("🟢",15,19),("🟠",7,11),("🟠",7,11),none,("🟠",23,3),("🟡",19,23),("🟢",15,19)]),
-  ("🦸 Héroes: invocación, libros, fragmentos", False, [none,none,none,("🟢",15,19),none,none,("🟢",3,7)]),
-  ("🛡 Equipo: restos, pernos", False, [("🟡",19,23),("🟠",15,19),none,("🟠",19,23),("🟢",3,7),("🟢",19,23),none]),
-  ("🧬 Titán: células, sueros", False, [none,("🟢",15,19),("🟢",15,19),none,("🟠",23,3),none,("🟠",23,3)]),
-  ("📐 Colección del chef: planos, tuercas", False, [none,none,none,("🟠",19,23),("🟠",11,15),none,("🟠",11,15)]),
-] %}
-{% set off = tz_offset_min // 60 %}
-<section class="card">
-  <h2>🗓 Cuándo gastar</h2>
-  <p class="hint mt0">Arriba: {{ tz_label }} ({{ offset_text() }}); abajo, en pequeño: UTC (hora del servidor del juego).</p>
-  <div class="table-wrap"><table class="week">
-    <tr><th>Qué</th><th>Lu</th><th>Ma</th><th>Mi</th><th>Ju</th><th>Vi</th><th>Sá</th><th>Do</th></tr>
-    {% for name, hl, cells in W %}
-    <tr{% if hl %} class="hl"{% endif %}><td>{% if hl %}<b>{{ name }}</b>{% else %}{{ name }}{% endif %}</td>
-      {% for c in cells %}<td>{% if c %}{{ c[0] }} {{ "%02d–%02d"|format(c[1], c[2]) }}<small class="utc">{{ "%02d–%02d"|format((c[1] - off) % 24, (c[2] - off) % 24) }} UTC</small>{% else %}—{% endif %}</td>{% endfor %}
-    </tr>
-    {% endfor %}
-    <tr><td>⚔️ Entrenamiento de tropas</td><td>TT</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>TT</td></tr>
-    <tr><td>🥫 Resistencia, misiones de exploración</td><td>VS</td><td>—</td><td>—</td><td>VS</td><td>VS</td><td>—</td><td>TT</td></tr>
-  </table></div>
-  <p class="hint">Calendario elaborado por la alianza [Dan]Dangers (estado 174). Los temas del Duelo pueden variar entre servidores: compruébalo en el juego. El nuevo día de juego empieza a las 03:00 {{ tz_label }} = 00:00 UTC.</p>
-</section>
+{% include "guides/_pp_calendar.html" %}
 
 <section class="card">
   <h2>📌 Por días, en resumen</h2>
