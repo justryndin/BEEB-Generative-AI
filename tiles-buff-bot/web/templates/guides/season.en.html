@@ -16,6 +16,34 @@
   </ul>
 </section>
 
+<section class="card" id="classes">
+  <h2>🏭 Seasonal class: Coal League or Frost Court</h2>
+  <p>In the season everyone picks a class — each has 5 active skills. The choice costs a special item (1 pc.).</p>
+  <div class="grid2">
+    <div>
+      <h3>🔵 Coal League — development</h3>
+      <ul class="checks">
+        <li><b>Construction</b> — +15% construction speed for you and a chosen ally for 60 min.</li>
+        <li><b>Joint</b> — +15% research speed for you and a chosen ally for 60 min.</li>
+        <li><b>Quick</b> — instantly −4 h of construction on all buildings.</li>
+        <li><b>Sparks and Silver</b> — instantly 4 000 coal and foil.</li>
+        <li><b>Ruthless</b> — −5% damage taken for 60 min.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>🟠 Frost Court — war</h3>
+      <ul class="checks">
+        <li><b>Fierce Attack</b> — +5% damage for your troops for 1 h.</li>
+        <li><b>United</b> — +5% damage for all rally participants for 1 h (if several such skills are active, only the highest one works).</li>
+        <li><b>Counterattack</b> — +5% damage when defending your settlement for 1 h.</li>
+        <li><b>First Aid</b> — instantly heal 20 000 wounded in the hospital (not those already being healed).</li>
+        <li><b>Mighty Strike</b> — instantly get 10 000 high-tier troops.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="example"><b>The buffs this site hands out are the Coal League skills “Construction” and “Joint”.</b> Only players who picked Coal League can give them. Builders and heavy researchers — Coal League; the alliance’s strike force — Frost Court.</div>
+</section>
+
 <section class="card">
   <h2>📈 Season progress points</h2>
   <p>Since version 2.6.0 there are three new sources of points:</p>
@@ -40,6 +68,6 @@
 
 <section class="card">
   <h2>🧊 Alliance buffs during the season</h2>
-  <p>The seasonal buff cuts <b>{{ pct }}%</b> of the declared construction or research time — for both the receiver and the giver at once. It recharges in {{ cooldown }}h, separately for construction and research. The site’s home page shows who to give it to. Details in the <a href="/guides/boosts">“Buffs and speedups”</a> guide and the <a href="/help#queue">help</a>.</p>
+  <p>These are the Coal League skills “Construction” and “Joint”: in the game they read “+15% speed for 60 min for you and a chosen ally”. The site assumes a buff cuts <b>{{ pct }}%</b> of the declared time — and after every buff it asks you to check your timer, so the real effect gets accounted for anyway. It recharges in {{ cooldown }}h, separately for construction and research. The site’s home page shows who to give it to. Details in the <a href="/guides/boosts">“Buffs and speedups”</a> guide and the <a href="/help#queue">help</a>.</p>
 </section>
 {% endblock %}

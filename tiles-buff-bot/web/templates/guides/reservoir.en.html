@@ -1,0 +1,101 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<nav class="toc">
+  <a href="#what">What it is</a>
+  <a href="#who">Who takes part</a>
+  <a href="#before">Before the battle</a>
+  <a href="#stages">Stages</a>
+  <a href="#buildings">Buildings</a>
+  <a href="#water">How to get water</a>
+  <a href="#rank">Ranks</a>
+  <a href="#plan">Alliance plan</a>
+</nav>
+
+<section class="card" id="what">
+  <h2>💧 What it is</h2>
+  <p>Two alliances fight on a separate battlefield — the Canyon. Capture and hold buildings to earn <b>purified water</b>: for the alliance pool and for yourself. <b>The alliance with more water when the countdown ends wins.</b> Rewards are based on the alliance result and on personal contribution.</p>
+  <ul class="checks">
+    <li><b>Troops don’t die.</b> The wounded go to the field hospital: unlimited space, free healing, and everyone is healed when you leave the raid.</li>
+    <li>Garrison troops don’t take part: your <b>highest-level</b> troops are put on the battlefield automatically.</li>
+    <li>Bonuses from research, alliance tech, Chief talents, VIP, bonus items and skins all apply.</li>
+  </ul>
+  <p class="hint">Based on the in-game event rules, October 2026.</p>
+</section>
+
+<section class="card" id="who">
+  <h2>🧾 Who takes part</h2>
+  <ul class="rules-list">
+    <li><span class="ico">🏆</span><div><b>Alliance</b> — in the state’s top 15 by power when registration opens.</div></li>
+    <li><span class="ico">⚡</span><div><b>Player</b> — Power Plant <b>lvl 12</b> or higher and in the alliance <b>before</b> registration. Joined later — you don’t take part and get no rewards.</div></li>
+    <li><span class="ico">📝</span><div>The leader or an R4 <b>registers</b>. They pick up to <b>30 participants and 10 substitutes</b>. Once registration ends, the roster can’t be changed.</div></li>
+    <li><span class="ico">⚖️</span><div>Opponents are matched by matchmaking rating: the stronger the Chiefs, the higher the rating.</div></li>
+  </ul>
+</section>
+
+<section class="card" id="before">
+  <h2>✅ Before entering the Canyon</h2>
+  <ul class="checks">
+    <li>No scouting in progress.</li>
+    <li>Troops aren’t marching and aren’t stationed in someone else’s settlement.</li>
+    <li>No reinforcements at the communication station.</li>
+  </ul>
+  <p>Your alliance is always <b>blue</b> on the battlefield.</p>
+  <p class="hint">Leave the raid while it’s running — and you can’t return for <b>10 minutes</b>. On the upside, the wounded in the field hospital are healed when you come back.</p>
+</section>
+
+<section class="card" id="stages">
+  <h2>⏱ Battle stages</h2>
+  <ol class="steps-list">
+    <li><b>Stage 1:</b> water purification facilities, water treatment plants, solar stations, helipads.</li>
+    <li><b>Stage 2:</b> the central reservoir, military factories and experimental testing grounds open.</li>
+    <li><b>Stage 3:</b> water tankers appear in random places.</li>
+  </ol>
+</section>
+
+<section class="card" id="buildings">
+  <h2>🏭 Buildings: how much water and what they give</h2>
+  <p class="hint mt0">“First capture” is a one-time reward when a building first turns your color. “Occupation” is how much trickles in every minute while you hold it.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Building</th><th class="num">Alliance water</th><th class="num">Personal water</th><th>Bonus</th></tr>
+    <tr><td><b>Central Reservoir</b> ×1</td><td class="num">9 000 · +1 800/min</td><td class="num">4 500 · +900/min</td><td>—</td></tr>
+    <tr><td><b>Water Purification Center</b> ×2 (SW and NE)</td><td class="num">6 000 · +1 200/min</td><td class="num">3 000 · +600/min</td><td>—</td></tr>
+    <tr><td><b>Water Treatment Plant</b> ×4 (on the sides of the Canyon)</td><td class="num">3 000 · +600/min</td><td class="num">1 500 · +300/min</td><td>—</td></tr>
+    <tr><td><b>Military Factory</b></td><td class="num">1 200 · +240/min</td><td class="num">600 · +120/min</td><td>+20% and +20% to two combat stats (by the icons — attack and, apparently, defense)</td></tr>
+    <tr><td><b>Solar Power Station</b></td><td class="num">1 200 · +240/min</td><td class="num">600 · +120/min</td><td>−50% on the clock icon — the description says: more efficient water purification</td></tr>
+    <tr><td><b>Development Complex</b></td><td class="num">1 200 · +240/min</td><td class="num">600 · +120/min</td><td>Sends a horde of infected at an enemy building: damage to the garrison, −attack and −defense for the enemy. The horde gets stronger with each attack, up to 4 times.</td></tr>
+    <tr><td><b>Abandoned Helipad</b></td><td class="num">1 200 · +240/min</td><td class="num">600 · +120/min</td><td>More frequent free advanced relocators, −50% to their cooldown</td></tr>
+  </table></div>
+  <p class="hint">Recapturing a building gives very little water — what matters is the first capture and holding it for a long time.</p>
+</section>
+
+<section class="card" id="water">
+  <h2>💧 How to get water</h2>
+  <ul class="checks">
+    <li><b>Holding buildings</b> is the main source. The Central Reservoir gives three times more than a plant: 1 800 a minute to the alliance pool.</li>
+    <li><b>Hitting the enemy:</b> for every 10 000 power of defeated troops — personal water: <b>40</b> when defending a building, <b>80</b> when attacking. It doesn’t go to the alliance pool.</li>
+    <li><b>Advanced teleport</b> is free during the event (with a cooldown). Advanced relocators work too.</li>
+    <li><b>Your settlement burns</b> much faster than usual after a failed defense. Don’t put it out in time — it gets moved to the safe zone, and you’re out of the fight for the point.</li>
+  </ul>
+</section>
+
+<section class="card" id="rank">
+  <h2>⭐ Alliance ranks</h2>
+  <ul class="checks">
+    <li>A new alliance enters the ranking only after registering; its rank is set after matchmaking and recalculated every round.</li>
+    <li><b>5 ranks.</b> Every rank except the top one has 0 to 5 stars. <b>100 points = a star</b>; after 5 stars, the next 100 points raise the rank.</li>
+  </ul>
+</section>
+
+<section class="card" id="plan">
+  <h2>🗺 Plan for the alliance</h2>
+  <ul class="rules-list">
+    <li><span class="ico">1</span><div><b>First — one player on each nearby plant.</b> The first capture gives the alliance 3 000 water from each of the four plants — a quick 12 000.</div></li>
+    <li><span class="ico">2</span><div><b>The strongest go to the centers and the reservoir.</b> The reservoir (stage 2) and the two centers give the most per minute: the best troops hold them.</div></li>
+    <li><span class="ico">3</span><div><b>Military Factory — before attacking the reservoir:</b> +20% attack comes in handy in the assault.</div></li>
+    <li><span class="ico">4</span><div>The <b>helipad</b> speeds up relocators — making it easier to move forces to the point under assault.</div></li>
+    <li><span class="ico">5</span><div><b>Put out settlements right away</b>, or you’ll be thrown into the safe zone.</div></li>
+    <li><span class="ico">6</span><div>Weaker participants should attack enemy troops at buildings the enemy holds: attacking gives twice as much personal water as defending.</div></li>
+  </ul>
+  <p class="hint">Since troops don’t die and healing is free — fight boldly. There are no losses, and water decides it.</p>
+</section>
+{% endblock %}
