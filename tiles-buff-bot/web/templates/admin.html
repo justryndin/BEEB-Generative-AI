@@ -43,7 +43,15 @@
   </form>
 </section>
 
-<section class="card" id="settings">
+{% if backups is defined and me.acc_owner %}
+<section class="card" id="backup">
+  <div class="card-head"><h2>{{ _("Резервные копии базы") }}</h2>{% if backups %}<a class="btn btn-sm btn-primary" href="/admin/backup">{{ _("Скачать последнюю") }}</a>{% endif %}</div>
+  <p class="hint mt0">{{ _("Сайт сам делает копию раз в сутки и хранит последние 14 — на том же сервере. Раз в неделю скачивай последнюю и храни у себя: если сервер пропадёт, базу можно будет восстановить. Видно только владельцу.") }}</p>
+  {% if backups %}<ul class="list-rows">{% for name, size in backups[:5] %}<li><span class="grow"><b>{{ name }}</b><span>{{ (size / 1024)|round|int }} КБ</span></span><a class="btn btn-sm" href="/admin/backup?name={{ name }}">{{ _("Скачать") }}</a></li>{% endfor %}</ul>
+  {% else %}<p class="empty">{{ _("Первая копия появится в течение минуты после запуска сайта.") }}</p>{% endif %}
+</section>
+
+{% endif %}<section class="card" id="settings">
   <h2>🛠 {{ _("Настройки очереди") }}</h2>
   <form method="post" action="/admin/settings">
     <input type="hidden" name="csrf" value="{{ csrf }}">

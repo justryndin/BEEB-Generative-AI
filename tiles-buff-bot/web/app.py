@@ -11,14 +11,14 @@ from pathlib import Path
 from urllib.parse import quote, unquote
 
 from fastapi import FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup
 
 from core import gamedata
 from core.db import Database
-from core import audience, crm, faq, i18n, planner, polls, powerplay, vs
+from core import audience, backup, crm, faq, i18n, planner, polls, powerplay, vs
 from core.i18n import LANGS, SHORT, t as tr
 from core.analytics import benefit, command_center, r4_report
 from core.tips import TIPS, player_tip
@@ -62,6 +62,7 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
                     svc.expire_pending(t)
                     svc.deactivate_finished(t)
                     await asyncio.to_thread(push.run_once, svc, cfg.tz, t)
+                    await asyncio.to_thread(backup.make, cfg.db_path, t)  # раз в сутки, остальное — пропуск
                 except Exception:
                     log.exception("Ошибка фоновой задачи")
                 await asyncio.sleep(60)
@@ -1225,7 +1226,24 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             settings={k: svc.setting(k) for k in SETTINGS},
             cycle=parse_pattern(svc.setting("pattern")),
             cycle_max=CYCLE_MAX,
+            backups=backup.listing(cfg.db_path) if me["acc_owner"] else [],
         )
+
+    @app.get("/admin/backup")
+    def admin_backup(request: Request, name: str = ""):
+        """Скачать копию базы — только владелец (в ней хеши PIN и подписки на уведомления)."""
+        me = need_admin(request)
+        if not me["acc_owner"]:
+            raise HTTPException(status_code=403, detail="Скачать копию базы может только владелец")
+        files = dict(backup.listing(cfg.db_path))
+        path = backup.folder(cfg.db_path)
+        if not files or path is None:
+            backup.make(cfg.db_path, now())
+            files = dict(backup.listing(cfg.db_path))
+        if not files:
+            raise HTTPException(status_code=404, detail="Копий пока нет")
+        chosen = name if name in files else max(files)
+        return FileResponse(path / chosen, filename=chosen, media_type="application/octet-stream")
 
     @app.get("/admin/stats", response_class=HTMLResponse)
     def admin_stats(request: Request, period: int = 7):
