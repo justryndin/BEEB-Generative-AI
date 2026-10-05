@@ -365,9 +365,9 @@ label.chip { display: inline-flex; align-items: center; margin: 0; }
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; }
 .tabs a { text-align: center; padding: 8px; border-radius: var(--radius-sm); text-decoration: none; font-weight: 600; color: var(--muted); }
 .tabs a.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
-.next { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: var(--radius); margin-bottom: 16px; background: var(--accent-soft); border: 1px solid var(--accent-ring); }
-.next .arrow { font-size: 1.6rem; }
-.next .nick { font-size: 1.25rem; font-weight: 650; }
+.next-banner { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: var(--radius); margin-bottom: 16px; background: var(--accent-soft); border: 1px solid var(--accent-ring); }
+.next-banner .arrow { font-size: 1.6rem; }
+.next-banner .nick { font-size: 1.25rem; font-weight: 650; }
 .qlist { list-style: none; margin: 0; padding: 0; }
 .qitem { display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--border); }
 .qitem:last-child { border-bottom: 0; }
