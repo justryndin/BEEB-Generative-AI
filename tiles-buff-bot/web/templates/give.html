@@ -1,21 +1,24 @@
 {% extends "base.html" %}
 {% block title %}{{ _("Я отдал баф") }} · {{ _(site_name) }}{% endblock %}
 {% block content %}
-<h1>🎁 {{ _("Я отдал баф") }}</h1>
-{% if for_other %}<div class="alert alert-info">⚙️ {{ _("Отмечаешь баф за игрока <b>{nick}</b>.", nick=donor.nick) }}</div>{% endif %}
+<div class="page-head">
+  <div><h1>{{ _("Я отдал баф") }}</h1>
+    <p>{{ _("Лучше отдать тому, кто первый: очередь честная — по доле полученного.") }}</p></div>
+</div>
+{% if for_other %}<div class="alert alert-info">{{ _("Отмечаешь баф за игрока <b>{nick}</b>.", nick=donor.nick) }}</div>{% endif %}
 
-<nav class="tabs">
+<nav class="tabs" aria-label="{{ _("Какой баф") }}">
   {% for k in ["research", "build"] %}
-  <a href="/give?kind={{ k }}{{ '&donor=' ~ donor.id if for_other }}" class="{{ 'on' if k == kind }}">{{ KIND_EMOJI[k] }} {{ _("Исследование") if k == "research" else _("Стройка") }}</a>
+  <a href="/give?kind={{ k }}{{ '&donor=' ~ donor.id if for_other }}" class="{{ 'on' if k == kind }}"{% if k == kind %} aria-current="page"{% endif %}>{{ KIND_EMOJI[k] }} {{ _("Исследование") if k == "research" else _("Стройка") }}</a>
   {% endfor %}
 </nav>
 
-<div class="alert alert-info">
-  <b>1.</b> {{ _("Отдай баф в игре — лучше тому, кто <b>первый 👉</b>.") }}<br>
-  <b>2.</b> {{ _("Нажми ниже на игрока, <b>которому отдал</b>.") }}
-</div>
+<ol class="howto">
+  <li><span>1</span><p>{{ _("Отдай баф союзнику в игре — навыком Угольной лиги.") }}</p></li>
+  <li><span>2</span><p>{{ _("Нажми ниже на того, <b>кому отдал</b>. Очередь сдвинется сама.") }}</p></li>
+</ol>
 {% set s, left = buff %}
-{% if s == "wait" %}<div class="alert alert-warn">⚠️ {{ _("По записям твой баф на {kind} будет готов только через {left}. Если уже отдал — всё равно отметь.", kind=_(KIND_ACC[kind]), left=dur(left)) if not for_other else _("По записям его баф на {kind} будет готов только через {left}. Если уже отдал — всё равно отметь.", kind=_(KIND_ACC[kind]), left=dur(left)) }}</div>{% endif %}
+{% if s == "wait" %}<div class="alert alert-warn">{{ _("По записям твой баф на {kind} будет готов только через {left}. Если уже отдал — всё равно отметь.", kind=_(KIND_ACC[kind]), left=dur(left)) if not for_other else _("По записям его баф на {kind} будет готов только через {left}. Если уже отдал — всё равно отметь.", kind=_(KIND_ACC[kind]), left=dur(left)) }}</div>{% endif %}
 
 {% if rows %}
 <ol class="give-list">
@@ -34,7 +37,7 @@
           {% if r.paused_for %}<span class="badge">⏸ {{ _("только что получил") }}</span>{% endif %}
           {% if c.player_id == donor.id %}<span class="badge">{{ _("это ты") }}</span>{% endif %}
           <small>{{ r.label or "" }}{{ " · " if r.label }}{{ _("получил {received} · осталось {left}", received=c.received, left=dur(c.remaining)) }}</small></span>
-        <span class="go">{{ _("Отдал ✓") }}</span>
+        <span class="go">{{ _("Отдал") }} {{ ico("check") }}</span>
       </button>
     </form>
   </li>
@@ -42,7 +45,7 @@
 </ol>
 {% endif %}
 {% if roulette %}
-<div class="alert alert-info">🎲 {{ _("<b>Рулетка.</b> В очереди на {kind} кроме тебя никого нет — отдай баф игроку, которому выпало.", kind=_(KIND_ACC[kind])) if rows else _("<b>Рулетка.</b> В очереди на {kind} никого нет — отдай баф игроку, которому выпало.", kind=_(KIND_ACC[kind])) }} {{ _("Первыми идут те, кто не построил Электростанцию {goal}. Баф срежет время всех его строек.", goal=pp_goal) }}</div>
+<div class="alert alert-info">{{ _("<b>Рулетка.</b> В очереди на {kind} кроме тебя никого нет — отдай баф игроку, которому выпало.", kind=_(KIND_ACC[kind])) if rows else _("<b>Рулетка.</b> В очереди на {kind} никого нет — отдай баф игроку, которому выпало.", kind=_(KIND_ACC[kind])) }} {{ _("Первыми идут те, кто не построил Электростанцию {goal}. Баф срежет время всех его строек.", goal=pp_goal) }}</div>
 <ol class="give-list">
   {% for r in roulette[:12] %}
   <li>
@@ -56,14 +59,14 @@
         <span class="who"><b>{{ r.nick }}</b>
           {% if loop.first %}<span class="badge badge-accent">🎲 {{ _("выпал") }}</span>{% endif %}
           <small>{{ r.why }}</small></span>
-        <span class="go">{{ _("Отдал ✓") }}</span>
+        <span class="go">{{ _("Отдал") }} {{ ico("check") }}</span>
       </button>
     </form>
   </li>
   {% endfor %}
 </ol>
 {% elif not rows %}
-<div class="card center"><p class="mb0">{{ _("Сейчас никому не нужен баф на {kind}", kind=_(KIND_ACC[kind])) }} 👍 {{ _("Придержи его.") }}</p></div>
+<div class="card empty-state">{{ ico("check") }}<p>{{ _("Сейчас никому не нужен баф на {kind}", kind=_(KIND_ACC[kind])) }}. {{ _("Придержи его.") }}</p></div>
 {% endif %}
 <p class="hint center">{{ _("Баф в игре действует и на тебя — твой таймер тоже сократится, сайт это учтёт.") }}</p>
 {% endblock %}

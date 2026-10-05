@@ -822,3 +822,19 @@ h2 > .i, h3 > .i { color: var(--accent-text); margin-right: 8px; vertical-align:
 .empty-state .row { justify-content: center; }
 .pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 @media (max-width: 640px) { .feed li { flex-wrap: wrap; } .feed .when { margin-left: 0; white-space: normal; } }
+
+/* «Я отдал баф» и «Встать в очередь» */
+.howto { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; }
+.howto li { display: flex; align-items: center; gap: 10px; color: var(--text-2); font-size: .92rem; }
+.howto li > span { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: none; font-size: .78rem; font-weight: 700; background: var(--accent-soft); color: var(--accent-text); }
+@media (min-width: 760px) { .howto { grid-template-columns: 1fr 1fr; } }
+.give-row .go { display: inline-flex; align-items: center; gap: 4px; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; color: var(--muted); text-decoration: none; font-weight: 600; font-size: .9rem; }
+.back-link:hover { color: var(--text); }
+.back-link .i { transform: rotate(180deg); }
+.kind-card.is-on { border-color: var(--good-soft); }
+.kind-emoji { font-size: 1.1rem; }
+.kind-stat { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; margin-bottom: 12px; border-radius: var(--radius-sm); background: var(--surface-2); }
+.kind-stat b { font-size: 1.4rem; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.kind-stat span { color: var(--muted); font-size: .84rem; }
+.howto li > p { margin: 0; }

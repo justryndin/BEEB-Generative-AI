@@ -1,26 +1,33 @@
 {% extends "base.html" %}
 {% block title %}{{ _("Встать в очередь") }} · {{ _(site_name) }}{% endblock %}
 {% block content %}
-<h1>➕ {{ _("Встать в очередь") }}</h1>
-<p class="text-2">{{ _("Что у тебя сейчас идёт в игре?") }}</p>
+<div class="page-head">
+  <div><h1>{{ _("Встать в очередь") }}</h1>
+    <p>{{ _("Что у тебя сейчас идёт в игре? Выбери — и впиши время с таймера.") }}</p></div>
+</div>
 <div class="grid2">
-  {% for kind in ["research", "build"] %}{% set t = timers[kind] %}
-  <div class="card">
-    <h2>{{ KIND_EMOJI[kind] }} {{ _("Исследование") if kind == "research" else _("Стройка") }}</h2>
-    {% if t and t.remaining > 0 %}
-    <p class="text-2">{{ _("Ты уже в очереди: осталось <b>{left}</b>.", left=dur(t.remaining)) }}</p>
+  {% for kind in ["research", "build"] %}{% set t = timers[kind] %}{% set on = t and t.remaining > 0 %}
+  <section class="card kind-card{{ ' is-on' if on }}">
+    <div class="card-head">
+      <h2><span class="kind-emoji">{{ KIND_EMOJI[kind] }}</span> {{ _("Исследование") if kind == "research" else _("Стройка") }}</h2>
+      {% if on %}<span class="badge badge-good">{{ _("в очереди") }}</span>{% else %}<span class="badge">{{ _("не в очереди") }}</span>{% endif %}
+    </div>
+    {% if on %}
+    <div class="kind-stat"><b>{{ dur(t.remaining) }}</b><span>{{ _("осталось по таймеру") }}{% if t.received %} · {{ _("получил бафов: {n}", n=t.received) }}{% endif %}</span></div>
     <div class="stack">
-      <a class="btn btn-block" href="/join/{{ kind }}?fix=1">🔧 {{ _("Поправить время") }}</a>
-      <a class="btn btn-ghost btn-block" href="/join/{{ kind }}">✏️ {{ _("Началось новое") }}</a>
+      <a class="btn btn-block" href="/join/{{ kind }}?fix=1">{{ ico("clock") }} {{ _("Поправить время") }}</a>
+      <a class="btn btn-ghost btn-block" href="/join/{{ kind }}">{{ ico("plus") }} {{ _("Началось новое") }}</a>
       <form method="post" action="/timer/{{ kind }}/close" data-confirm="{{ _("Убрать тебя из очереди ({kind})?", kind=_(KIND_NAME[kind])) }}">
         <input type="hidden" name="csrf" value="{{ csrf }}">
-        <button class="btn btn-ghost btn-block" type="submit">🏁 {{ _("Готово — бафы больше не нужны") }}</button>
+        <button class="btn btn-ghost btn-block" type="submit">{{ ico("check") }} {{ _("Готово — бафы больше не нужны") }}</button>
       </form>
     </div>
     {% else %}
-    <a class="btn btn-primary btn-big btn-block" href="/join/{{ kind }}">➕ {{ _("Встать: {kind}", kind=_(KIND_NAME[kind])) }}</a>
+    <p class="text-2 mt0">{{ _("Запусти долгую стройку и встань — союзники отдадут бафы по очереди.") if kind == "build" else _("Запусти долгое исследование и встань — союзники отдадут бафы по очереди.") }}</p>
+    <a class="btn btn-primary btn-big btn-block" href="/join/{{ kind }}">{{ ico("plus") }} {{ _("Встать: {kind}", kind=_(KIND_NAME[kind])) }}</a>
     {% endif %}
-  </div>
+  </section>
   {% endfor %}
 </div>
+<p class="hint center">{{ _("Как устроена очередь и почему кто-то впереди —") }} <a href="/faq#not-first">{{ _("коротко в ответах") }}</a>.</p>
 {% endblock %}

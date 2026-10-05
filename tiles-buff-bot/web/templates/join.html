@@ -3,13 +3,15 @@
 {% block title %}{{ _("Встать в очередь") }} · {{ _(site_name) }}{% endblock %}
 {% block content %}
 {% set q = "&player=" ~ target.id if for_other else "" %}
-{% if for_other %}<div class="alert alert-info">⚙️ {{ _("Записываешь за игрока <b>{nick}</b>", nick=target.nick) }}</div>{% endif %}
+{% if for_other %}<div class="alert alert-info">{{ _("Записываешь за игрока <b>{nick}</b>", nick=target.nick) }}</div>{% endif %}
 
 {% if fix %}
-<h1>🔧 {{ _("Поправить время") }}</h1>
-<p class="text-2">{{ KIND_EMOJI[kind] }} {{ _(KIND_NAME[kind])|capitalize }}{% if it %}: {{ it.name }}{% if level %} → {{ level }}{% endif %}{% endif %}. {{ _("Ускорился сам или ошибся — укажи, сколько <b>сейчас</b> осталось по таймеру.") }}</p>
+<div class="page-head"><div><h1>{{ _("Поправить время") }}</h1>
+<p>{{ KIND_EMOJI[kind] }} {{ _(KIND_NAME[kind])|capitalize }}{% if it %}: {{ it.name }}{% if level %} → {{ level }}{% endif %}{% endif %}. {{ _("Ускорился сам или ошибся — укажи, сколько <b>сейчас</b> осталось по таймеру.") }}</p></div></div>
 {% else %}
-<h1>{{ KIND_EMOJI[kind] }} {{ _("Встать в очередь") }}</h1>
+<div class="page-head"><div><h1>{{ _("Встать в очередь") }}</h1>
+<p>{{ KIND_EMOJI[kind] }} {{ _(KIND_NAME[kind])|capitalize }} · {{ _("три шага: что, до какого уровня и сколько осталось") if kind == "build" else _("два шага: какая ветка и сколько осталось") }}</p></div>
+<a class="btn btn-ghost btn-sm" href="/join">{{ _("Другой баф") }}</a></div>
 {% endif %}
 
 {% if step == "item" %}
@@ -32,18 +34,18 @@
   <div class="levels">
     {% for n in range(1, it.max_level + 1) %}<a href="/join/{{ kind }}?item={{ it.code }}&level={{ n }}{{ q }}">{{ n }}</a>{% endfor %}
   </div>
-  <p style="margin-top:14px"><a href="/join/{{ kind }}?{{ q[1:] }}">◀️ {{ _("Назад к выбору здания") }}</a></p>
+  <a class="back-link" href="/join/{{ kind }}?{{ q[1:] }}">{{ ico("chev") }}{{ _("Назад к выбору здания") }}</a>
 </section>
 
 {% else %}
 <section class="card">
   {% if not fix %}{{ steps(total_steps, total_steps) }}{% endif %}
-  <h2>⏳ {{ _("Сколько осталось по таймеру?") }}</h2>
+  <h2>{{ _("Сколько осталось по таймеру?") }}</h2>
   {% if it and not fix %}<p class="text-2 mt0">{{ it.name }}{% if level %} → {{ level }}{% endif %}</p>{% endif %}
   {% if reference %}
-  <div class="alert alert-info">📚 {{ _("Справочно {item} → {level}: <b>{time}</b> без бонусов", item=it.name, level=level, time=dur(reference)) }}{% if it.approximate %} ({{ _("≈, данные неточные") }}){% endif %}.
+  <div class="alert alert-info">{{ _("Справочно {item} → {level}: <b>{time}</b> без бонусов", item=it.name, level=level, time=dur(reference)) }}{% if it.approximate %} ({{ _("≈, данные неточные") }}){% endif %}.
     {% if requires %}<br>{{ _("Требования: {req}", req=requires) }}{% endif %}
-    {% for o in observed %}<br>👥 {{ _("У игроков союза обычно ≈ {time} ({n} записей)", time=dur(o[2]), n=o[3]) }}{% endfor %}
+    {% for o in observed %}<br>{{ _("У игроков союза обычно ≈ {time} ({n} записей)", time=dur(o[2]), n=o[3]) }}{% endfor %}
   </div>
   {% endif %}
   <p class="text-2">{{ _("Открой стройку в игре, посмотри таймер и введи числа. Кнопки «−» и «+» помогут.") if kind == "build" else _("Открой исследование в игре, посмотри таймер и введи числа. Кнопки «−» и «+» помогут.") }}</p>
@@ -66,12 +68,12 @@
       {% endfor %}
     </div>
     <p class="hint">{{ _("Например, на таймере <b>21д 05:30:00</b> → 21 дней, 5 часов, 30 минут.") }}</p>
-    <button class="btn btn-primary btn-big btn-block" type="submit">✅ {{ _("Сохранить") if fix else _("Встать в очередь") }}</button>
+    <button class="btn btn-primary btn-big btn-block" type="submit">{{ _("Сохранить") if fix else _("Встать в очередь") }}</button>
   </form>
   {% if not fix and it and it.kind == "build" and it.max_level %}
-  <p style="margin-top:14px"><a href="/join/{{ kind }}?item={{ it.code }}{{ q }}">◀️ {{ _("Назад к выбору уровня") }}</a></p>
+  <a class="back-link" href="/join/{{ kind }}?item={{ it.code }}{{ q }}">{{ ico("chev") }}{{ _("Назад к выбору уровня") }}</a>
   {% elif not fix %}
-  <p style="margin-top:14px"><a href="/join/{{ kind }}?{{ q[1:] }}">◀️ {{ _("Назад") }}</a></p>
+  <a class="back-link" href="/join/{{ kind }}?{{ q[1:] }}">{{ ico("chev") }}{{ _("Назад") }}</a>
   {% endif %}
 </section>
 {% endif %}
