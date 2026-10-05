@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import buff_line, journal %}
+{% from "_macros.html" import buff_line, journal with context %}
 {% block title %}{{ p.nick }} · {{ _("Управление") }}{% endblock %}
 {% block content %}
 <p><a href="/admin">◀️ {{ _("Все игроки") }}</a></p>

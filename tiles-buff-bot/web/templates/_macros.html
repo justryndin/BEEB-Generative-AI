@@ -1,34 +1,34 @@
 {% macro queue_item(r, me, pos) -%}
 {% set c = r.candidate %}
 <li class="qitem{{ ' me' if me and c.player_id == me.id }}{{ ' urgent' if c.urgent }}">
-  <span class="qpos" aria-label="Место {{ pos }}">{{ pos }}</span>
+  <span class="qpos" aria-label="{{ _("Место {pos}", pos=pos) }}">{{ pos }}</span>
   <span>
-    <span class="qname">{{ c.nick }}{% if me and c.player_id == me.id %} <span class="badge badge-accent">это ты</span>{% endif %}</span>
+    <span class="qname">{{ c.nick }}{% if me and c.player_id == me.id %} <span class="badge badge-accent">{{ _("это ты") }}</span>{% endif %}</span>
     <span class="qmeta">
-      {% if r.label %}{{ r.label }} · {% endif %}ещё ≈{{ r.needed }} баф.{% if c.received %} · получил {{ c.received }}{% endif %}
+      {% if r.label %}{{ r.label }} · {% endif %}{{ _("ещё ≈{n} баф.", n=r.needed) }}{% if c.received %} · {{ _("получил {n}", n=c.received) }}{% endif %}
     </span>
     <span class="row" style="gap:6px;margin-top:2px">
-      {% if c.urgent %}<span class="badge badge-urgent">🔥 срочно</span>{% endif %}
-      {% if r.pending %}<span class="badge badge-warn">⏳ ему уже несут баф</span>{% endif %}
-      {% if r.paused_for %}<span class="badge">⏸ пауза ещё {{ dur(r.paused_for) }}</span>{% endif %}
+      {% if c.urgent %}<span class="badge badge-urgent">🔥 {{ _("срочно") }}</span>{% endif %}
+      {% if r.pending %}<span class="badge badge-warn">⏳ {{ _("ему уже несут баф") }}</span>{% endif %}
+      {% if r.paused_for %}<span class="badge">⏸ {{ _("пауза ещё {left}", left=dur(r.paused_for)) }}</span>{% endif %}
     </span>
   </span>
-  <span class="qtime">{{ dur(c.remaining) }}<small>осталось</small></span>
+  <span class="qtime">{{ dur(c.remaining) }}<small>{{ _("осталось") }}</small></span>
 </li>
 {%- endmacro %}
 
 {% macro steps(current, total) -%}
-<div class="steps" aria-label="Шаг {{ current }} из {{ total }}">
+<div class="steps" aria-label="{{ _("Шаг {current} из {total}", current=current, total=total) }}">
   {% for i in range(1, total + 1) %}<span class="{{ 'on' if i <= current }}"></span>{% endfor %}
 </div>
-<div class="step-title">Шаг {{ current }} из {{ total }}</div>
+<div class="step-title">{{ _("Шаг {current} из {total}", current=current, total=total) }}</div>
 {%- endmacro %}
 
 {% macro buff_line(kind, state) -%}
 {% set s, left = state %}
-{% if s == "ready" %}<span class="badge badge-good">✅ готов</span>
-{% elif s == "wait" %}<span class="badge">⏳ через {{ dur(left) }}</span>
-{% else %}<span class="badge">❔ сайт узнает после первого бафа</span>{% endif %}
+{% if s == "ready" %}<span class="badge badge-good">✅ {{ _("готов") }}</span>
+{% elif s == "wait" %}<span class="badge">⏳ {{ _("через {left}", left=dur(left)) }}</span>
+{% else %}<span class="badge">❔ {{ _("сайт узнает после первого бафа") }}</span>{% endif %}
 {%- endmacro %}
 
 {% macro journal(rows, csrf, next) -%}
@@ -37,21 +37,21 @@
   {% for d in rows %}
   <li class="{{ 'undone' if d.status == 'undone' }}">
     <div class="j-main">
-      <span>{{ KIND_EMOJI[d.kind] }} <b>{{ d.donor_nick or "—" }}</b> → <b>{{ d.recipient_nick or "—" }}</b> <span class="muted">{% if d.slot == "R" %}🎲 рулетка{% if d.reduction %} · −{{ dur(d.reduction) }}{% endif %}{% else %}−{{ dur(d.reduction or 0) }}{% endif %}</span></span>
-      <small class="muted">{{ local(d.resolved_at) }}{% if d.by_nick and d.requested_by != d.donor_id %} · отметил {{ d.by_nick }}{% endif %}</small>
-      {% if d.status == 'undone' %}<small class="j-undone">↩️ отменено{% if d.undone_nick %} · {{ d.undone_nick }}{% endif %} · {{ local(d.undone_at) }}</small>{% endif %}
+      <span>{{ KIND_EMOJI[d.kind] }} <b>{{ d.donor_nick or "—" }}</b> → <b>{{ d.recipient_nick or "—" }}</b> <span class="muted">{% if d.slot == "R" %}🎲 {{ _("рулетка") }}{% if d.reduction %} · −{{ dur(d.reduction) }}{% endif %}{% else %}−{{ dur(d.reduction or 0) }}{% endif %}</span></span>
+      <small class="muted">{{ local(d.resolved_at) }}{% if d.by_nick and d.requested_by != d.donor_id %} · {{ _("отметил {nick}", nick=d.by_nick) }}{% endif %}</small>
+      {% if d.status == 'undone' %}<small class="j-undone">↩️ {{ _("отменено") }}{% if d.undone_nick %} · {{ d.undone_nick }}{% endif %} · {{ local(d.undone_at) }}</small>{% endif %}
     </div>
     {% if d.status == 'done' %}
-    <form method="post" action="/undo/{{ d.id }}" data-confirm="Отменить запись: {{ d.donor_nick }} → {{ d.recipient_nick }}? Таймеры и очередь вернутся как были.">
+    <form method="post" action="/undo/{{ d.id }}" data-confirm="{{ _("Отменить запись: {donor} → {recipient}? Таймеры и очередь вернутся как были.", donor=d.donor_nick, recipient=d.recipient_nick) }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <input type="hidden" name="next" value="{{ next }}">
-      <button class="btn btn-sm btn-danger" type="submit">↩️ Отменить</button>
+      <button class="btn btn-sm btn-danger" type="submit">↩️ {{ _("Отменить") }}</button>
     </form>
     {% endif %}
   </li>
   {% endfor %}
 </ul>
 {% else %}
-<p class="muted">Пока ни одной записи.</p>
+<p class="muted">{{ _("Пока ни одной записи.") }}</p>
 {% endif %}
 {%- endmacro %}

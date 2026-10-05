@@ -1,98 +1,98 @@
 {% extends "base.html" %}
-{% from "_macros.html" import buff_line %}
-{% block title %}Профиль · {{ site_name }}{% endblock %}
+{% from "_macros.html" import buff_line with context %}
+{% block title %}{{ _("Профиль") }} · {{ site_name }}{% endblock %}
 {% block content %}
 <h1>👤 {{ me.nick }}</h1>
 <div class="row" style="margin-bottom:12px">
-  {% if me.is_owner %}<span class="badge badge-accent">👑 владелец</span>{% elif me.is_admin %}<span class="badge badge-accent">⭐ админ</span>{% endif %}
+  {% if me.is_owner %}<span class="badge badge-accent">👑 {{ _("владелец") }}</span>{% elif me.is_admin %}<span class="badge badge-accent">⭐ {{ _("админ") }}</span>{% endif %}
 </div>
 
 <section class="card gain">
-  <h2>💎 Моя выгода</h2>
+  <h2>💎 {{ _("Моя выгода") }}</h2>
   <div class="grid4">
-    <div class="tile accent"><div class="num">−{{ dur(gain.total_s) if gain.total_s else "0" }}</div><div class="lbl">срезано с моих стройки и исследований</div></div>
-    <div class="tile"><div class="num">{{ gain.got_n }}</div><div class="lbl">бафов получил{% if gain.got_s %} · −{{ dur(gain.got_s) }}{% endif %}</div></div>
-    <div class="tile"><div class="num">{{ gain.gave_n }}</div><div class="lbl">бафов отдал{% if gain.gave_s %} · себе −{{ dur(gain.gave_s) }}{% endif %}</div></div>
-    <div class="tile"><div class="num">{{ saved // 86400 }} д</div><div class="lbl">подарил союзу</div></div>
+    <div class="tile accent"><div class="num">−{{ dur(gain.total_s) if gain.total_s else "0" }}</div><div class="lbl">{{ _("срезано с моих стройки и исследований") }}</div></div>
+    <div class="tile"><div class="num">{{ gain.got_n }}</div><div class="lbl">{{ _("бафов получил") }}{% if gain.got_s %} · −{{ dur(gain.got_s) }}{% endif %}</div></div>
+    <div class="tile"><div class="num">{{ gain.gave_n }}</div><div class="lbl">{{ _("бафов отдал") }}{% if gain.gave_s %} · {{ _("себе −{time}", time=dur(gain.gave_s)) }}{% endif %}</div></div>
+    <div class="tile"><div class="num">{{ _("{n} д", n=saved // 86400) }}</div><div class="lbl">{{ _("подарил союзу") }}</div></div>
   </div>
-  <p class="hint">Отдавать выгодно: баф срезает время и тебе. За неделю союз раздал {{ gain.alliance_n }} баф. и сэкономил {{ gain.alliance_s // 86400 }} дн.</p>
+  <p class="hint">{{ _("Отдавать выгодно: баф срезает время и тебе. За неделю союз раздал {n} баф. и сэкономил {days} дн.", n=gain.alliance_n, days=gain.alliance_s // 86400) }}</p>
   {% for kind, row in gain.shares.items() %}
   <div class="gain-row">
-    <span>{{ KIND_EMOJI[kind] }} {{ KIND_NAME[kind]|capitalize }}: {% if row.need %}получил <b>{{ row.candidate.received }} из {{ row.total }}</b>, №{{ row.position }} в очереди{% else %}🎯 у цели{% endif %}</span>
+    <span>{{ KIND_EMOJI[kind] }} {{ _(KIND_NAME[kind])|capitalize }}: {% if row.need %}{{ _("получил <b>{received} из {total}</b>, №{pos} в очереди", received=row.candidate.received, total=row.total, pos=row.position) }}{% else %}🎯 {{ _("у цели") }}{% endif %}</span>
     <span class="sharebar"><span style="width:{{ (row.share * 100)|round|int }}%"></span></span>
   </div>
   {% endfor %}
 </section>
 
 <section class="card">
-  <h2>🎁 Мои бафы</h2>
+  <h2>🎁 {{ _("Мои бафы") }}</h2>
   <ul class="feed">
-    {% for kind in KINDS %}<li><span>{{ KIND_EMOJI[kind] }} Баф на {{ KIND_ACC[kind] }}</span><span class="when">{{ buff_line(kind, buffs[kind]) }}</span></li>{% endfor %}
+    {% for kind in KINDS %}<li><span>{{ KIND_EMOJI[kind] }} {{ _("Баф на {kind}", kind=_(KIND_ACC[kind])) }}</span><span class="when">{{ buff_line(kind, buffs[kind]) }}</span></li>{% endfor %}
   </ul>
-  <p class="hint">Сайт узнаёт, когда твой баф готов, после того как ты отдашь его через сайт (баф восстанавливается за 48 ч).</p>
+  <p class="hint">{{ _("Сайт узнаёт, когда твой баф готов, после того как ты отдашь его через сайт (баф восстанавливается за 48 ч).") }}</p>
 </section>
 
 <section class="card">
-  <h2>⚡ Моя Электростанция</h2>
-  <p class="text-2 mt0">Если очередь на стройку пуста, бафы идут по рулетке — и первыми тем, кто ещё не построил Электростанцию {{ pp_goal }}. Сайт сам узнаёт уровень, когда ты встаёшь в очередь со стройкой Электростанции; можно указать и вручную.</p>
+  <h2>⚡ {{ _("Моя Электростанция") }}</h2>
+  <p class="text-2 mt0">{{ _("Если очередь на стройку пуста, бафы идут по рулетке — и первыми тем, кто ещё не построил Электростанцию {goal}. Сайт сам узнаёт уровень, когда ты встаёшь в очередь со стройкой Электростанции; можно указать и вручную.", goal=pp_goal) }}</p>
   <form method="post" action="/me/pp" class="row">
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <label for="pp" class="sr-only">Уровень Электростанции</label>
-    <input id="pp" name="level" type="number" inputmode="numeric" min="1" max="99" value="{{ me.pp_level or '' }}" placeholder="уровень, например 27" style="flex:1;min-width:160px">
-    <button class="btn" type="submit">Сохранить</button>
+    <label for="pp" class="sr-only">{{ _("Уровень Электростанции") }}</label>
+    <input id="pp" name="level" type="number" inputmode="numeric" min="1" max="99" value="{{ me.pp_level or '' }}" placeholder="{{ _("уровень, например 27") }}" style="flex:1;min-width:160px">
+    <button class="btn" type="submit">{{ _("Сохранить") }}</button>
   </form>
 </section>
 
 <section class="card" id="notify">
-  <h2>🔔 Уведомления на телефон</h2>
-  <p class="text-2 mt0">Сайт сам напишет, когда твой баф готов и кому его отдать, когда тебе отдали баф и когда ты следующий. Следить не нужно.</p>
+  <h2>🔔 {{ _("Уведомления на телефон") }}</h2>
+  <p class="text-2 mt0">{{ _("Сайт сам напишет, когда твой баф готов и кому его отдать, когда тебе отдали баф и когда ты следующий. Следить не нужно.") }}</p>
   <div data-push>
-    <p class="push-status" data-push-status>{% if devices %}Включено на {{ devices }} устр.{% else %}Пока выключено.{% endif %}</p>
+    <p class="push-status" data-push-status>{% if devices %}{{ _("Включено на {n} устр.", n=devices) }}{% else %}{{ _("Пока выключено.") }}{% endif %}</p>
     <div class="row">
-      <button class="btn btn-primary" type="button" data-push-on>🔔 Включить на этом устройстве</button>
-      <button class="btn" type="button" data-push-off hidden>Выключить здесь</button>
+      <button class="btn btn-primary" type="button" data-push-on>🔔 {{ _("Включить на этом устройстве") }}</button>
+      <button class="btn" type="button" data-push-off hidden>{{ _("Выключить здесь") }}</button>
     </div>
-    <div class="alert alert-info push-ios" data-push-ios hidden>📱 <b>iPhone:</b> открой сайт в Safari → «Поделиться» → «На экран Домой». Потом открой сайт с иконки на экране и нажми «Включить» здесь.</div>
-    <div class="alert alert-warn" data-push-denied hidden>Уведомления запрещены в настройках браузера. Разреши их для этого сайта (значок замка в адресной строке → Уведомления) и нажми «Включить» ещё раз.</div>
+    <div class="alert alert-info push-ios" data-push-ios hidden>📱 {{ _("<b>iPhone:</b> открой сайт в Safari → «Поделиться» → «На экран Домой». Потом открой сайт с иконки на экране и нажми «Включить» здесь.") }}</div>
+    <div class="alert alert-warn" data-push-denied hidden>{{ _("Уведомления запрещены в настройках браузера. Разреши их для этого сайта (значок замка в адресной строке → Уведомления) и нажми «Включить» ещё раз.") }}</div>
   </div>
   {% if devices %}
   <form method="post" action="/push/test" style="margin-top:10px">
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <button class="btn btn-sm" type="submit">Прислать проверочное</button>
+    <button class="btn btn-sm" type="submit">{{ _("Прислать проверочное") }}</button>
   </form>
   {% endif %}
   <details class="more" data-key="notify-kinds" style="margin-top:12px">
-    <summary>О чём присылать</summary>
+    <summary>{{ _("О чём присылать") }}</summary>
     <form method="post" action="/me/notify" class="stack" style="margin-top:10px">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       {% for k, label in NOTICE_KINDS.items() %}
-      <label class="check"><input type="checkbox" name="on_{{ k }}" value="1" {{ 'checked' if k not in notify.off }}> {{ label }}</label>
+      <label class="check"><input type="checkbox" name="on_{{ k }}" value="1" {{ 'checked' if k not in notify.off }}> {{ _(label) }}</label>
       {% endfor %}
-      <label class="check"><input type="checkbox" name="quiet" value="1" {{ 'checked' if notify.quiet }}> Не беспокоить ночью ({{ "%02d:00" % quiet[0] }}–{{ "%02d:00" % quiet[1] }})</label>
-      <button class="btn" type="submit">Сохранить</button>
+      <label class="check"><input type="checkbox" name="quiet" value="1" {{ 'checked' if notify.quiet }}> {{ _("Не беспокоить ночью ({start}–{end})", start="%02d:00" % quiet[0], end="%02d:00" % quiet[1]) }}</label>
+      <button class="btn" type="submit">{{ _("Сохранить") }}</button>
     </form>
   </details>
 </section>
 
 <section class="card">
-  <h2>✏️ Сменить ник</h2>
+  <h2>✏️ {{ _("Сменить ник") }}</h2>
   <form method="post" action="/me/nick" class="row">
     <input type="hidden" name="csrf" value="{{ csrf }}">
     <input type="text" name="nick" value="{{ me.nick }}" minlength="2" maxlength="32" required style="flex:1;min-width:180px">
-    <button class="btn" type="submit">Сохранить</button>
+    <button class="btn" type="submit">{{ _("Сохранить") }}</button>
   </form>
 </section>
 
 <section class="card">
-  <h2>🔑 Сменить PIN-код</h2>
+  <h2>🔑 {{ _("Сменить PIN-код") }}</h2>
   <form method="post" action="/me/pin">
     <input type="hidden" name="csrf" value="{{ csrf }}">
     <div class="grid2">
-      <div class="field"><label for="old">Текущий PIN</label><input id="old" name="old" type="password" class="pin" inputmode="numeric" maxlength="4" required></div>
-      <div class="field"><label for="npin">Новый PIN</label><input id="npin" name="pin" type="password" class="pin" inputmode="numeric" maxlength="4" required></div>
+      <div class="field"><label for="old">{{ _("Текущий PIN") }}</label><input id="old" name="old" type="password" class="pin" inputmode="numeric" maxlength="4" required></div>
+      <div class="field"><label for="npin">{{ _("Новый PIN") }}</label><input id="npin" name="pin" type="password" class="pin" inputmode="numeric" maxlength="4" required></div>
     </div>
-    <div class="field"><label for="npin2">Новый PIN ещё раз</label><input id="npin2" name="pin2" type="password" class="pin" inputmode="numeric" maxlength="4" required></div>
-    <button class="btn" type="submit">Сменить PIN</button>
+    <div class="field"><label for="npin2">{{ _("Новый PIN ещё раз") }}</label><input id="npin2" name="pin2" type="password" class="pin" inputmode="numeric" maxlength="4" required></div>
+    <button class="btn" type="submit">{{ _("Сменить PIN") }}</button>
   </form>
 </section>
 
@@ -100,13 +100,13 @@
   <div class="row">
     <form method="post" action="/logout">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button class="btn" type="submit">🚪 Выйти</button>
+      <button class="btn" type="submit">🚪 {{ _("Выйти") }}</button>
     </form>
     <span class="spacer"></span>
     {% if not me.is_owner %}
-    <form method="post" action="/me/delete" data-confirm="Точно удалить тебя с сайта? Ты пропадёшь из очередей.">
+    <form method="post" action="/me/delete" data-confirm="{{ _("Точно удалить тебя с сайта? Ты пропадёшь из очередей.") }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button class="btn btn-danger" type="submit">🗑 Удалить меня</button>
+      <button class="btn btn-danger" type="submit">🗑 {{ _("Удалить меня") }}</button>
     </form>
     {% endif %}
   </div>

@@ -1,0 +1,138 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<nav class="toc">
+  <a href="#rule">La regla principal</a>
+  <a href="#bigplay">Power Play</a>
+  <a href="#mine">Mina de oro</a>
+  <a href="#duel">Duelo de alianzas</a>
+  <a href="#exped">Expedición de la gloria</a>
+  <a href="#arena">Arenas y asedio</a>
+  <a href="#turtle">Turbo Turtle</a>
+  <a href="#terror">Exterminio del terror</a>
+  <a href="#special">De temporada y especiales</a>
+  <a href="#small">Eventos menores</a>
+  <a href="#season">Grandes temporadas</a>
+  <a href="#prio">Prioridades</a>
+</nav>
+
+<section class="card" id="rule">
+  <h2>🧭 La regla principal: primero el evento, luego el botón</h2>
+  <p>Casi cualquier acción (construcción, investigación, mejora de héroes, recolección) se puede hacer «porque sí» o en la fase correcta y ganar además puntos de eventos. Antes de gastar, abre los eventos y revisa los temporizadores y las condiciones.</p>
+  <p class="hint">El calendario por días de la semana y las ventanas para los aceleradores están en la guía <a href="/guides/week">«Semana»</a>.</p>
+</section>
+
+<section class="card" id="bigplay">
+  <h2>🎲 Power Play / Gran Juego</h2>
+  <p>Puntos por acciones concretas: construcción, investigación, entrenamiento de tropas, héroes, etc. Las fases cambian: lo que conviene hoy puede no contar mañana.</p>
+  <ul class="checks">
+    <li>El edificio está casi listo, pero la fase de construcción llega más tarde: <b>no lo recojas enseguida</b>. Lo mismo con la investigación.</li>
+    <li>Guarda los aceleradores para la fase en la que abrirán cofres.</li>
+    <li>Los cofres de recursos de la mochila son una reserva flexible. Si los abres sin motivo, la flexibilidad desaparece.</li>
+    <li>Por la mañana revisa las fases, cierra enseguida lo pequeño y deja lo grande para su ventana.</li>
+  </ul>
+</section>
+
+<section class="card" id="mine">
+  <h2>⛏ Mina de oro subterránea</h2>
+  <p>Ocupas minas, extraes oro y te arriesgas a toparte con rivales. Cuanto más alto el nivel de la mina, mejores recompensas y más probable que te echen.</p>
+  <ul class="checks">
+    <li>No envíes un escuadrón débil a un punto disputado ni te olvides de él: la mina hay que vigilarla.</li>
+    <li>Antes de la marcha mira el nivel de la mina, el tiempo de extracción, los vecinos y la tienda. Un punto modesto pero tranquilo suele ser mejor que uno top durante un par de minutos.</li>
+    <li>No cambies la moneda de la tienda por menudencias el primer día: ahorra para una cosa importante (por ejemplo, Planos precisos para la <a href="/guides/collection">colección</a>).</li>
+  </ul>
+  <p class="hint">🆕 Desde la <b>2.6.0</b> se entra en la mina desde la <b>lista de tareas del evento</b>, no desde el centro de eventos. Desde la <b>2.6.200</b> ahí mismo se ven el estado del equipo y el temporizador.</p>
+</section>
+
+<section class="card" id="duel">
+  <h2>⚔️ Duelo de alianzas (VS)</h2>
+  <p>Lo que importa es la aportación total de la alianza. Cada día tiene su tema: construcción, investigación, héroes, recolección, entrenamiento, combates.</p>
+  <ul class="checks">
+    <li><b>No gastes por adelantado.</b> Mañana es el día de héroes: guarda los libros y los fragmentos. Se acerca el día de construcción: no recojas un edificio grande.</li>
+    <li>Para los oficiales, órdenes cortas: «no subimos héroes hasta la noche», «no gastamos aceleradores», «marchas a recolectar».</li>
+  </ul>
+  <p class="hint">🆕 <b>2.6.0</b>: en la Liga del Duelo, emparejamiento de alianzas por poder y estrellas por victorias; la subida de rango depende del número de estrellas al final de la liga. En prueba: durante un ataque del Duelo, los defensores en el asentamiento no sufren pérdidas (los atacantes, como siempre). <b>2.6.200</b>: el segundo día del Duelo hay tareas de <a href="/guides/pets">mascotas</a> (donde las mascotas estén desbloqueadas).</p>
+</section>
+
+<section class="card" id="exped">
+  <h2>🧗 Expedición de la gloria</h2>
+  <p>Avance por etapas: premia la constancia, no el sprint del último día.</p>
+  <ul class="checks">
+    <li>Lee las condiciones de la etapa: derrotar enemigos, gastar objetos, acumular actividad… Si no, gastarás lo necesario antes de tiempo.</li>
+    <li>Cada día cierra las tareas disponibles y no te saltes el progreso gratuito.</li>
+    <li>Al elegir recompensas, toma lo que resuelve tu problema ahora: lo raro no siempre es más útil.</li>
+  </ul>
+</section>
+
+<section class="card" id="arena">
+  <h2>🏟 Arena, Arena 3×3 y Asedio de infectados</h2>
+  <ul class="rules-list">
+    <li><span class="ico">1️⃣</span><div>La <b>Arena</b> pone a prueba tu formación principal. No mires el poder, sino el combate: quién cae primero, si hay suficiente curación, si se rompe la defensa. Si pierdes contra iguales, lo más probable es que el problema esté en la combinación de héroes.</div></li>
+    <li><span class="ico">3️⃣</span><div>La <b>Arena 3×3</b> pone a prueba la profundidad de la cuenta. Dos equipos que funcionan son mejores que uno bonito y dos «de sobras». 🆕 Desde la <b>2.6.0</b> se entra desde el menú <b>«Exploración»</b>, no desde la lista de tareas.</div></li>
+    <li><span class="ico">🛡</span><div>El <b>Asedio de infectados (Infected Siege)</b> es un examen para toda la alianza: formaciones defensivas, hospital, curación, preajustes, estar conectado. Prepárate con antelación, no cuando el ejército ya esté en el hospital.</div></li>
+  </ul>
+</section>
+
+<section class="card" id="turtle">
+  <h2>🐢 Turbo Turtle</h2>
+  <ul class="checks">
+    <li>Entiende qué acciones hacen avanzar el progreso y elige las tareas con la mejor relación entre puntos y gasto.</li>
+    <li>Si cuenta la recolección, envía las marchas para que vuelvan en la ventana correcta.</li>
+    <li>No hace falta pelear por el top: consigue las recompensas principales y para; la reserva te vendrá bien en el Duelo.</li>
+    <li>Deja algunas marchas libres si la alianza prepara una actividad.</li>
+  </ul>
+</section>
+
+<section class="card" id="terror">
+  <h2>👹 Exterminio del terror</h2>
+  <p>PvE recurrente: atacas un objetivo fuerte y superas etapas de daño. El objetivo es sacar el máximo de cada intento.</p>
+  <ol class="steps-list">
+    <li>Revisa la formación: quién hace daño, quién potencia, quién aguanta los golpes.</li>
+    <li>Haz un combate de prueba y mira el informe.</li>
+    <li>Cambia un héroe y compara el daño. Si hay una diferencia notable, vas por buen camino; si no, no gastes recursos a ciegas.</li>
+  </ol>
+  <p class="hint">Para un novato bastan las recompensas estables por etapas: el top del ranking a menudo no compensa.</p>
+</section>
+
+<section class="card" id="special">
+  <h2>🎡 Eventos de temporada y especiales</h2>
+  <ul class="rules-list">
+    <li><span class="ico">💼</span><div><b>Magnate del futuro</b>: avanza en la barra cada día, no todo la última noche. Primero entiende qué mueve la barra. En la tienda, elige el premio principal con antelación y ahorra para él: aquí aparecen Planos precisos.</div></li>
+    <li><span class="ico">🗝</span><div><b>Cámara de secretos</b>: lee las reglas. Busca en la barra los premios clave y decide qué hito necesitas. Toma las recompensas principales y, a partir de ahí, compara precio y utilidad.</div></li>
+    <li><span class="ico">🎡</span><div><b>Rueda de la fortuna</b>: mira la lista de premios y la barra de recompensas por número de giros. Los giros gratis, siempre; los de pago, solo si te alcanza para llegar al hito que necesitas.</div></li>
+    <li><span class="ico">🎈</span><div><b>Fiesta de globos</b>: sencillo, no hace falta poder, sino constancia: intentos gratis cada día. Gasta la moneda antes de que acabe el evento y compara en la tienda qué es más útil ahora.</div></li>
+    <li><span class="ico">🍀</span><div><b>Pinball del Leprechaun</b>: mucho azar, ponte un límite. Toma los intentos gratis, revisa la barra y la tienda. Es un extra, no la base de tu progreso.</div></li>
+  </ul>
+</section>
+
+<section class="card" id="small">
+  <h2>🧩 Eventos menores: no te los saltes</h2>
+  <ul class="checks">
+    <li><b>Incursión de héroes</b>: fragmentos y materiales de héroes. Primero comprueba si tu formación necesita ese héroe.</li>
+    <li><b>Equipo especial</b>: invierte en quienes de verdad salen a combatir, no en todos. Mira <a href="/guides/gear">«Reforja del equipo de héroes»</a>.</li>
+    <li><b>Juicio Final (Doomsday)</b>: entregas, camiones, intentos. Fíjate en la calidad de la tarea, el tiempo y el premio. <span class="text-2">(Parece que se refiere al Doomsday Express; la fuente no lo precisa.)</span></li>
+    <li><b>Suministros de temporada</b>: ayudan a mantener el ritmo en las actividades de temporada.</li>
+  </ul>
+  <p class="hint">🆕 Doomsday Express, <b>2.6.0</b>: en los estados que han pasado al menos una temporada, los camiones dan cajas aleatorias con fragmentos de héroes legendarios (que ya tienes) en lugar de fragmentos de Ray. <b>2.6.200</b>: estado y temporizador, en la lista de tareas del evento.</p>
+</section>
+
+<section class="card" id="season">
+  <h2>❄️ Grandes eventos de temporada</h2>
+  <p>Una capa aparte del juego: mapa nuevo, edificios y recursos de temporada, enemigos, progreso semanal, tiendas, pases y grandes objetivos de alianza. No puedes quedarte atrás desde los primeros días: frenas tanto a ti mismo como a la alianza.</p>
+  <ul class="checks">
+    <li><b>Todos:</b> tareas diarias, chat, ayuda según las marcas, limpieza, nada de marchas a cualquier sitio.</li>
+    <li><b>R4/R5:</b> explicar la ruta: qué capturamos, qué acumulamos, dónde están las marcas, cuándo son los combates. No gana la alianza más ruidosa, sino la más organizada.</li>
+  </ul>
+  <p class="hint">🆕 Desde la <b>2.6.100</b>: tras salir de una alianza hay que esperar <b>48 horas</b> antes de participar en el Choque de la Isla del Dragón, el Choque de Luz y Noche y el Choque de Hielo y Fuego. Más detalles en la guía <a href="/guides/season">«Temporada»</a>.</p>
+</section>
+
+<section class="card" id="prio">
+  <h2>🥇 Cómo elegir prioridades</h2>
+  <ol class="steps-list">
+    <li><b>Desarrollo de la cuenta y de la alianza:</b> Duelo de alianzas, grandes temporadas, arenas, Mina de oro subterránea, eventos de combate.</li>
+    <li><b>Buenas tiendas y objetos raros.</b></li>
+    <li><b>Minieventos</b>: recoge con calma los intentos gratis.</li>
+  </ol>
+  <div class="example"><b>Tres preguntas para cada día:</b> ¿qué termina primero? ¿qué recompensas son las más útiles? ¿qué acciones se pueden combinar? Si una acción cierra dos eventos, hazla primero.</div>
+  <p class="hint">Paga solo por un objetivo concreto y un modo concreto, no «por si acaso».</p>
+</section>
+{% endblock %}

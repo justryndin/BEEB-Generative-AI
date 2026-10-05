@@ -1,27 +1,27 @@
 {% extends "base.html" %}
-{% block title %}Я отдал баф · {{ site_name }}{% endblock %}
+{% block title %}{{ _("Я отдал баф") }} · {{ site_name }}{% endblock %}
 {% block content %}
-<h1>🎁 Я отдал баф</h1>
-{% if for_other %}<div class="alert alert-info">⚙️ Отмечаешь баф за игрока <b>{{ donor.nick }}</b>.</div>{% endif %}
+<h1>🎁 {{ _("Я отдал баф") }}</h1>
+{% if for_other %}<div class="alert alert-info">⚙️ {{ _("Отмечаешь баф за игрока <b>{nick}</b>.", nick=donor.nick) }}</div>{% endif %}
 
 <nav class="tabs">
   {% for k in ["research", "build"] %}
-  <a href="/give?kind={{ k }}{{ '&donor=' ~ donor.id if for_other }}" class="{{ 'on' if k == kind }}">{{ KIND_EMOJI[k] }} {{ "Исследование" if k == "research" else "Стройка" }}</a>
+  <a href="/give?kind={{ k }}{{ '&donor=' ~ donor.id if for_other }}" class="{{ 'on' if k == kind }}">{{ KIND_EMOJI[k] }} {{ _("Исследование") if k == "research" else _("Стройка") }}</a>
   {% endfor %}
 </nav>
 
 <div class="alert alert-info">
-  <b>1.</b> Отдай баф в игре — лучше тому, кто <b>первый 👉</b>.<br>
-  <b>2.</b> Нажми ниже на игрока, <b>которому отдал</b>.
+  <b>1.</b> {{ _("Отдай баф в игре — лучше тому, кто <b>первый 👉</b>.") }}<br>
+  <b>2.</b> {{ _("Нажми ниже на игрока, <b>которому отдал</b>.") }}
 </div>
 {% set s, left = buff %}
-{% if s == "wait" %}<div class="alert alert-warn">⚠️ По записям {{ "твой" if not for_other else "его" }} баф на {{ KIND_ACC[kind] }} будет готов только через {{ dur(left) }}. Если уже отдал — всё равно отметь.</div>{% endif %}
+{% if s == "wait" %}<div class="alert alert-warn">⚠️ {{ _("По записям твой баф на {kind} будет готов только через {left}. Если уже отдал — всё равно отметь.", kind=_(KIND_ACC[kind]), left=dur(left)) if not for_other else _("По записям его баф на {kind} будет готов только через {left}. Если уже отдал — всё равно отметь.", kind=_(KIND_ACC[kind]), left=dur(left)) }}</div>{% endif %}
 
 {% if rows %}
 <ol class="give-list">
   {% for r in rows %}{% set c = r.candidate %}
   <li>
-    <form method="post" action="/gave" data-confirm="Записать: баф на {{ KIND_ACC[kind] }} → {{ c.nick }}?">
+    <form method="post" action="/gave" data-confirm="{{ _("Записать: баф на {kind} → {nick}?", kind=_(KIND_ACC[kind]), nick=c.nick) }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <input type="hidden" name="kind" value="{{ kind }}">
       <input type="hidden" name="recipient" value="{{ c.player_id }}">
@@ -29,12 +29,12 @@
       <button type="submit" class="give-row{{ ' next' if r.position == 1 }}{{ ' paused' if r.paused_for }}" {{ 'disabled' if c.player_id == donor.id }}>
         <span class="pos">{{ r.position }}</span>
         <span class="who"><b>{{ c.nick }}</b>
-          {% if r.position == 1 %}<span class="badge badge-accent">👉 следующий</span>{% endif %}
-          {% if c.urgent %}<span class="badge badge-urgent">🔥 срочно</span>{% endif %}
-          {% if r.paused_for %}<span class="badge">⏸ только что получил</span>{% endif %}
-          {% if c.player_id == donor.id %}<span class="badge">это ты</span>{% endif %}
-          <small>{{ r.label or "" }}{{ " · " if r.label }}получил {{ c.received }} · осталось {{ dur(c.remaining) }}</small></span>
-        <span class="go">Отдал ✓</span>
+          {% if r.position == 1 %}<span class="badge badge-accent">👉 {{ _("следующий") }}</span>{% endif %}
+          {% if c.urgent %}<span class="badge badge-urgent">🔥 {{ _("срочно") }}</span>{% endif %}
+          {% if r.paused_for %}<span class="badge">⏸ {{ _("только что получил") }}</span>{% endif %}
+          {% if c.player_id == donor.id %}<span class="badge">{{ _("это ты") }}</span>{% endif %}
+          <small>{{ r.label or "" }}{{ " · " if r.label }}{{ _("получил {received} · осталось {left}", received=c.received, left=dur(c.remaining)) }}</small></span>
+        <span class="go">{{ _("Отдал ✓") }}</span>
       </button>
     </form>
   </li>
@@ -42,11 +42,11 @@
 </ol>
 {% endif %}
 {% if roulette %}
-<div class="alert alert-info">🎲 <b>Рулетка.</b> В очереди на {{ KIND_ACC[kind] }} {{ "кроме тебя " if rows }}никого нет — отдай баф игроку, которому выпало. Первыми идут те, кто не построил Электростанцию {{ pp_goal }}. Баф срежет время всех его строек.</div>
+<div class="alert alert-info">🎲 {{ _("<b>Рулетка.</b> В очереди на {kind} кроме тебя никого нет — отдай баф игроку, которому выпало.", kind=_(KIND_ACC[kind])) if rows else _("<b>Рулетка.</b> В очереди на {kind} никого нет — отдай баф игроку, которому выпало.", kind=_(KIND_ACC[kind])) }} {{ _("Первыми идут те, кто не построил Электростанцию {goal}. Баф срежет время всех его строек.", goal=pp_goal) }}</div>
 <ol class="give-list">
   {% for r in roulette[:12] %}
   <li>
-    <form method="post" action="/gave" data-confirm="Записать: баф на {{ KIND_ACC[kind] }} → {{ r.nick }} (рулетка)?">
+    <form method="post" action="/gave" data-confirm="{{ _("Записать: баф на {kind} → {nick} (рулетка)?", kind=_(KIND_ACC[kind]), nick=r.nick) }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <input type="hidden" name="kind" value="{{ kind }}">
       <input type="hidden" name="recipient" value="{{ r.player_id }}">
@@ -54,16 +54,16 @@
       <button type="submit" class="give-row{{ ' next' if loop.first }}{{ ' paused' if r.paused }}">
         <span class="pos">{{ loop.index }}</span>
         <span class="who"><b>{{ r.nick }}</b>
-          {% if loop.first %}<span class="badge badge-accent">🎲 выпал</span>{% endif %}
+          {% if loop.first %}<span class="badge badge-accent">🎲 {{ _("выпал") }}</span>{% endif %}
           <small>{{ r.why }}</small></span>
-        <span class="go">Отдал ✓</span>
+        <span class="go">{{ _("Отдал ✓") }}</span>
       </button>
     </form>
   </li>
   {% endfor %}
 </ol>
 {% elif not rows %}
-<div class="card center"><p class="mb0">Сейчас никому не нужен баф на {{ KIND_ACC[kind] }} 👍 Придержи его.</p></div>
+<div class="card center"><p class="mb0">{{ _("Сейчас никому не нужен баф на {kind}", kind=_(KIND_ACC[kind])) }} 👍 {{ _("Придержи его.") }}</p></div>
 {% endif %}
-<p class="hint center">Баф в игре действует и на тебя — твой таймер тоже сократится, сайт это учтёт.</p>
+<p class="hint center">{{ _("Баф в игре действует и на тебя — твой таймер тоже сократится, сайт это учтёт.") }}</p>
 {% endblock %}

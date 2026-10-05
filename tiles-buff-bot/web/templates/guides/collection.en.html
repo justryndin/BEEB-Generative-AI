@@ -1,0 +1,92 @@
+{% extends "guides/_base.html" %}
+{% block guide %}
+<nav class="toc">
+  <a href="#why">Why it matters</a>
+  <a href="#first">What to level first</a>
+  <a href="#order">All at once or one by one</a>
+  <a href="#cost">How much it costs</a>
+  <a href="#items">The six items</a>
+  <a href="#where">Where to get blueprints</a>
+</nav>
+
+<section class="card" id="why">
+  <h2>🧭 The key points</h2>
+  <p>The Chief Collection is six items that boost your <b>whole account</b>, not just one hero like regular gear. A single level gives a little, but six items × several qualities add up to a very noticeable boost.</p>
+  <p>The trap is going only by power. A big jump in power doesn’t mean the upgrade is the best one: check which stat (attack, defense, health) your main lineup actually needs.</p>
+  <p class="hint">🆕 <b>Update 2.6.100</b> (September 17, 2026): the collection got a major rework — a shared screen with all its bonuses, <b>set bonuses</b> (collect items of the same quality — get an extra bonus) and new <b>mythic sets</b>. The DTF guide came out before this patch, so the numbers below may have partly changed — check against the game.</p>
+</section>
+
+<section class="card" id="first">
+  <h2>🎯 What to level first — based on your lineup</h2>
+  <p>The old “universal” order <b>watch → knife → lantern → diary → binoculars → compass</b> relied on the items giving different power. Now their power is almost even, so following it blindly no longer makes sense. Pick the stat you need first — then the item that gives it.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Lineup core</th><th>Priority</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><b>Strongmen</b></td><td>Attack → Defense → Health</td><td>They already have plenty of survivability, attack raises damage more noticeably. Defense above health: Tara’s and Nikola’s shields depend on it.</td></tr>
+      <tr><td><b>Rogues, aggressive</b></td><td>Attack → Health → Defense</td><td>For the arena, Reservoir Raid, the Oil Battle — take the enemy apart before they respond. Candy and Layla make good use of HP. The downside — they’re worse at holding a point.</td></tr>
+      <tr><td><b>Rogues, reliable</b></td><td>Attack → Defense → Health</td><td>A bit less damage, but more stable in long fights and on defense.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="hint">If the same lineup both attacks and holds positions — go with the balanced option.</p>
+</section>
+
+<section class="card" id="order">
+  <h2>🪜 All at once or one item to the max?</h2>
+  <p>It depends on quality: up to blue it pays to level evenly, from blue on — finish them one at a time.</p>
+  <ol class="steps-list">
+    <li><b>Gray</b> — all six to level 10, then upgrade to green.</li>
+    <li><b>Green</b> — all evenly to level 15. The first levels are cheap and give a lot: from level 1 to 10 a green item grows from about 130K to 799K power, and the step up to blue adds about 390K more.</li>
+    <li><b>Blue — time to rush.</b> A level costs 30 Precise Blueprints, and the step up to purple costs 150 (like five levels). Pick an item for your build → to level 15 → straight to purple → the next one.</li>
+    <li><b>Purple</b> — same scheme, but to level 20 → straight to gold → the next one.</li>
+    <li><b>Gold (legendary)</b> — there’s no further quality upgrade, just level up to 30.</li>
+  </ol>
+  <div class="example"><b>In short:</b> gray to 10 → all green to 15 → blue one by one to 15 and into purple → purple one by one to 20 and into gold → gold to 30.</div>
+  <p class="hint">Don’t spread blue items out “+2 each”: from this stage it pays more to focus and complete the step up. Note: since 2.6.100 there are bonuses for a set of one quality — sometimes it may be better to bring the whole set up to one color. The sources don’t have exact calculations for the new system yet.</p>
+</section>
+
+<section class="card" id="cost">
+  <h2>💸 How much it costs</h2>
+  <ul class="checks">
+    <li>One item to <b>legendary</b> quality (without leveling up the legendary levels): roughly <b>65,190 parts + 1,840 Precise Blueprints</b>.</li>
+    <li>The whole collection of six: about <b>391,140 parts + 11,040 blueprints</b>.</li>
+    <li>You need more parts, but they’re easier to get. <b>The main shortage in the late game is Precise Blueprints.</b></li>
+  </ul>
+  <p>Why a quality upgrade is so valuable: the matching combat bonus at the first level of the new quality jumps from <b>1.5%</b> (uncommon) to <b>12.5%</b> (rare), then to <b>24.5%</b> (epic), and legendary starts at <b>40%</b>. Sometimes it’s better not to squeeze out the last levels but to get the item ready for the next rarity sooner.</p>
+</section>
+
+<section class="card" id="items">
+  <h2>🧰 The six items and their economy bonus</h2>
+  <p>Each slot has its own combat stats and a separate production bonus; the item’s name changes with quality.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>Economy bonus</th></tr></thead>
+    <tbody>
+      <tr><td>Lantern</td><td>fuel production</td></tr>
+      <tr><td>Binoculars</td><td>metal production</td></tr>
+      <tr><td>Compass</td><td>food gathering speed</td></tr>
+      <tr><td>Watch</td><td>wood gathering speed</td></tr>
+      <tr><td>Knife</td><td>wood production</td></tr>
+      <tr><td>Diary</td><td>metal gathering speed</td></tr>
+    </tbody>
+  </table></div>
+  <p class="hint">If some resource is always short for you — factor this bonus into your choice too.</p>
+</section>
+
+<section class="card" id="where">
+  <h2>📦 Where to get parts and Precise Blueprints</h2>
+  <ul class="rules-list">
+    <li><span class="ico">⚙️</span><div><b>Parts</b> — scarce at first, later they come in noticeably more often. The main source is <b>Distorted Alphas</b>: hit the highest ones you can handle. Don’t rush to buy more at the first shortage — first count how many you really need to reach your goal.</div></li>
+    <li><span class="ico">🧟</span><div><b>Wandering Infected</b> — the first win of the day is guaranteed to give <b>3 blueprints</b>. Over a month that’s about 90 almost for free.</div></li>
+    <li><span class="ico">♻️</span><div><b>Recycling Center</b> — spare hero shards → currency → blueprints in the shop. It still works after the Wall of Honor appears. Just make sure the shards really are spare.</div></li>
+    <li><span class="ico">⛏</span><div><b>Underground Goldmine</b> — its shop sometimes has blueprints; if they’re in the rotation — make them a priority, on par with valuable shards. Since 2.6.0 you enter it via the task list in the event.</div></li>
+    <li><span class="ico">🏰</span><div><b>Arcadia</b> (for clearing and achievements) and <b>Kingdom vs Kingdom (KvK)</b> — also give blueprints. Don’t mindlessly spend <b>Reservoir Raid</b> currency on blueprints: there are more valuable things there.</div></li>
+  </ul>
+  <h2>🎪 Events — the main supply</h2>
+  <ul class="checks">
+    <li><b>Future Tycoon</b> — one of the best sources: blueprints in the event shop. Don’t waste the currency on minor stuff.</li>
+    <li><b>Partner Paradise</b> — blueprints in chests and stage rewards; spend attempts on the milestone rewards you need.</li>
+    <li><b>Chamber of Secrets</b> — look at the floor rewards first; save up attempts and clear several floors at once if blueprints are close.</li>
+    <li>Anniversary, holidays and other limited-time events — look for blueprints in the shop first, not cosmetics.</li>
+  </ul>
+  <p class="hint">Hold off on big collection upgrades if there’s an event coming where they give points or rewards. Spend real money only for a specific goal: count how much you’re short of the quality upgrade.</p>
+</section>
+{% endblock %}

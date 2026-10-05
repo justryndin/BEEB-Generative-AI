@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}События · {{ site_name }}{% endblock %}
+{% block title %}{{ _("События") }} · {{ site_name }}{% endblock %}
 {% block content %}
-<h1>📣 Союз</h1>
+<h1>📣 {{ _("Союз") }}</h1>
 <nav class="tabs" style="grid-template-columns:repeat(3,1fr)">
-  <a href="/board">Объявления</a>
-  <a href="/events" class="on">📅 События</a>
-  <a href="/guides">📚 Гайды</a>
+  <a href="/board">{{ _("Объявления") }}</a>
+  <a href="/events" class="on">📅 {{ _("События") }}</a>
+  <a href="/guides">📚 {{ _("Гайды") }}</a>
 </nav>
-<p class="hint">Время — {{ tz_label }} ({{ offset_text() }}) и серверное UTC. Новый игровой день начинается в {{ reset }} {{ tz_label }} = 00:00 UTC.</p>
+<p class="hint">{{ _("Время — {tz} ({offset}) и серверное UTC. Новый игровой день начинается в {reset} {tz} = 00:00 UTC.", tz=tz_label, offset=offset_text(), reset=reset) }}</p>
 
 {% for d in days %}
 <section class="card">
@@ -15,10 +15,10 @@
   <ul class="events">
     {% for o in d.list %}{% set e = o.event %}
     <li class="ev{{ ' now' if o.ongoing(now_ts) }}">
-      <div class="ev-time">{% if o.ongoing(now_ts) %}<b>идёт</b><small>до {{ local(o.end, "%H:%M") }} {{ tz_label }}</small><small>{{ utc(o.end) }} UTC</small>{% elif e.duration >= 1440 %}<b>весь день</b><small>с {{ local(o.start) }} {{ tz_label }}</small><small>{{ utc(o.start) }} UTC</small>{% else %}<b>{{ local(o.start, "%H:%M") }} {{ tz_label }}</b><small>{{ utc(o.start) }} UTC</small><small>{{ dur(e.duration * 60) }}</small>{% endif %}</div>
+      <div class="ev-time">{% if o.ongoing(now_ts) %}<b>{{ _("идёт") }}</b><small>{{ _("до {time}", time=local(o.end, "%H:%M")) }} {{ tz_label }}</small><small>{{ utc(o.end) }} UTC</small>{% elif e.duration >= 1440 %}<b>{{ _("весь день") }}</b><small>{{ _("с {time}", time=local(o.start)) }} {{ tz_label }}</small><small>{{ utc(o.start) }} UTC</small>{% else %}<b>{{ local(o.start, "%H:%M") }} {{ tz_label }}</b><small>{{ utc(o.start) }} UTC</small><small>{{ dur(e.duration * 60) }}</small>{% endif %}</div>
       <div class="ev-body">
-        <b>{{ e.title }}</b>{% if not e.checked %} <span class="badge badge-warn" title="Время взято из гайдов — R4, сверьте с игрой">проверить</span>{% endif %}
-        {% if e.prepare %}<small>{{ e.prepare }}</small>{% endif %}
+        <b>{{ _(e.title) }}</b>{% if not e.checked %} <span class="badge badge-warn" title="{{ _("Время взято из гайдов — R4, сверьте с игрой") }}">{{ _("проверить") }}</span>{% endif %}
+        {% if e.prepare %}<small>{{ _(e.prepare) }}</small>{% endif %}
         {% if e.rsvp %}{% with ref = o.ref, a = answers[o.ref], next = "/events" %}{% include "_rsvp.html" %}{% endwith %}{% endif %}
       </div>
     </li>
@@ -26,18 +26,18 @@
   </ul>
 </section>
 {% else %}
-<p class="empty">На неделе событий нет.</p>
+<p class="empty">{{ _("На неделе событий нет.") }}</p>
 {% endfor %}
 
 {% if is_admin %}
 <section class="card">
-  <div class="card-head"><h2>⚙️ Расписание союза</h2><a class="btn btn-sm btn-primary" href="/events/edit">➕ Событие</a></div>
-  <p class="hint mt0">Стартовый набор взят из открытых гайдов — источники расходятся. Сверьте время с игрой, поправьте и снимите «проверить». Напоминание приходит игрокам на телефон.</p>
+  <div class="card-head"><h2>⚙️ {{ _("Расписание союза") }}</h2><a class="btn btn-sm btn-primary" href="/events/edit">➕ {{ _("Событие") }}</a></div>
+  <p class="hint mt0">{{ _("Стартовый набор взят из открытых гайдов — источники расходятся. Сверьте время с игрой, поправьте и снимите «проверить». Напоминание приходит игрокам на телефон.") }}</p>
   <ul class="feed">
     {% for x in all_events %}{% set e = x.e %}
-    <li><span><b>{{ e.title }}</b>{% if not e.checked %} <span class="badge badge-warn">проверить</span>{% endif %}<br>
-      <small class="muted">{% for i in range(7) if (i|string) in x.local[0] %}{{ WEEKDAYS[i] }}{{ ", " if not loop.last }}{% endfor %} · {{ x.local[1] }} {{ tz_label }} ({{ "%02d:%02d"|format(e.start_min // 60, e.start_min % 60) }} UTC) · {{ dur(e.duration * 60) }}{% if e.remind_min >= 0 %} · 🔔 за {{ dur(e.remind_min * 60) if e.remind_min else "0м" }}{% endif %}</small></span>
-      <a class="btn btn-sm" href="/events/edit?id={{ e.id }}">Изменить</a></li>
+    <li><span><b>{{ _(e.title) }}</b>{% if not e.checked %} <span class="badge badge-warn">{{ _("проверить") }}</span>{% endif %}<br>
+      <small class="muted">{% for i in range(7) if (i|string) in x.local[0] %}{{ _(WEEKDAYS[i]) }}{{ ", " if not loop.last }}{% endfor %} · {{ x.local[1] }} {{ tz_label }} ({{ "%02d:%02d"|format(e.start_min // 60, e.start_min % 60) }} UTC) · {{ dur(e.duration * 60) }}{% if e.remind_min >= 0 %} · 🔔 {{ _("за {time}", time=dur(e.remind_min * 60) if e.remind_min else _("0м")) }}{% endif %}</small></span>
+      <a class="btn btn-sm" href="/events/edit?id={{ e.id }}">{{ _("Изменить") }}</a></li>
     {% endfor %}
   </ul>
 </section>

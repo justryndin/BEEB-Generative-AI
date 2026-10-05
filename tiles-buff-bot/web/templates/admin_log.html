@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import journal %}
+{% from "_macros.html" import journal with context %}
 {% block title %}{{ _("Журнал бафов") }} · {{ _("Управление") }}{% endblock %}
 {% block content %}
 <p><a href="/admin">◀️ {{ _("Управление") }}</a></p>

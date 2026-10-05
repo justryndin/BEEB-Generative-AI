@@ -4,66 +4,66 @@
   <span class="pos">{{ r.position }}</span>
   <div class="who">
     <b>{{ c.nick }}</b>
-    {% if r.position == 1 %}<span class="badge badge-accent">👉 следующий</span>{% endif %}
-    {% if me and c.player_id == me.id %}<span class="badge badge-accent">это ты</span>{% endif %}
-    {% if c.urgent %}<span class="badge badge-urgent">🔥 срочно</span>{% endif %}
-    {% if r.fire_in is not none %}<span class="badge badge-urgent">⏰ горит</span>{% endif %}
-    {% if c.priority %}<span class="badge">⚡ приоритет</span>{% endif %}
-    {% if c.holding %}<span class="badge">⏳ держит баф</span>{% endif %}
-    {% if r.paused_for %}<span class="badge">⏸ пауза {{ dur(r.paused_for) }}</span>{% endif %}
+    {% if r.position == 1 %}<span class="badge badge-accent">👉 {{ _("следующий") }}</span>{% endif %}
+    {% if me and c.player_id == me.id %}<span class="badge badge-accent">{{ _("это ты") }}</span>{% endif %}
+    {% if c.urgent %}<span class="badge badge-urgent">🔥 {{ _("срочно") }}</span>{% endif %}
+    {% if r.fire_in is not none %}<span class="badge badge-urgent">⏰ {{ _("горит") }}</span>{% endif %}
+    {% if c.priority %}<span class="badge">⚡ {{ _("приоритет") }}</span>{% endif %}
+    {% if c.holding %}<span class="badge">⏳ {{ _("держит баф") }}</span>{% endif %}
+    {% if r.paused_for %}<span class="badge">⏸ {{ _("пауза {left}", left=dur(r.paused_for)) }}</span>{% endif %}
     <small class="why">{{ r.why }}</small>
     {% if r.label %}<small>{{ r.label }}</small>{% endif %}
-    <span class="sharebar" title="получил {{ c.received }} из {{ r.total }}"><span style="width:{{ (r.share * 100)|round|int }}%"></span></span>
+    <span class="sharebar" title="{{ _("получил {received} из {total}", received=c.received, total=r.total) }}"><span style="width:{{ (r.share * 100)|round|int }}%"></span></span>
   </div>
   <div class="nums">
-    <div><b>{{ c.received }} из {{ r.total }}</b><small>получил</small></div>
-    <div><b>{{ dur(c.remaining) }}</b><small>осталось</small></div>
-    <div><b>{{ dur(now_ts - r.joined_at) }}</b><small>в очереди</small></div>
+    <div><b>{{ _("{received} из {total}", received=c.received, total=r.total) }}</b><small>{{ _("получил") }}</small></div>
+    <div><b>{{ dur(c.remaining) }}</b><small>{{ _("осталось") }}</small></div>
+    <div><b>{{ dur(now_ts - r.joined_at) }}</b><small>{{ _("в очереди") }}</small></div>
   </div>
 </li>
 {%- endmacro %}
 
 <div class="boards" id="boards" data-live="/live">
   <section class="now-card">
-    <h2>🎁 Баф готов? Отдай сейчас:</h2>
+    <h2>🎁 {{ _("Баф готов? Отдай сейчас:") }}</h2>
     <div class="now-grid">
       {% for kind in ["research", "build"] %}{% set first = boards[kind].need[0] if boards[kind].need else none %}
       <div class="now-item">
-        <span class="now-kind">{{ KIND_EMOJI[kind] }} {{ "Исследование" if kind == "research" else "Стройка" }}</span>
+        <span class="now-kind">{{ KIND_EMOJI[kind] }} {{ _("Исследование") if kind == "research" else _("Стройка") }}</span>
         {% set spin = boards[kind].roulette[0] if boards[kind].roulette else none %}
         {% if first and not (spin and me and first.candidate.player_id == me.id) %}
         <b class="now-nick">{{ first.candidate.nick }}</b>
-        {% if me and first.candidate.player_id == me.id %}<span class="badge badge-accent">это ты — отдай следующему</span>{% endif %}
-        <a class="btn btn-primary btn-block" href="/give?kind={{ kind }}">Отдал ✓</a>
+        {% if me and first.candidate.player_id == me.id %}<span class="badge badge-accent">{{ _("это ты — отдай следующему") }}</span>{% endif %}
+        <a class="btn btn-primary btn-block" href="/give?kind={{ kind }}">{{ _("Отдал ✓") }}</a>
         {% elif spin %}
         <b class="now-nick">{{ spin.nick }}</b>
-        <span class="badge">🎲 рулетка — очередь пуста</span>
-        <a class="btn btn-primary btn-block" href="/give?kind={{ kind }}">Отдал ✓</a>
+        <span class="badge">🎲 {{ _("рулетка — очередь пуста") }}</span>
+        <a class="btn btn-primary btn-block" href="/give?kind={{ kind }}">{{ _("Отдал ✓") }}</a>
         {% else %}
-        <b class="now-nick muted">никому не нужно 👍</b>
+        <b class="now-nick muted">{{ _("никому не нужно") }} 👍</b>
         {% endif %}
       </div>
       {% endfor %}
     </div>
   </section>
-  <p class="live-note"><span class="dot"></span> Обновляется в реальном времени · {{ updated }}</p>
+  <p class="live-note"><span class="dot"></span> {{ _("Обновляется в реальном времени") }} · {{ updated }}</p>
   {% for kind in ["research", "build"] %}{% set b = boards[kind] %}
   <section class="board">
     <div class="board-head">
-      <h2>{{ KIND_EMOJI[kind] }} {{ "Исследование" if kind == "research" else "Стройка" }}</h2>
+      <h2>{{ KIND_EMOJI[kind] }} {{ _("Исследование") if kind == "research" else _("Стройка") }}</h2>
       <div class="board-stats">
-        <div><b>{{ b.need|length }}</b><span>в очереди</span></div>
-        <div><b>{{ b.today }}</b><span>бафов сегодня</span></div>
-        <div><b>{{ b.reached|length }}</b><span>у цели 🎯</span></div>
+        <div><b>{{ b.need|length }}</b><span>{{ _("в очереди") }}</span></div>
+        <div><b>{{ b.today }}</b><span>{{ _("бафов сегодня") }}</span></div>
+        <div><b>{{ b.reached|length }}</b><span>{{ _("у цели") }} 🎯</span></div>
       </div>
     </div>
 
-    <p class="board-rule">{% if order == "share" %}Чья полоска короче — тот следующий: каждому помогаем в равной доле от положенного.{% else %}Порядок: справедливый круг и цикл {{ pattern_text(pattern) }}.{% endif %} <a href="/help#queue">Как это работает →</a></p>
+    <p class="board-rule">{% if order == "share" %}{{ _("Чья полоска короче — тот следующий: каждому помогаем в равной доле от положенного.") }}{% else %}{{ _("Порядок: справедливый круг и цикл {pattern}.", pattern=pattern_text(pattern)) }}{% endif %} <a href="/help#queue">{{ _("Как это работает →") }}</a></p>
 
     {% if b.mine %}{% set m = b.mine %}
     <div class="mine">
-      {% if m.need %}Ты <b>№{{ m.position }}</b> в очереди · положено ещё <b>{{ m.needed }}</b> баф.{% else %}🎯 Ты дошёл до цели — запись живёт, пока идёт таймер{% endif %}
-      · получил <b>{{ m.candidate.received }}{% if m.need %} из {{ m.total }}{% endif %}</b> · осталось <b>{{ dur(m.candidate.remaining) }}</b>
+      {% if m.need %}{{ _("Ты <b>№{pos}</b> в очереди · положено ещё <b>{n}</b> баф.", pos=m.position, n=m.needed) }}{% else %}🎯 {{ _("Ты дошёл до цели — запись живёт, пока идёт таймер") }}{% endif %}
+      · {% if m.need %}{{ _("получил <b>{received} из {total}</b>", received=m.candidate.received, total=m.total) }}{% else %}{{ _("получил <b>{received}</b>", received=m.candidate.received) }}{% endif %} · {{ _("осталось <b>{left}</b>", left=dur(m.candidate.remaining)) }}
       {% if m.need %}<br><small>{{ m.why }}</small>{% endif %}
     </div>
     {% endif %}
@@ -72,28 +72,28 @@
     <ol class="blist">{% for r in b.need[:10] %}{{ brow(r, me, now_ts) }}{% endfor %}</ol>
     {% if b.need|length > 10 %}
     <details class="more" data-key="{{ kind }}-more">
-      <summary>Показать всех ({{ b.need|length }})</summary>
+      <summary>{{ _("Показать всех ({n})", n=b.need|length) }}</summary>
       <ol class="blist">{% for r in b.need[10:] %}{{ brow(r, me, now_ts) }}{% endfor %}</ol>
     </details>
     {% endif %}
     {% endif %}
     {% if b.roulette %}
     <div class="roulette">
-      <p class="mt0"><b>🎲 Рулетка.</b> {% if b.need %}Кроме тебя в очереди никого нет{% else %}В очереди никого нет{% endif %} — чтобы баф не пропал, отдаём активным игрокам союза по кругу. Первыми — кто ещё не построил Электростанцию {{ pp_goal }}.
-        <a href="/join/{{ kind }}">Строишь что-то? Встань в очередь</a> — записавшимся помогаем первыми. <a href="/help#roulette">Подробнее</a></p>
+      <p class="mt0"><b>🎲 {{ _("Рулетка.") }}</b> {{ _("Кроме тебя в очереди никого нет — чтобы баф не пропал, отдаём активным игрокам союза по кругу.") if b.need else _("В очереди никого нет — чтобы баф не пропал, отдаём активным игрокам союза по кругу.") }} {{ _("Первыми — кто ещё не построил Электростанцию {goal}.", goal=pp_goal) }}
+        {{ _("<a href=\"/join/{kind}\">Строишь что-то? Встань в очередь</a> — записавшимся помогаем первыми.", kind=kind) }} <a href="/help#roulette">{{ _("Подробнее") }}</a></p>
       <ol class="feed roulette-list">
-        {% for r in b.roulette[:5] %}<li><span><b>{{ r.nick }}</b>{% if loop.first %} <span class="badge badge-accent">🎲 сейчас</span>{% endif %}<br><small class="muted">{{ r.why }}</small></span></li>{% endfor %}
+        {% for r in b.roulette[:5] %}<li><span><b>{{ r.nick }}</b>{% if loop.first %} <span class="badge badge-accent">🎲 {{ _("сейчас") }}</span>{% endif %}<br><small class="muted">{{ r.why }}</small></span></li>{% endfor %}
       </ol>
     </div>
     {% elif not b.need %}
-    <p class="empty">Сейчас никому не нужен баф 👍</p>
+    <p class="empty">{{ _("Сейчас никому не нужен баф") }} 👍</p>
     {% endif %}
 
     {% if b.reached %}
     <details class="more" data-key="{{ kind }}-reached">
-      <summary>🎯 Дошли до цели ({{ b.reached|length }})</summary>
+      <summary>🎯 {{ _("Дошли до цели ({n})", n=b.reached|length) }}</summary>
       <ul class="feed">
-        {% for r in b.reached %}<li><span><b>{{ r.candidate.nick }}</b>{% if r.label %} <small class="muted">· {{ r.label }}</small>{% endif %}</span><span class="when">получил {{ r.candidate.received }} · осталось {{ dur(r.candidate.remaining) }}</span></li>{% endfor %}
+        {% for r in b.reached %}<li><span><b>{{ r.candidate.nick }}</b>{% if r.label %} <small class="muted">· {{ r.label }}</small>{% endif %}</span><span class="when">{{ _("получил {received} · осталось {left}", received=r.candidate.received, left=dur(r.candidate.remaining)) }}</span></li>{% endfor %}
       </ul>
     </details>
     {% endif %}

@@ -1,28 +1,28 @@
 {% extends "base.html" %}
-{% block title %}Статистика · {{ site_name }}{% endblock %}
+{% block title %}{{ _("Статистика") }} · {{ site_name }}{% endblock %}
 {% block refresh %}{{ refresh_seconds }}{% endblock %}
 {% block content %}
-<h1>📊 Статистика союза</h1>
+<h1>📊 {{ _("Статистика союза") }}</h1>
 
 <div class="grid4" style="margin-bottom:16px">
-  <div class="tile"><div class="num">{{ all_time.buffs }}</div><div class="lbl">бафов отдано за всё время</div></div>
-  <div class="tile accent"><div class="num">{{ all_time.saved // 86400 }}</div><div class="lbl">дней сэкономлено союзом</div></div>
-  <div class="tile"><div class="num">{{ queue_counts.build + queue_counts.research }}</div><div class="lbl">ждут бафа сейчас</div></div>
-  <div class="tile"><div class="num">{{ players }}</div><div class="lbl">игроков на сайте</div></div>
+  <div class="tile"><div class="num">{{ all_time.buffs }}</div><div class="lbl">{{ _("бафов отдано за всё время") }}</div></div>
+  <div class="tile accent"><div class="num">{{ all_time.saved // 86400 }}</div><div class="lbl">{{ _("дней сэкономлено союзом") }}</div></div>
+  <div class="tile"><div class="num">{{ queue_counts.build + queue_counts.research }}</div><div class="lbl">{{ _("ждут бафа сейчас") }}</div></div>
+  <div class="tile"><div class="num">{{ players }}</div><div class="lbl">{{ _("игроков на сайте") }}</div></div>
 </div>
 
 <nav class="tabs" style="grid-template-columns:repeat(3,1fr)">
-  {% for p in (7, 30, 90) %}<a href="/stats?period={{ p }}" class="{{ 'on' if p == period }}">{{ p }} дней</a>{% endfor %}
+  {% for p in (7, 30, 90) %}<a href="/stats?period={{ p }}" class="{{ 'on' if p == period }}">{{ _("{n} дней", n=p) }}</a>{% endfor %}
 </nav>
 
 <section class="card">
-  <div class="card-head"><h2>Бафы по дням</h2><span class="muted">{{ totals.buffs }} за {{ period }} дн.</span></div>
-  <p class="hint mt0">🏗 стройка: {{ totals.build }} · 🔬 исследования: {{ totals.research }} · сэкономлено {{ dur(totals.saved) }}</p>
+  <div class="card-head"><h2>{{ _("Бафы по дням") }}</h2><span class="muted">{{ _("{n} за {days} дн.", n=totals.buffs, days=period) }}</span></div>
+  <p class="hint mt0">🏗 {{ _("стройка: {n}", n=totals.build) }} · 🔬 {{ _("исследования: {n}", n=totals.research) }} · {{ _("сэкономлено {time}", time=dur(totals.saved)) }}</p>
   {{ chart|safe }}
   <details>
-    <summary>Показать таблицей</summary>
+    <summary>{{ _("Показать таблицей") }}</summary>
     <div class="table-wrap"><table>
-      <tr><th>День</th><th class="num">Бафов</th></tr>
+      <tr><th>{{ _("День") }}</th><th class="num">{{ _("Бафов") }}</th></tr>
       {% for day, n in days|reverse %}<tr><td>{{ local(day, "%d.%m.%Y") }}</td><td class="num">{{ n }}</td></tr>{% endfor %}
     </table></div>
   </details>
@@ -30,25 +30,25 @@
 
 <div class="grid2">
   <section class="card">
-    <h2>🏆 Лучшие помощники</h2>
-    <p class="hint mt0">Кто больше всех отдал бафов за {{ period }} дн. (сколько · сколько времени сэкономил)</p>
+    <h2>🏆 {{ _("Лучшие помощники") }}</h2>
+    <p class="hint mt0">{{ _("Кто больше всех отдал бафов за {days} дн. (сколько · сколько времени сэкономил)", days=period) }}</p>
     {{ donors|safe }}
   </section>
   <section class="card">
-    <h2>🎁 Больше всех получили</h2>
-    <p class="hint mt0">За {{ period }} дн.</p>
+    <h2>🎁 {{ _("Больше всех получили") }}</h2>
+    <p class="hint mt0">{{ _("За {days} дн.", days=period) }}</p>
     {{ recipients|safe }}
   </section>
 </div>
 
 <section class="card">
-  <h2>🕒 Последние бафы</h2>
+  <h2>🕒 {{ _("Последние бафы") }}</h2>
   {% if recent %}
   <ul class="feed">
     {% for d in recent %}
     <li><span>{{ KIND_EMOJI[d.kind] }} <b>{{ d.donor_nick or "—" }}</b> → <b>{{ d.recipient_nick or "—" }}</b> <span class="muted">−{{ dur(d.reduction or 0) }}</span></span><span class="when">{{ local(d.resolved_at) }}</span></li>
     {% endfor %}
   </ul>
-  {% else %}<p class="muted">Пока ни одного бафа. Будь первым! 🎁</p>{% endif %}
+  {% else %}<p class="muted">{{ _("Пока ни одного бафа. Будь первым!") }} 🎁</p>{% endif %}
 </section>
 {% endblock %}

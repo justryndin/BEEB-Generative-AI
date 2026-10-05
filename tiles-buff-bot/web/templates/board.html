@@ -1,24 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Объявления · {{ site_name }}{% endblock %}
+{% block title %}{{ _("Объявления") }} · {{ site_name }}{% endblock %}
 {% block content %}
-<h1>📣 Союз</h1>
+<h1>📣 {{ _("Союз") }}</h1>
 <nav class="tabs" style="grid-template-columns:repeat(3,1fr)">
-  <a href="/board" class="on">Объявления</a>
-  <a href="/events">📅 События</a>
-  <a href="/guides">📚 Гайды</a>
+  <a href="/board" class="on">{{ _("Объявления") }}</a>
+  <a href="/events">📅 {{ _("События") }}</a>
+  <a href="/guides">📚 {{ _("Гайды") }}</a>
 </nav>
 
 {% if is_admin %}
 <section class="card">
-  <h2>✍️ Новое объявление</h2>
+  <h2>✍️ {{ _("Новое объявление") }}</h2>
   <form method="post" action="/board" class="stack">
     <input type="hidden" name="csrf" value="{{ csrf }}">
-    <label for="text">Текст</label>
-    <textarea id="text" name="text" rows="4" maxlength="2000" required placeholder="Сбор на Аркадию в субботу 15:00 МСК. Щиты снять до 14:30."></textarea>
-    <label class="check"><input type="checkbox" name="pinned" value="1"> 📌 Закрепить на главной</label>
-    <label class="check"><input type="checkbox" name="important" value="1"> 🔔 Важное — прислать всем на телефон</label>
-    <label class="check"><input type="checkbox" name="rsvp" value="1"> Спросить «Буду / Не смогу»</label>
-    <button class="btn btn-primary" type="submit">Опубликовать</button>
+    <label for="text">{{ _("Текст") }}</label>
+    <textarea id="text" name="text" rows="4" maxlength="2000" required placeholder="{{ _("Сбор на Аркадию в субботу 15:00 МСК. Щиты снять до 14:30.") }}"></textarea>
+    <label class="check"><input type="checkbox" name="pinned" value="1"> 📌 {{ _("Закрепить на главной") }}</label>
+    <label class="check"><input type="checkbox" name="important" value="1"> 🔔 {{ _("Важное — прислать всем на телефон") }}</label>
+    <label class="check"><input type="checkbox" name="rsvp" value="1"> {{ _("Спросить «Буду / Не смогу»") }}</label>
+    <button class="btn btn-primary" type="submit">{{ _("Опубликовать") }}</button>
   </form>
 </section>
 {% endif %}
@@ -26,22 +26,22 @@
 {% for p in items %}
 <article class="card post{{ ' pinned' if p.pinned }}{{ ' fresh' if not p.seen }}">
   <div class="post-head">
-    {% if p.pinned %}<span class="badge badge-accent">📌 закреплено</span>{% endif %}
-    {% if p.important %}<span class="badge badge-urgent">🔔 важное</span>{% endif %}
-    {% if not p.seen %}<span class="badge">новое</span>{% endif %}
+    {% if p.pinned %}<span class="badge badge-accent">📌 {{ _("закреплено") }}</span>{% endif %}
+    {% if p.important %}<span class="badge badge-urgent">🔔 {{ _("важное") }}</span>{% endif %}
+    {% if not p.seen %}<span class="badge">{{ _("новое") }}</span>{% endif %}
     <span class="muted">{{ p.author or "R4" }} · {{ local(p.created_at) }}</span>
   </div>
   <p class="post-text">{{ p.text }}</p>
   {% if p.rsvp %}{% with ref = "post:" ~ p.id, a = answers["post:" ~ p.id], next = "/board" %}{% include "_rsvp.html" %}{% endwith %}{% endif %}
   <div class="post-foot">
-    <span class="hint">прочитали {{ p.reads }} из {{ players }}</span>
+    <span class="hint">{{ _("прочитали {reads} из {total}", reads=p.reads, total=players) }}</span>
     {% if is_admin %}
-    <form method="post" action="/board/{{ p.id }}/{{ 'unpin' if p.pinned else 'pin' }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm btn-ghost" type="submit">{{ "Открепить" if p.pinned else "📌 Закрепить" }}</button></form>
-    <form method="post" action="/board/{{ p.id }}/delete" data-confirm="Удалить объявление?"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm btn-ghost" type="submit">🗑</button></form>
+    <form method="post" action="/board/{{ p.id }}/{{ 'unpin' if p.pinned else 'pin' }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm btn-ghost" type="submit">{{ _("Открепить") if p.pinned else "📌 " ~ _("Закрепить") }}</button></form>
+    <form method="post" action="/board/{{ p.id }}/delete" data-confirm="{{ _("Удалить объявление?") }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn btn-sm btn-ghost" type="submit">🗑</button></form>
     {% endif %}
   </div>
 </article>
 {% else %}
-<p class="empty">Объявлений пока нет.{% if is_admin %} Напиши первое — оно появится у всех на главной.{% endif %}</p>
+<p class="empty">{{ _("Объявлений пока нет.") }}{% if is_admin %} {{ _("Напиши первое — оно появится у всех на главной.") }}{% endif %}</p>
 {% endfor %}
 {% endblock %}
