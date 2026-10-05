@@ -338,6 +338,8 @@ def test_undone_test_buff_disappears_everywhere(site, old_record):
     d = svc.journal(1)[0]
     if old_record:  # запись, сделанная до появления отмены, — без сведений для отката
         svc.db.run("UPDATE donations SET undo = NULL WHERE id = ?", d["id"])
+    me_page = player.get("/me").text
+    assert "Получил баф на стройку от Иван" in me_page and "Что я могу на сайте" in me_page
     owner.post(f"/undo/{d['id']}", data={"csrf": token, "next": "/admin/log"})
 
     after = svc.timer_candidate(mura["id"], "build", t)

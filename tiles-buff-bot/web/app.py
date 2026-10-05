@@ -748,7 +748,8 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
             given=given, received=received, saved=saved,
             notify=notify_prefs(me),
             gain=benefit(svc, me["id"], t),
-            devices=len(svc.push_subs(me["id"])),
+            history=svc.journal(30, me["id"]),
+            devices=len(svc.push_subs(acc_id(me))),
             quiet=(int(svc.setting_float("quiet_from")), int(svc.setting_float("quiet_to"))),
         )
 
@@ -1070,10 +1071,10 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         check_csrf(me, csrf)
         nick = clean_nick(nick)
         if not 2 <= len(nick) <= 32:
-            return go("/me", "⚠️ Ник должен быть от 2 до 32 символов.")
+            return go("/me#security", "⚠️ Ник должен быть от 2 до 32 символов.")
         if svc.rename(me["id"], nick) == "taken":
-            return go("/me", "⚠️ Этот ник уже занят другим игроком.")
-        return go("/me", tr("✅ Ник изменён на {nick}.", nick=nick))
+            return go("/me#security", "⚠️ Этот ник уже занят другим игроком.")
+        return go("/me#security", tr("✅ Ник изменён на {nick}.", nick=nick))
 
     @app.post("/me/pin")
     def change_pin(request: Request, csrf: str = Form(""), old: str = Form(""), pin: str = Form(""),
@@ -1082,11 +1083,11 @@ def create_app(cfg: Config | None = None, svc: Service | None = None) -> FastAPI
         check_csrf(me, csrf)
         _, error = svc.login(me["account_nick"], old.strip(), now())
         if error:
-            return go("/me", "⚠️ Текущий PIN-код неверный.")
+            return go("/me#security", "⚠️ Текущий PIN-код неверный.")
         if not valid_pin(pin.strip()) or pin.strip() != pin2.strip():
-            return go("/me", "⚠️ Новый PIN — 4 цифры, и оба раза одинаково.")
+            return go("/me#security", "⚠️ Новый PIN — 4 цифры, и оба раза одинаково.")
         svc.set_pin(acc_id(me), pin.strip())
-        return go("/me", "✅ PIN-код изменён.")
+        return go("/me#security", "✅ PIN-код изменён.")
 
     @app.post("/char/{cid}")
     def switch_char(request: Request, cid: int, csrf: str = Form(""), next: str = Form("/")):

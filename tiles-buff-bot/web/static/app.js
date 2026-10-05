@@ -275,6 +275,28 @@
     if (e.key === "Escape") { var t = document.getElementById("nav-toggle"); if (t) t.checked = false; }
   });
 
+  // Вкладки (личный кабинет): без JS видны все разделы подряд; ссылка /me#notify открывает нужную вкладку.
+  document.querySelectorAll("[data-tabs]").forEach(function (box) {
+    var panels = box.querySelectorAll(".tab-panel"), links = box.querySelectorAll("[data-tab]");
+    function show() {
+      var id = location.hash.slice(1), target = id && document.getElementById(id), panel = panels[0];
+      panels.forEach(function (p) { if (target && (p === target || p.contains(target))) panel = p; });
+      panels.forEach(function (p) { p.classList.toggle("on", p === panel); });
+      links.forEach(function (a) {
+        var on = a.dataset.tab === panel.id;
+        a.classList.toggle("on", on);
+        if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+      });
+      if (target && target !== panel) target.focus && target.focus();
+    }
+    box.classList.add("tabs-js");
+    links.forEach(function (a) { a.addEventListener("click", function (e) {
+      e.preventDefault(); history.replaceState(null, "", "#" + a.dataset.tab); show();
+    }); });
+    window.addEventListener("hashchange", show);
+    show();
+  });
+
   initClock();
   initTheme();
   initPush();
