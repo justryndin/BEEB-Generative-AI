@@ -1,12 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ _("События") }} · {{ _(site_name) }}{% endblock %}
 {% block content %}
-<h1>📣 {{ _("Союз") }}</h1>
-<nav class="tabs" style="grid-template-columns:repeat(3,1fr)">
-  <a href="/board">{{ _("Объявления") }}</a>
-  <a href="/events" class="on">📅 {{ _("События") }}</a>
-  <a href="/guides">📚 {{ _("Гайды") }}</a>
-</nav>
+<div class="page-head"><div><h1>{{ _("События") }}</h1><p>{{ _("Расписание союза на неделю: что, когда и как подготовиться.") }}</p></div>
+  {% if is_admin %}<a class="btn btn-primary" href="/events/edit">{{ ico("plus") }} {{ _("Событие") }}</a>{% endif %}</div>
+{% include "_union_nav.html" %}
 <p class="hint">{{ _("Время — {tz} ({offset}) и серверное UTC. Новый игровой день начинается в {reset} {tz} = 00:00 UTC.", tz=tz_label, offset=offset_text(), reset=reset) }}</p>
 
 {% for d in days %}
@@ -26,12 +23,12 @@
   </ul>
 </section>
 {% else %}
-<p class="empty">{{ _("На неделе событий нет.") }}</p>
+<div class="card empty-state">{{ ico("cal") }}<p>{{ _("На неделе событий нет.") }}</p></div>
 {% endfor %}
 
 {% if is_admin %}
 <section class="card">
-  <div class="card-head"><h2>⚙️ {{ _("Расписание союза") }}</h2><a class="btn btn-sm btn-primary" href="/events/edit">➕ {{ _("Событие") }}</a></div>
+  <div class="card-head"><h2>{{ ico("sliders") }} {{ _("Расписание союза") }} <span class="badge">R4</span></h2><a class="btn btn-sm btn-primary" href="/events/edit">{{ ico("plus") }} {{ _("Событие") }}</a></div>
   <p class="hint mt0">{{ _("Стартовый набор примерный. Сверьте время с игрой, поправьте и снимите «проверить». Напоминание приходит игрокам на телефон.") }}</p>
   <ul class="feed">
     {% for x in all_events %}{% set e = x.e %}

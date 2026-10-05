@@ -838,3 +838,14 @@ h2 > .i, h3 > .i { color: var(--accent-text); margin-right: 8px; vertical-align:
 .kind-stat b { font-size: 1.4rem; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .kind-stat span { color: var(--muted); font-size: .84rem; }
 .howto li > p { margin: 0; }
+
+/* раздел «Союз» */
+.tabs-3 { grid-template-columns: repeat(3, 1fr); }
+.tabs a { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.tabs a.on .i { color: var(--accent-text); }
+@media (max-width: 420px) { .tabs-3 a .i { display: none; } }
+details.composer > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 650; }
+details.composer > summary::-webkit-details-marker { display: none; }
+details.composer > summary .hint { margin: 0 0 0 auto; }
+details.composer[open] > summary { margin-bottom: 12px; }
+details.composer > summary .i { color: var(--accent-text); }

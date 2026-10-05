@@ -1,0 +1,5 @@
+<nav class="tabs tabs-3" aria-label="{{ _("Союз") }}">
+  {% for href, icon_name, name, n in [("/board", "msg", _("Объявления"), unread), ("/events", "cal", _("События"), 0), ("/polls", "poll", _("Опросы"), open_polls)] %}
+  <a href="{{ href }}" class="{{ 'on' if path == href }}"{% if path == href %} aria-current="page"{% endif %}>{{ ico(icon_name) }}<span>{{ name }}</span>{% if n %}<span class="dotcount">{{ n }}</span>{% endif %}</a>
+  {% endfor %}
+</nav>
